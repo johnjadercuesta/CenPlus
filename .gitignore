@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# env
+.env*.local
+
+# database
+cenplus.db
+cenplus.db-wal
+cenplus.db-shm
+
+# misc
+.DS_Store
+*.pem
+nul
