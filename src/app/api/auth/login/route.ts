@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { pool } from "@/lib/db";
 import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb();
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -15,9 +14,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = db
-      .prepare("SELECT * FROM admins WHERE email = ? AND activo = 1")
-      .get(email) as { id: number; email: string; password: string; nombre: string; role: string } | undefined;
+    const { rows } = await pool.query(
+      "SELECT * FROM admins WHERE email = $1 AND activo = 1",
+      [email]
+    );
+    const user = rows[0] as { id: number; email: string; password: string; nombre: string; role: string } | undefined;
 
     if (!user) {
       return NextResponse.json(
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       email: user.email,
       nombre: user.nombre,
-      role: user.role as "administrador" | "lider",
+      role: user.role as "administrador" | "estratega" | "lider",
     });
 
     const response = NextResponse.json({
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
       nombre: user.nombre,
       role: user.role,
     });
+    
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

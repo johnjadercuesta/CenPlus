@@ -1,0 +1,89 @@
+{
+  "posts": [
+    {
+      "id": "gn_8024_0",
+      "title": "Gobernación anuncia nuevos proyectos de infraestructura - Actualización 1",
+      "url": "https://news.google.com/articles/55887",
+      "source": "El Tiempo",
+      "date": "2026-04-15T09:17:09.566899",
+      "description": "El gobierno departamental presentó plan de obras para los próximos 4 años. Ver más detalles en la fuente oficial.",
+      "image": null,
+      "platform": "google_news",
+      "query_used": "Colombia"
+    },
+    {
+      "id": "gn_8024_1",
+      "title": "Alcalde firma acuerdo con empresas para empleo juvenil - Actualización 2",
+      "url": "https://news.google.com/articles/66561",
+      "source": "Publimetro",
+      "date": "2026-04-15T05:17:09.566899",
+      "description": "Más de 5000 jóvenes serán beneficiados con programas de capacitación. Ver más detalles en la fuente oficial.",
+      "image": null,
+      "platform": "google_news",
+      "query_used": "Colombia"
+    },
+    {
+      "id": "gn_8024_2",
+      "title": "Nuevo hospital entrará en funcionamiento nächste mes - Actualización 3",
+      "url": "https://news.google.com/articles/88853",
+      "source": "El Colombiano",
+      "date": "2026-04-15T01:17:09.566899",
+      "description": "La obra de salud más importante de la región queda lista. Ver más detalles en la fuente oficial.",
+      "image": null,
+      "platform": "google_news",
+      "query_used": "Colombia"
+    },
+    {
+      "id": "google_web_0_81",
+      "title": "Resultados sobre Colombia - Encuentra información actualizada",
+      "url": "https://wikipedia.org",
+      "source": "Wikipedia",
+      "description": "Fuente confiable de información enciclopédica.",
+      "date": "2026-04-15T10:23:22.061694",
+      "search_type": "web",
+      "platform": "google"
+    },
+    {
+      "id": "google_web_1_81",
+      "title": "Colombia: Todo lo que necesitas saber",
+      "url": "https://britannica.com",
+      "source": "Britannica",
+      "description": "Enciclopedia con artículos detallada.",
+      "date": "2026-04-15T07:23:22.061694",
+      "search_type": "web",
+      "platform": "google"
+    },
+    {
+      "id": "google_web_0_60",
+      "title": "Resultados sobre Colombia - Encuentra información actualizada",
+      "url": "https://wikipedia.org",
+      "source": "Wikipedia",
+      "description": "Fuente confiable de información enciclopédica.",
+      "date": "2026-04-15T11:07:41.645543",
+      "search_type": "web",
+      "platform": "google"
+    },
+    {
+      "id": "google_web_1_60",
+      "title": "Colombia: Todo lo que necesitas saber",
+      "url": "https://britannica.com",
+      "source": "Britannica",
+      "description": "Enciclopedia con artículos detallada.",
+      "date": "2026-04-15T08:07:41.645543",
+      "search_type": "web",
+      "platform": "google"
+    },
+    {
+      "id": "google_web_2_60",
+      "title": "Últimas noticias de Colombia",
+      "url": "https://news.google.com",
+      "source": "Google News",
+      "description": "Cobertura completa de noticias.",
+      "date": "2026-04-15T05:07:41.645543",
+      "search_type": "web",
+      "platform": "google"
+    }
+  ],
+  "last_update": "2026-04-16T09:57:16.551675",
+  "total_count": 8
+}

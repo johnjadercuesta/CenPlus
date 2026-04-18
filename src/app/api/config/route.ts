@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -9,8 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const db = getDb();
-    const rows = db.prepare("SELECT clave, valor FROM config").all() as { clave: string; valor: string }[];
+    const { rows } = await pool.query("SELECT clave, valor FROM config");
     const config: Record<string, string> = {};
     for (const r of rows) {
       config[r.clave] = r.valor;
@@ -19,7 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ config });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
 
@@ -27,19 +26,21 @@ export async function PUT(request: NextRequest) {
   try {
     const token = getTokenFromRequest(request);
     if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
+      return NextResponse.json({ error: "Solo administradores pueden cambiar la configuración" }, { status: 403 });
     }
 
-    const db = getDb();
     const body = await request.json();
 
     for (const [clave, valor] of Object.entries(body)) {
-      db.prepare("INSERT OR REPLACE INTO config (clave, valor) VALUES (?, ?)").run(clave, String(valor));
+      await pool.query(
+        "INSERT INTO config (clave, valor) VALUES ($1, $2) ON CONFLICT (clave) DO UPDATE SET valor = $2",
+        [clave, String(valor)]
+      );
     }
 
-    return NextResponse.json({ message: "Configuración actualizada" });
+    return NextResponse.json({ message: "Configuración actualizada correctamente" });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

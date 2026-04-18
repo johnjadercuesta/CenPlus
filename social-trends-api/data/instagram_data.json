@@ -1,0 +1,121 @@
+{
+  "posts": [
+    {
+      "id": "ig_hashtag_noticias Colombia_0",
+      "text": "Hermoso atardecer en la ciudad #colombia #paisaje noticias Colombia",
+      "date": "2026-04-15T11:48:02.399146",
+      "username": "fotografo_med",
+      "url": "https://instagram.com/p/ig_hashtag_noticias Colombia_0",
+      "likes": 250,
+      "comments": 15,
+      "media_type": "image",
+      "media_urls": [],
+      "hashtags": [
+        "#colombia",
+        "#noticias Colombia",
+        "#actualidad"
+      ],
+      "platform": "instagram",
+      "location": {
+        "city": "Medellín",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T11:48:02.399146"
+    },
+    {
+      "id": "ig_hashtag_noticias Colombia_1",
+      "text": "Nuevo negociolocale visiten #apoyo local noticias Colombia",
+      "date": "2026-04-15T08:48:02.399146",
+      "username": "comerciante_cali",
+      "url": "https://instagram.com/p/ig_hashtag_noticias Colombia_1",
+      "likes": 130,
+      "comments": 9,
+      "media_type": "image",
+      "media_urls": [],
+      "hashtags": [
+        "#colombia",
+        "#noticias Colombia",
+        "#actualidad"
+      ],
+      "platform": "instagram",
+      "location": {
+        "city": "Cali",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T08:48:02.399146"
+    },
+    {
+      "id": "ig_hashtag_noticias Colombia_2",
+      "text": "Evento comunitario mañana #convivencia noticias Colombia",
+      "date": "2026-04-15T05:48:02.399146",
+      "username": "org_comunal",
+      "url": "https://instagram.com/p/ig_hashtag_noticias Colombia_2",
+      "likes": 100,
+      "comments": 14,
+      "media_type": "image",
+      "media_urls": [],
+      "hashtags": [
+        "#colombia",
+        "#noticias Colombia",
+        "#actualidad"
+      ],
+      "platform": "instagram",
+      "location": {
+        "city": "Bogotá",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T05:48:02.399146"
+    },
+    {
+      "id": "ig_hashtag_Colombia_0",
+      "text": "Hermoso atardecer en la ciudad #colombia #paisaje Colombia",
+      "date": "2026-04-16T09:57:13.459253",
+      "username": "fotografo_med",
+      "url": "https://instagram.com/p/ig_hashtag_Colombia_0",
+      "likes": 250,
+      "comments": 15,
+      "media_type": "image",
+      "media_urls": [],
+      "hashtags": [
+        "#colombia",
+        "#Colombia",
+        "#actualidad"
+      ],
+      "platform": "instagram",
+      "location": {
+        "city": "Medellín",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-16T09:57:13.459253"
+    },
+    {
+      "id": "ig_hashtag_Colombia_1",
+      "text": "Nuevo negociolocale visiten #apoyo local Colombia",
+      "date": "2026-04-16T06:57:13.459253",
+      "username": "comerciante_cali",
+      "url": "https://instagram.com/p/ig_hashtag_Colombia_1",
+      "likes": 130,
+      "comments": 9,
+      "media_type": "image",
+      "media_urls": [],
+      "hashtags": [
+        "#colombia",
+        "#Colombia",
+        "#actualidad"
+      ],
+      "platform": "instagram",
+      "location": {
+        "city": "Cali",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-16T06:57:13.459253"
+    }
+  ],
+  "last_update": "2026-04-16T09:57:13.491566",
+  "total_count": 5
+}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
@@ -10,15 +10,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
 
-    const db = getDb();
-    const data = db
-      .prepare("SELECT id, email, nombre, role, activo, created_at FROM admins ORDER BY created_at DESC")
-      .all();
+    const { rows: data } = await pool.query(
+      "SELECT id, email, nombre, role, activo, created_at FROM admins ORDER BY created_at DESC"
+    );
 
     return NextResponse.json({ data });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
 
@@ -29,30 +28,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
 
-    const db = getDb();
     const { email, password, nombre, role } = await request.json();
 
     if (!email || !password || !nombre) {
       return NextResponse.json({ error: "Email, contraseña y nombre son obligatorios" }, { status: 400 });
     }
 
-    const existing = db.prepare("SELECT id FROM admins WHERE email = ?").get(email);
-    if (existing) {
+    const { rows: existingRows } = await pool.query("SELECT id FROM admins WHERE email = $1", [email]);
+    if (existingRows.length > 0) {
       return NextResponse.json({ error: "Este email ya está registrado" }, { status: 409 });
     }
 
     const hash = bcrypt.hashSync(password, 10);
-    const result = db
-      .prepare("INSERT INTO admins (email, password, nombre, role) VALUES (?, ?, ?, ?)")
-      .run(email, hash, nombre, role === "administrador" ? "administrador" : "lider");
+    const validRoles = ["administrador", "estratega", "lider", "analista"];
+    const targetRole = validRoles.includes(role) ? role : "lider";
 
-    const data = db
-      .prepare("SELECT id, email, nombre, role, activo, created_at FROM admins WHERE id = ?")
-      .get(result.lastInsertRowid);
+    const { rows } = await pool.query(
+      "INSERT INTO admins (email, password, nombre, role) VALUES ($1, $2, $3, $4) RETURNING id, email, nombre, role, activo, created_at",
+      [email, hash, nombre, targetRole]
+    );
 
-    return NextResponse.json({ data, message: "Usuario creado" }, { status: 201 });
+    return NextResponse.json({ data: rows[0], message: "Usuario creado exitosamente" }, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

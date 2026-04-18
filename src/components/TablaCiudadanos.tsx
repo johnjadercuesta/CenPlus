@@ -15,7 +15,7 @@ interface CiudadanosResponse {
 const NIVELES = ["Ninguno", "Primaria", "Secundaria", "Técnico", "Universitario", "Posgrado"];
 const SEXOS = ["Masculino", "Femenino", "Otro"];
 
-export default function TablaCiudadanos() {
+export default function TablaCiudadanos({ archivoId }: { archivoId?: string }) {
   const [data, setData] = useState<(Ciudadano & { registrado_por?: string })[]>([]);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -61,6 +61,7 @@ export default function TablaCiudadanos() {
         ...(filterCorregimiento && { corregimiento: filterCorregimiento }),
         ...(filterOcupacion && { ocupacion: filterOcupacion }),
         ...(filterEsLider && { es_lider: filterEsLider }),
+        ...(archivoId && archivoId !== "actual" && { archivo_id: archivoId }),
       });
       const res = await fetch(`/api/ciudadanos?${params}`, {
         headers: authHeaders(),
@@ -74,7 +75,7 @@ export default function TablaCiudadanos() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, filterNivel, filterSexo, filterBarrio, filterCorregimiento, filterOcupacion, filterEsLider]);
+  }, [page, search, filterNivel, filterSexo, filterBarrio, filterCorregimiento, filterOcupacion, filterEsLider, archivoId]);
 
   useEffect(() => {
     fetchData();

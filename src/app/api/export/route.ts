@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { pool } from "@/lib/db";
 
 export async function GET() {
   try {
-    const db = getDb();
-    const data = db.prepare("SELECT * FROM ciudadanos ORDER BY created_at DESC").all() as Record<string, unknown>[];
+    const { rows: data } = await pool.query("SELECT * FROM ciudadanos ORDER BY created_at DESC");
 
     if (data.length === 0) {
       return NextResponse.json({ error: "No hay datos para exportar" }, { status: 404 });
@@ -12,7 +11,8 @@ export async function GET() {
 
     const headers = [
       "ID", "Cédula", "Nombre Completo", "Teléfono", "Sexo", "Edad",
-      "Nivel de Estudios", "Ocupación", "Barrio", "Corregimiento",
+      "Nivel de Estudios", "Ocupación", "Régimen Salud", "Puesto Votación",
+      "Problemática Principal", "Comuna", "Barrio", "Corregimiento",
       "Vereda", "Es Líder", "Latitud", "Longitud", "Fecha Registro",
     ];
 
@@ -28,10 +28,14 @@ export async function GET() {
           row.edad || "",
           row.nivel_estudios || "",
           `"${row.ocupacion || ""}"`,
+          `"${row.regimen_salud || ""}"`,
+          `"${row.puesto_votacion || ""}"`,
+          `"${row.problematica_principal || ""}"`,
+          row.id_comuna || "",
           `"${row.barrio}"`,
           `"${row.corregimiento}"`,
           `"${row.vereda || ""}"`,
-          row.es_lider ? "Sí" : "No",
+          row.es_lider === 1 ? "Sí" : "No",
           row.latitud || "",
           row.longitud || "",
           row.created_at
@@ -43,9 +47,9 @@ export async function GET() {
 
     const csvContent = csvRows.join("\n");
     const bom = "\uFEFF";
-    const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
-
-    return new NextResponse(blob, {
+    
+    // El navegador manejará la descarga si retornamos los headers correctos
+    return new NextResponse(bom + csvContent, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="cenplus_export_${new Date().toISOString().split("T")[0]}.csv"`,

@@ -1,17 +1,37 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
+import { pool } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
-    const data = db
-      .prepare("SELECT latitud, longitud, es_lider FROM ciudadanos WHERE latitud IS NOT NULL AND longitud IS NOT NULL")
-      .all() as { latitud: number; longitud: number; es_lider: number }[];
+    const { searchParams } = new URL(request.url);
+    const archivoId = searchParams.get("archivo_id");
 
-    const mapped = data.map((c) => ({
+    let rows: any[];
+
+    if (archivoId) {
+      const archivoRes = await pool.query(
+        "SELECT snapshot FROM archivos_electorales WHERE id = $1",
+        [archivoId]
+      );
+      if (archivoRes.rows.length === 0) {
+        return NextResponse.json({ error: "Archivo no encontrado" }, { status: 404 });
+      }
+      const snapshot = archivoRes.rows[0].snapshot;
+      rows = (snapshot.ciudadanos || []).filter(
+        (c: any) => c.latitud != null && c.longitud != null
+      );
+    } else {
+      const result = await pool.query(
+        "SELECT latitud, longitud, es_lider, problematica_principal FROM ciudadanos WHERE latitud IS NOT NULL AND longitud IS NOT NULL"
+      );
+      rows = result.rows;
+    }
+
+    const mapped = rows.map((c: any) => ({
       latitud: c.latitud,
       longitud: c.longitud,
       es_lider: c.es_lider === 1,
+      problematica_principal: c.problematica_principal
     }));
 
     const response = NextResponse.json({ data: mapped, count: mapped.length });
@@ -19,6 +39,6 @@ export async function GET() {
     return response;
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

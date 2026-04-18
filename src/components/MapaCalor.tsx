@@ -96,10 +96,22 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
     let cancelled = false;
 
     const loadMap = async () => {
-      const L = (await import("leaflet")).default;
+      if (typeof window === "undefined") return;
+      if (leafletLibRef.current) return;
+      
+      const leaflet = await import("leaflet");
+      const L = leaflet.default;
+      (window as any).L = L;
+      
+      await new Promise<void>((resolve) => {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js";
+        script.onload = () => resolve();
+        document.head.appendChild(script);
+      });
+      
       if (cancelled || !mapRef.current || mapInstanceRef.current) return;
-      await import("leaflet.heat");
-      if (cancelled) return;
+      leafletLibRef.current = L;
 
       delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -195,9 +207,9 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
 
     // Heatmap layer
     if (viewMode === "heatmap" || viewMode === "ambos") {
-      if (filteredData.length > 0 && L.heatLayer) {
+      if (filteredData.length > 0 && (L as any).heatLayer) {
         const points = filteredData.map((c) => [c.latitud!, c.longitud!, 0.8] as [number, number, number]);
-        const heat = L.heatLayer(points, {
+        const heat = (L as any).heatLayer(points, {
           radius: 35,
           blur: 25,
           maxZoom: 17,

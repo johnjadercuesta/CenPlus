@@ -1,0 +1,206 @@
+{
+  "posts": [
+    {
+      "id": "tw_default_0_4118",
+      "text": "Colombia avanza con nuevos proyectos",
+      "date": "2026-04-15T09:17:09.557837",
+      "username": "colombiaprogress",
+      "user_displayname": "Colombiaprogress",
+      "followers": 100,
+      "retweets": 30,
+      "likes": 60,
+      "replies": 1,
+      "hashtags": [
+        "#default",
+        "#colombia",
+        "#noticias"
+      ],
+      "mentions": [],
+      "url": "https://twitter.com/colombiaprogress/status/tw_default_0_4118",
+      "platform": "twitter",
+      "location": {
+        "city": "Bogotá",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T09:17:09.557837"
+    },
+    {
+      "id": "tw_default_1_1394",
+      "text": "Actividades comunitarias este fin",
+      "date": "2026-04-15T09:12:09.557837",
+      "username": "comunidadCO",
+      "user_displayname": "Comunidadco",
+      "followers": 150,
+      "retweets": 22,
+      "likes": 43,
+      "replies": 2,
+      "hashtags": [
+        "#default",
+        "#colombia",
+        "#noticias"
+      ],
+      "mentions": [],
+      "url": "https://twitter.com/comunidadCO/status/tw_default_1_1394",
+      "platform": "twitter",
+      "location": {
+        "city": "Medellín",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T09:12:09.557837"
+    },
+    {
+      "id": "tw_default_2_858",
+      "text": "Reunión vecinal este sábado",
+      "date": "2026-04-15T09:07:09.557837",
+      "username": "juntavecinos",
+      "user_displayname": "Juntavecinos",
+      "followers": 200,
+      "retweets": 19,
+      "likes": 36,
+      "replies": 3,
+      "hashtags": [
+        "#default",
+        "#colombia",
+        "#noticias"
+      ],
+      "mentions": [],
+      "url": "https://twitter.com/juntavecinos/status/tw_default_2_858",
+      "platform": "twitter",
+      "location": {
+        "city": "Cali",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T09:07:09.557837"
+    },
+    {
+      "id": "tw_default_0_908",
+      "text": "Colombia avanza con nuevos proyectos",
+      "date": "2026-04-15T10:23:19.026068",
+      "username": "colombiaprogress",
+      "user_displayname": "Colombiaprogress",
+      "followers": 100,
+      "retweets": 30,
+      "likes": 60,
+      "replies": 1,
+      "hashtags": [
+        "#default",
+        "#colombia",
+        "#noticias"
+      ],
+      "mentions": [],
+      "url": "https://twitter.com/colombiaprogress/status/tw_default_0_908",
+      "platform": "twitter",
+      "location": {
+        "city": "Bogotá",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T10:23:19.026068"
+    },
+    {
+      "id": "tw_default_1_3260",
+      "text": "Actividades comunitarias este fin",
+      "date": "2026-04-15T10:18:19.026068",
+      "username": "comunidadCO",
+      "user_displayname": "Comunidadco",
+      "followers": 150,
+      "retweets": 22,
+      "likes": 43,
+      "replies": 2,
+      "hashtags": [
+        "#default",
+        "#colombia",
+        "#noticias"
+      ],
+      "mentions": [],
+      "url": "https://twitter.com/comunidadCO/status/tw_default_1_3260",
+      "platform": "twitter",
+      "location": {
+        "city": "Medellín",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T10:18:19.026068"
+    },
+    {
+      "id": "tw_default_0_948",
+      "text": "Colombia avanza con nuevos proyectos",
+      "date": "2026-04-15T11:07:38.594775",
+      "username": "colombiaprogress",
+      "user_displayname": "Colombiaprogress",
+      "followers": 100,
+      "retweets": 30,
+      "likes": 60,
+      "replies": 1,
+      "hashtags": [
+        "#default",
+        "#colombia",
+        "#noticias"
+      ],
+      "mentions": [],
+      "url": "https://twitter.com/colombiaprogress/status/tw_default_0_948",
+      "platform": "twitter",
+      "location": {
+        "city": "Bogotá",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T11:07:38.594775"
+    },
+    {
+      "id": "tw_default_1_7189",
+      "text": "Actividades comunitarias este fin",
+      "date": "2026-04-15T11:02:38.594775",
+      "username": "comunidadCO",
+      "user_displayname": "Comunidadco",
+      "followers": 150,
+      "retweets": 22,
+      "likes": 43,
+      "replies": 2,
+      "hashtags": [
+        "#default",
+        "#colombia",
+        "#noticias"
+      ],
+      "mentions": [],
+      "url": "https://twitter.com/comunidadCO/status/tw_default_1_7189",
+      "platform": "twitter",
+      "location": {
+        "city": "Medellín",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T11:02:38.594775"
+    },
+    {
+      "id": "tw_default_2_7419",
+      "text": "Reunión vecinal este sábado",
+      "date": "2026-04-15T10:57:38.594775",
+      "username": "juntavecinos",
+      "user_displayname": "Juntavecinos",
+      "followers": 200,
+      "retweets": 19,
+      "likes": 36,
+      "replies": 3,
+      "hashtags": [
+        "#default",
+        "#colombia",
+        "#noticias"
+      ],
+      "mentions": [],
+      "url": "https://twitter.com/juntavecinos/status/tw_default_2_7419",
+      "platform": "twitter",
+      "location": {
+        "city": "Cali",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T10:57:38.594775"
+    }
+  ],
+  "last_update": "2026-04-16T09:57:13.449890",
+  "total_count": 8
+}

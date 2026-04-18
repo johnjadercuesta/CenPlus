@@ -25,7 +25,7 @@ export default function DrawingMap({
   const mapInstanceRef = useRef<any>(null);
   const leafletRef = useRef<any>(null);
   const modeRef = useRef<"none" | "drawing" | "editing">("none");
-  const pointsRef = useRef<number[][]>(existingPolygon || []);
+  const pointsRef = useRef<number[][]>(existingPolygon ? [...existingPolygon] : []);
   const polyRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const refLayersRef = useRef<any[]>([]);

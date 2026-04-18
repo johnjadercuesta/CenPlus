@@ -1,0 +1,30 @@
+{
+  "last_update": "2026-04-16T20:22:04.356714",
+  "total_posts": 52,
+  "sources": {
+    "twitter": {
+      "total": 8,
+      "last_scrape": "2026-04-16T09:57:13.455186"
+    },
+    "google_news": {
+      "total": 8,
+      "last_scrape": "2026-04-16T09:57:16.553557"
+    },
+    "youtube": {
+      "total": 10,
+      "last_scrape": "2026-04-16T09:57:16.576100"
+    },
+    "google": {
+      "total": 18,
+      "last_scrape": "2026-04-16T20:22:04.356696"
+    },
+    "facebook": {
+      "total": 3,
+      "last_scrape": "2026-04-15T11:07:38.594085"
+    },
+    "instagram": {
+      "total": 5,
+      "last_scrape": "2026-04-16T09:57:13.512787"
+    }
+  }
+}

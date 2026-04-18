@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
 
 export async function PUT(
@@ -12,12 +12,12 @@ export async function PUT(
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const db = getDb();
     const id = params.id;
 
-    // Líder solo puede editar sus registros
+    // Control de Acceso: Líder solo puede editar sus propios registros
     if (token.role === "lider") {
-      const record = db.prepare("SELECT lider_id FROM ciudadanos WHERE id = ?").get(id) as { lider_id: number } | undefined;
+      const { rows } = await pool.query("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
+      const record = rows[0] as { lider_id: number } | undefined;
       if (!record || record.lider_id !== token.userId) {
         return NextResponse.json({ error: "Sin permisos para editar este registro" }, { status: 403 });
       }
@@ -26,19 +26,25 @@ export async function PUT(
     const body = await request.json();
 
     const fields: string[] = [];
-    const values: unknown[] = [];
+    const values: any[] = [];
+    let placeholderCount = 1;
 
-    const setters: Record<string, (v: unknown) => unknown> = {
+    const setters: Record<string, (v: any) => any> = {
       nombre_completo: (v) => String(v).trim(),
       telefono: (v) => (v ? String(v).trim() : null),
       sexo: (v) => v || null,
       edad: (v) => (v ? parseInt(String(v)) : null),
       nivel_estudios: (v) => v || null,
       ocupacion: (v) => (v ? String(v).trim() : null),
+      regimen_salud: (v) => v || null,
+      puesto_votacion: (v) => (v ? String(v).trim() : null),
+      problematica_principal: (v) => (v ? String(v).trim() : null),
+      id_comuna: (v) => (v ? parseInt(String(v)) : null),
+      id_barrio: (v) => (v ? parseInt(String(v)) : null),
       barrio: (v) => String(v).trim(),
       corregimiento: (v) => String(v).trim(),
       vereda: (v) => (v ? String(v).trim() : null),
-      es_lider: (v) => (v === true || v === "Sí" || v === "true" ? 1 : 0),
+      es_lider: (v) => (v === true || v === "Sí" || v === "true" || v === 1 ? 1 : 0),
       nombre_lider: (v) => (v ? String(v).trim() : null),
       latitud: (v) => (v ? parseFloat(String(v)) : null),
       longitud: (v) => (v ? parseFloat(String(v)) : null),
@@ -46,7 +52,7 @@ export async function PUT(
 
     for (const [key, fn] of Object.entries(setters)) {
       if (body[key] !== undefined) {
-        fields.push(`${key} = ?`);
+        fields.push(`${key} = $${placeholderCount++}`);
         values.push(fn(body[key]));
       }
     }
@@ -55,19 +61,30 @@ export async function PUT(
       return NextResponse.json({ error: "Sin cambios" }, { status: 400 });
     }
 
-    fields.push("updated_at = datetime('now')");
+    // PostGIS omitido localmente
+    // if (body.latitud !== undefined || body.longitud !== undefined) {
+    //   const lat = body.latitud !== undefined ? setters.latitud(body.latitud) : null;
+    //   const lng = body.longitud !== undefined ? setters.longitud(body.longitud) : null;
+    //   
+    //   if (lat !== null && lng !== null) {
+    //     fields.push(`ubicacion_geom = ST_SetSRID(ST_MakePoint($${placeholderCount++}, $${placeholderCount++}), 4326)`);
+    //     values.push(lng); // PostGIS usa (Longitud, Latitud)
+    //     values.push(lat);
+    //   }
+    // }
+
+    fields.push(`updated_at = NOW()`);
     values.push(id);
 
-    const sql = `UPDATE ciudadanos SET ${fields.join(", ")} WHERE id = ?`;
-    db.prepare(sql).run(...values);
-
-    const data = db.prepare("SELECT * FROM ciudadanos WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+    const sql = `UPDATE ciudadanos SET ${fields.join(", ")} WHERE id = $${placeholderCount} RETURNING *`;
+    const { rows: updateRows } = await pool.query(sql, values);
+    const data = updateRows[0];
 
     if (!data) {
       return NextResponse.json({ error: "Registro no encontrado" }, { status: 404 });
     }
 
-    data.es_lider = (data.es_lider as number) === 1;
+    data.es_lider = data.es_lider === 1;
 
     return NextResponse.json({ data, message: "Actualización exitosa" });
   } catch (err) {
@@ -86,23 +103,21 @@ export async function DELETE(
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const db = getDb();
     const id = params.id;
 
-    // Líder solo puede eliminar sus registros
+    // Control de Acceso: Líder solo puede eliminar sus propios registros
     if (token.role === "lider") {
-      const record = db.prepare("SELECT lider_id FROM ciudadanos WHERE id = ?").get(id) as { lider_id: number } | undefined;
+      const { rows } = await pool.query("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
+      const record = rows[0] as { lider_id: number } | undefined;
       if (!record || record.lider_id !== token.userId) {
         return NextResponse.json({ error: "Sin permisos para eliminar este registro" }, { status: 403 });
       }
     }
 
-    const data = db.prepare("SELECT * FROM ciudadanos WHERE id = ?").get(id);
-    if (!data) {
+    const { rowCount } = await pool.query("DELETE FROM ciudadanos WHERE id = $1", [id]);
+    if (rowCount === 0) {
       return NextResponse.json({ error: "Registro no encontrado" }, { status: 404 });
     }
-
-    db.prepare("DELETE FROM ciudadanos WHERE id = ?").run(id);
 
     return NextResponse.json({ message: "Registro eliminado" });
   } catch (err) {

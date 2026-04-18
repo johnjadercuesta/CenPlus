@@ -1,72 +1,141 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
+import { pool } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const { searchParams } = new URL(request.url);
+    const archivoId = searchParams.get("archivo_id");
 
-    const total = (db.prepare("SELECT COUNT(*) as c FROM ciudadanos").get() as { c: number }).c;
-    const lideres = (db.prepare("SELECT COUNT(*) as c FROM ciudadanos WHERE es_lider = 1").get() as { c: number }).c;
-    const conCoords = (db.prepare("SELECT COUNT(*) as c FROM ciudadanos WHERE latitud IS NOT NULL").get() as { c: number }).c;
-    const hoy = (db.prepare("SELECT COUNT(*) as c FROM ciudadanos WHERE date(created_at) = date('now')").get() as { c: number }).c;
-    const semana = (db.prepare("SELECT COUNT(*) as c FROM ciudadanos WHERE created_at >= datetime('now', '-7 days')").get() as { c: number }).c;
+    let total, lideres, conCoords, hoy, semana, porEstudios, porSexo, topBarrios, topCorregimientos, topOcupaciones, topRegimenSalud, topProblematicas, porLider, rows7dias: { fecha: string; c: number }[], avgEdad;
 
-    // Por nivel de estudios
-    const porEstudios = db
-      .prepare("SELECT nivel_estudios, COUNT(*) as c FROM ciudadanos WHERE nivel_estudios IS NOT NULL GROUP BY nivel_estudios ORDER BY c DESC")
-      .all() as { nivel_estudios: string; c: number }[];
+    if (archivoId) {
+      const archivoRes = await pool.query(
+        "SELECT snapshot FROM archivos_electorales WHERE id = $1",
+        [archivoId]
+      );
+      if (archivoRes.rows.length === 0) {
+        return NextResponse.json({ error: "Archivo no encontrado" }, { status: 404 });
+      }
+      const rawSnapshot = archivoRes.rows[0].snapshot;
+      const snapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
+      const ciudadanos = snapshot.ciudadanos || [];
 
-    // Por sexo
-    const porSexo = db
-      .prepare("SELECT sexo, COUNT(*) as c FROM ciudadanos WHERE sexo IS NOT NULL GROUP BY sexo")
-      .all() as { sexo: string; c: number }[];
+      total = ciudadanos.length;
+      lideres = ciudadanos.filter((c: any) => c.es_lider === 1).length;
+      conCoords = ciudadanos.filter((c: any) => c.latitud != null && c.longitud != null).length;
+      hoy = 0;
+      semana = 0;
 
-    // Top barrios unificados (case-insensitive)
-    const topBarrios = db
-      .prepare("SELECT barrio, COUNT(*) as c FROM ciudadanos GROUP BY barrio COLLATE NOCASE ORDER BY c DESC LIMIT 10")
-      .all() as { barrio: string; c: number }[];
+      const estudiosMap: Record<string, number> = {};
+      const sexoMap: Record<string, number> = {};
+      const barrioMap: Record<string, number> = {};
+      const corrMap: Record<string, number> = {};
+      const ocupMap: Record<string, number> = {};
+      const saludMap: Record<string, number> = {};
+      const probMap: Record<string, number> = {};
+      let totalEdad = 0;
+      let countEdad = 0;
 
-    // Top corregimientos
-    const topCorregimientos = db
-      .prepare("SELECT corregimiento, COUNT(*) as c FROM ciudadanos GROUP BY corregimiento ORDER BY c DESC LIMIT 10")
-      .all() as { corregimiento: string; c: number }[];
+      for (const c of ciudadanos) {
+        if (c.nivel_estudios) estudiosMap[c.nivel_estudios] = (estudiosMap[c.nivel_estudios] || 0) + 1;
+        if (c.sexo) sexoMap[c.sexo] = (sexoMap[c.sexo] || 0) + 1;
+        if (c.barrio) barrioMap[c.barrio] = (barrioMap[c.barrio] || 0) + 1;
+        if (c.corregimiento) corrMap[c.corregimiento] = (corrMap[c.corregimiento] || 0) + 1;
+        if (c.ocupacion) ocupMap[c.ocupacion] = (ocupMap[c.ocupacion] || 0) + 1;
+        if (c.regimen_salud) saludMap[c.regimen_salud] = (saludMap[c.regimen_salud] || 0) + 1;
+        if (c.problematica_principal) probMap[c.problematica_principal] = (probMap[c.problematica_principal] || 0) + 1;
+        if (c.edad) { totalEdad += c.edad; countEdad++; }
+      }
 
-    // Top ocupaciones
-    const topOcupaciones = db
-      .prepare("SELECT ocupacion, COUNT(*) as c FROM ciudadanos WHERE ocupacion IS NOT NULL AND ocupacion != '' GROUP BY ocupacion ORDER BY c DESC LIMIT 10")
-      .all() as { ocupacion: string; c: number }[];
+      porEstudios = Object.entries(estudiosMap).map(([nivel_estudios, c]) => ({ nivel_estudios, c })).sort((a, b) => (b.c as number) - (a.c as number));
+      porSexo = Object.entries(sexoMap).map(([sexo, c]) => ({ sexo, c }));
+      topBarrios = Object.entries(barrioMap).map(([barrio, c]) => ({ barrio, c })).sort((a, b) => (b.c as number) - (a.c as number)).slice(0, 10);
+      topCorregimientos = Object.entries(corrMap).map(([corregimiento, c]) => ({ corregimiento, c })).sort((a, b) => (b.c as number) - (a.c as number)).slice(0, 10);
+      topOcupaciones = Object.entries(ocupMap).map(([ocupacion, c]) => ({ ocupacion, c })).sort((a, b) => (b.c as number) - (a.c as number)).slice(0, 10);
+      topRegimenSalud = Object.entries(saludMap).map(([regimen_salud, c]) => ({ regimen_salud, c })).sort((a, b) => (b.c as number) - (a.c as number));
+      topProblematicas = Object.entries(probMap).map(([problematica, c]) => ({ problematica, c })).sort((a, b) => (b.c as number) - (a.c as number));
+      porLider = [];
+      rows7dias = [];
+      avgEdad = countEdad > 0 ? Math.round(totalEdad / countEdad) : 0;
+    } else {
+      const totalRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos");
+      total = parseInt(totalRes.rows[0].c);
 
-    // Por líder
-    const porLider = db
-      .prepare(`
-        SELECT a.nombre, COUNT(c.id) as c
+      const lideresRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos WHERE es_lider = 1");
+      lideres = parseInt(lideresRes.rows[0].c);
+
+      const conCoordsRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos WHERE latitud IS NOT NULL");
+      conCoords = parseInt(conCoordsRes.rows[0].c);
+
+      const hoyRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos WHERE created_at::date = CURRENT_DATE");
+      hoy = parseInt(hoyRes.rows[0].c);
+
+      const semanaRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos WHERE created_at >= NOW() - INTERVAL '7 days'");
+      semana = parseInt(semanaRes.rows[0].c);
+
+      const { rows: porEstudiosRows } = await pool.query(
+        "SELECT nivel_estudios, COUNT(*) as c FROM ciudadanos WHERE nivel_estudios IS NOT NULL GROUP BY nivel_estudios ORDER BY c DESC"
+      );
+      porEstudios = porEstudiosRows;
+
+      const { rows: porSexoRows } = await pool.query(
+        "SELECT sexo, COUNT(*) as c FROM ciudadanos WHERE sexo IS NOT NULL GROUP BY sexo"
+      );
+      porSexo = porSexoRows;
+
+      const { rows: topBarriosRows } = await pool.query(
+        "SELECT barrio, COUNT(*) as c FROM ciudadanos GROUP BY barrio ORDER BY c DESC LIMIT 10"
+      );
+      topBarrios = topBarriosRows;
+
+      const { rows: topCorregimientosRows } = await pool.query(
+        "SELECT corregimiento, COUNT(*) as c FROM ciudadanos GROUP BY corregimiento ORDER BY c DESC LIMIT 10"
+      );
+      topCorregimientos = topCorregimientosRows;
+
+      const { rows: topOcupacionesRows } = await pool.query(
+        "SELECT ocupacion, COUNT(*) as c FROM ciudadanos WHERE ocupacion IS NOT NULL AND ocupacion != '' GROUP BY ocupacion ORDER BY c DESC LIMIT 10"
+      );
+      topOcupaciones = topOcupacionesRows;
+
+      const { rows: topRegimenSaludRows } = await pool.query(
+        "SELECT regimen_salud, COUNT(*) as c FROM ciudadanos WHERE regimen_salud IS NOT NULL GROUP BY regimen_salud ORDER BY c DESC"
+      );
+      topRegimenSalud = topRegimenSaludRows;
+
+      const { rows: topProblematicasRows } = await pool.query(
+        "SELECT problematica_principal as problematica, COUNT(*) as c FROM ciudadanos WHERE problematica_principal IS NOT NULL GROUP BY problematica_principal ORDER BY c DESC"
+      );
+      topProblematicas = topProblematicasRows;
+
+      const { rows: porLiderRows } = await pool.query(`
+        SELECT COALESCE(a.nombre, 'Sin Asignar') as nombre, COUNT(c.id) as c
         FROM ciudadanos c
         LEFT JOIN admins a ON c.lider_id = a.id
-        WHERE c.lider_id IS NOT NULL
-        GROUP BY c.lider_id
+        GROUP BY a.nombre
         ORDER BY c DESC
-      `)
-      .all() as { nombre: string; c: number }[];
+      `);
+      porLider = porLiderRows;
 
-    // Registros últimos 7 días (por día)
-    const ultimos7dias: { fecha: string; c: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const row = db
-        .prepare(`SELECT COUNT(*) as c FROM ciudadanos WHERE date(created_at) = date('now', '-${i} days')`)
-        .get() as { c: number };
-      const fecha = new Date();
-      fecha.setDate(fecha.getDate() - i);
-      ultimos7dias.push({
-        fecha: fecha.toLocaleDateString("es-CO", { weekday: "short" }),
-        c: row.c,
-      });
+      const { rows: rows7diasResult } = await pool.query(`
+        SELECT d::date as fecha, COUNT(c.id) as c
+        FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, INTERVAL '1 day') d
+        LEFT JOIN ciudadanos c ON c.created_at::date = d::date
+        GROUP BY d::date
+        ORDER BY d::date ASC
+      `);
+      rows7dias = rows7diasResult.map((r: any) => ({
+        fecha: new Date(r.fecha).toLocaleDateString("es-CO", { weekday: "short" }),
+        c: parseInt(r.c)
+      }));
+
+      const { rows: avgRes } = await pool.query("SELECT AVG(edad) as avg FROM ciudadanos WHERE edad IS NOT NULL");
+      avgEdad = avgRes[0].avg ? Math.round(parseFloat(avgRes[0].avg)) : 0;
     }
 
-    // Meta desde config
-    const metaRow = db.prepare("SELECT valor FROM config WHERE clave = 'meta_global'").get() as { valor: string } | undefined;
-    const meta = metaRow ? parseInt(metaRow.valor) : 1000;
+    const { rows: configRows } = await pool.query("SELECT valor FROM config WHERE clave = 'meta_global'");
+    const meta = configRows.length > 0 ? parseInt(configRows[0].valor) : 1000;
     const porcentajeMeta = Math.round((total / meta) * 1000) / 10;
-    const avgEdad = db.prepare("SELECT AVG(edad) as avg FROM ciudadanos WHERE edad IS NOT NULL").get() as { avg: number | null };
 
     const response = NextResponse.json({
       total,
@@ -76,19 +145,22 @@ export async function GET() {
       semana,
       meta,
       porcentajeMeta,
-      avgEdad: avgEdad.avg ? Math.round(avgEdad.avg) : 0,
+      avgEdad,
       porEstudios,
       porSexo,
       topBarrios,
       topCorregimientos,
       topOcupaciones,
+      topRegimenSalud,
+      topProblematicas,
       porLider,
-      ultimos7dias,
+      ultimos7dias: rows7dias,
     });
+    
     response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     return response;
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

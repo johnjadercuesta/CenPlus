@@ -1,0 +1,57 @@
+{
+  "posts": [
+    {
+      "id": "fb_page_0_2557",
+      "text": "Buen día comunidad, alguna información importante? #0",
+      "date": "2026-04-15T11:07:38.592529",
+      "username": "ComunidadVerde",
+      "url": "https://facebook.com/posts/fb_page_0_2557",
+      "likes": 15,
+      "comments": 3,
+      "shares": 0,
+      "platform": "facebook",
+      "location": {
+        "city": "Medellín",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T11:07:38.592529"
+    },
+    {
+      "id": "fb_page_1_9727",
+      "text": "Vecinos el agua está cortada #1",
+      "date": "2026-04-15T09:07:38.592529",
+      "username": "Alertasantafe",
+      "url": "https://facebook.com/posts/fb_page_1_9727",
+      "likes": -24,
+      "comments": 9,
+      "shares": 3,
+      "platform": "facebook",
+      "location": {
+        "city": "Bogotá",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T09:07:38.592529"
+    },
+    {
+      "id": "fb_page_2_5635",
+      "text": "Gran jornada de limpieza mañana #2",
+      "date": "2026-04-15T07:07:38.592529",
+      "username": "JornadaVerde",
+      "url": "https://facebook.com/posts/fb_page_2_5635",
+      "likes": 42,
+      "comments": 17,
+      "shares": 7,
+      "platform": "facebook",
+      "location": {
+        "city": "Cali",
+        "lat": 6.2476,
+        "lng": -75.5658
+      },
+      "raw_date": "2026-04-15T07:07:38.592529"
+    }
+  ],
+  "last_update": "2026-04-15T11:07:38.593121",
+  "total_count": 3
+}

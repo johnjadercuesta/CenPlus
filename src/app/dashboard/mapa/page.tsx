@@ -2,18 +2,21 @@
 
 import { useEffect, useState } from "react";
 import MapaCalor from "@/components/MapaCalor";
+import ArchivoSelector from "@/components/ArchivoSelector";
 
 export default function MapaPage() {
   const [ciudadanos, setCiudadanos] = useState<{latitud: number | null; longitud: number | null; es_lider: boolean}[]>([]);
   const [meta, setMeta] = useState(1000);
   const [loading, setLoading] = useState(true);
+  const [archivoId, setArchivoId] = useState(() => localStorage.getItem("archivoSeleccionado") || "actual");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    const params = archivoId !== "actual" ? `?archivo_id=${archivoId}` : "";
     Promise.all([
-      fetch("/api/ciudadanos/coords", { headers, cache: "no-store" }).then((r) => r.json()),
-      fetch("/api/config", { headers, cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/ciudadanos/coords${params}`, { headers, cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/config${params}`, { headers, cache: "no-store" }).then((r) => r.json()),
     ])
       .then(([cJson, cfgJson]) => {
         setCiudadanos(cJson.data || []);
@@ -21,7 +24,7 @@ export default function MapaPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [archivoId]);
 
   const conCoords = ciudadanos.filter((c) => c.latitud && c.longitud);
   const lideres = conCoords.filter((c) => c.es_lider);
@@ -30,8 +33,11 @@ export default function MapaPage() {
     <div>
       <div className="main-header">
         <div>
-          <h1 className="main-header-title">Mapa Territorial</h1>
+          <h1 className="main-header-title">👥 Mapa Territorial</h1>
           <p className="main-header-subtitle">Visualización de densidad y metas por zona</p>
+        </div>
+        <div style={{ minWidth: 220 }}>
+          <ArchivoSelector value={archivoId} onChange={setArchivoId} compact />
         </div>
       </div>
       <div className="main-content">

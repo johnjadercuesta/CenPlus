@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -9,40 +9,84 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const db = getDb();
+    const { searchParams } = new URL(request.url);
+    const archivoId = searchParams.get("archivo_id");
 
-    const metaRow = db.prepare("SELECT valor FROM config WHERE clave = 'meta_global'").get() as { valor: string } | undefined;
-    const metaGlobal = metaRow ? parseInt(metaRow.valor) : 1000;
+    const { rows: configRows } = await pool.query("SELECT valor FROM config WHERE clave = 'meta_global'");
+    const metaGlobal = configRows.length > 0 ? parseInt(configRows[0].valor) : 1000;
 
-    // Consulta optimizada: Obtiene los sectores y cuenta los ciudadanos vinculados por nombre de barrio
-    const sectores = db.prepare(`
-      SELECT 
-        s.*,
-        (SELECT COUNT(*) FROM ciudadanos c WHERE c.barrio = s.nombre COLLATE NOCASE) as registros
-      FROM sectores s
-      WHERE s.activo = 1
-      ORDER BY s.nombre
-    `).all() as {
-      id: number; nombre: string; meta: number; latitud: number; longitud: number;
-      radio: number; poligono: string | null; activo: number; registros: number;
-    }[];
+    let sectorStats: any[];
 
-    const sectorStats = sectores.map((s) => {
-      const porcentaje = s.meta > 0 ? Math.round((s.registros / s.meta) * 1000) / 10 : 0;
-      return {
-        id: s.id,
-        nombre: s.nombre,
-        meta: s.meta,
-        latitud: s.latitud,
-        longitud: s.longitud,
-        radio: s.radio,
-        poligono: s.poligono ? JSON.parse(s.poligono) : null,
-        activo: s.activo,
-        registros: s.registros,
-        porcentaje,
-        estado: porcentaje >= 80 ? "cumpliendo" : porcentaje >= 30 ? "en_progreso" : "critico",
-      };
-    });
+    if (archivoId) {
+      const archivoRes = await pool.query(
+        "SELECT snapshot FROM archivos_electorales WHERE id = $1",
+        [archivoId]
+      );
+      if (archivoRes.rows.length === 0) {
+        return NextResponse.json({ error: "Archivo no encontrado" }, { status: 404 });
+      }
+      const rawSnapshot = archivoRes.rows[0].snapshot;
+      const snapshot = typeof rawSnapshot === 'string' ? JSON.parse(rawSnapshot) : rawSnapshot;
+      const sectores = snapshot.sectores || [];
+      const ciudadanos = snapshot.ciudadanos || [];
+
+      sectorStats = sectores.map((s: any) => {
+        const registros = ciudadanos.filter((c: any) => c.barrio?.toLowerCase().includes(s.nombre.toLowerCase())).length;
+        const porcentaje = s.meta > 0 ? Math.round((registros / s.meta) * 1000) / 10 : 0;
+        const brecha = (s.votos_historicos || 0) - registros;
+
+        return {
+          id: s.id,
+          nombre: s.nombre,
+          meta: s.meta,
+          votosHistoricos: s.votos_historicos || 0,
+          brecha: brecha > 0 ? brecha : 0,
+          latitud: s.latitud,
+          longitud: s.longitud,
+          radio: s.radio,
+          poligono: s.poligono ? (typeof s.poligono === 'string' ? JSON.parse(s.poligono) : s.poligono) : null,
+          color: s.color,
+          activo: s.activo,
+          registros,
+          porcentaje,
+          estado: porcentaje >= 80 ? "cumpliendo" : porcentaje >= 30 ? "en_progreso" : "critico",
+          zona: s.zona || 'urbana',
+        };
+      });
+    } else {
+      const { rows: sectores } = await pool.query(`
+        SELECT 
+          s.*,
+          (SELECT COUNT(*) FROM ciudadanos c WHERE (s.barrio_id IS NOT NULL AND c.id_barrio = s.barrio_id) OR c.barrio ILIKE '%' || s.nombre || '%') as registros
+        FROM sectores s
+        WHERE s.activo = 1
+        ORDER BY s.nombre
+      `);
+
+      sectorStats = sectores.map((s: any) => {
+        const registros = parseInt(s.registros || "0");
+        const porcentaje = s.meta > 0 ? Math.round((registros / s.meta) * 1000) / 10 : 0;
+        const brecha = (s.votos_historicos || 0) - registros;
+
+        return {
+          id: s.id,
+          nombre: s.nombre,
+          meta: s.meta,
+          votosHistoricos: s.votos_historicos || 0,
+          brecha: brecha > 0 ? brecha : 0,
+          latitud: s.latitud,
+          longitud: s.longitud,
+          radio: s.radio,
+          poligono: s.poligono ? JSON.parse(s.poligono) : null,
+          color: s.color,
+          activo: s.activo,
+          registros,
+          porcentaje,
+          estado: porcentaje >= 80 ? "cumpliendo" : porcentaje >= 30 ? "en_progreso" : "critico",
+          zona: s.zona || 'urbana',
+        };
+      });
+    }
 
     const response = NextResponse.json({ metaGlobal, sectorStats });
     response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
@@ -50,6 +94,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error" }, { status: 500 });
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

@@ -1,0 +1,5 @@
+{
+  "platforms": ["twitter"],
+  "query": "Colombia",
+  "max_results": 10
+}

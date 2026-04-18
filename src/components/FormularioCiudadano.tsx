@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SEXO_OPTIONS, NIVEL_ESTUDIOS_OPTIONS } from "@/types/ciudadano";
+import { 
+  SEXO_OPTIONS, 
+  NIVEL_ESTUDIOS_OPTIONS, 
+  REGIMEN_SALUD_OPTIONS,
+  Comuna,
+  Barrio,
+  PuestoVotacion,
+  ProblematicaSocial
+} from "@/types/ciudadano";
 import { getToken, authHeadersWithJson } from "@/lib/api";
 
 export default function FormularioCiudadano() {
@@ -13,11 +21,19 @@ export default function FormularioCiudadano() {
     edad: "",
     nivel_estudios: "",
     ocupacion: "",
+    regimen_salud: "",
+    puesto_votacion: "",
+    problematica_principal: "",
+    zona: "urbana", // New field
+    id_comuna: "",
+    id_barrio: "",
     barrio: "",
     corregimiento: "",
     vereda: "",
     es_lider: "No",
     nombre_lider: "",
+    latitud: null as number | null,
+    longitud: null as number | null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -29,25 +45,40 @@ export default function FormularioCiudadano() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [lideres, setLideres] = useState<{ id: number; nombre: string }[]>([]);
   const [selectedLiderId, setSelectedLiderId] = useState<string>("");
-  const [sectores, setSectores] = useState<{ id: number; nombre: string }[]>([]);
 
+  // Listas de referencia dinámicas
+  const [comunas, setComunas] = useState<Comuna[]>([]);
+  const [barrios, setBarrios] = useState<Barrio[]>([]);
+  const [puestos, setPuestos] = useState<PuestoVotacion[]>([]);
+  const [problematicas, setProblematicas] = useState<ProblematicaSocial[]>([]);
+
+  // Obtener GPS automáticamente al cargar el formulario
   useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setForm(prev => ({ 
+            ...prev, 
+            latitud: pos.coords.latitude, 
+            longitud: pos.coords.longitude 
+          }));
+        },
+        (err) => console.warn("GPS no disponible:", err.message),
+        { enableHighAccuracy: true }
+      );
+    }
+
+    // Fetch inicial de datos compartidos
+    fetch("/api/territorio/puestos").then(r => r.json()).then(res => setPuestos(res.data || []));
+    fetch("/api/territorio/problematicas").then(r => r.json()).then(res => setProblematicas(res.data || []));
+
     const token = getToken();
     if (!token) return;
 
-    // Fetch sectores (barrios) for the dropdown
-    fetch("/api/sectores", { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.data) setSectores(res.data.map((s: { id: number; nombre: string }) => ({ id: s.id, nombre: s.nombre })));
-      })
-      .catch(() => {});
-
-    // Fetch auth + líderes
     fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => {
-        if (data.authenticated && data.role === "administrador") {
+        if (data.authenticated && (data.role === "administrador" || data.role === "estratega")) {
           setIsAdmin(true);
           fetch("/api/lideres", { headers: { Authorization: `Bearer ${token}` } })
             .then((r) => r.json())
@@ -60,11 +91,57 @@ export default function FormularioCiudadano() {
       .catch(() => {});
   }, []);
 
+  // Fetch de comunas/corregimientos cuando cambia la zona
+  useEffect(() => {
+    fetch(`/api/territorio/comunas?tipo=${form.zona}`)
+      .then(r => r.json())
+      .then(res => setComunas(res.data || []));
+  }, [form.zona]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === "zona") {
+        setForm(prev => ({ 
+            ...prev, 
+            zona: value, 
+            id_comuna: "", 
+            id_barrio: "", 
+            barrio: "", 
+            corregimiento: "", 
+            vereda: "" 
+        }));
+        setBarrios([]);
+    } else if (name === "id_comuna") {
+      const selectedObj = comunas.find(c => String(c.id) === value);
+      setForm(prev => ({ 
+        ...prev, 
+        id_comuna: value, 
+        corregimiento: selectedObj?.nombre || "",
+        id_barrio: "", 
+        barrio: "",
+        vereda: ""
+      }));
+      if (value) {
+        fetch(`/api/territorio/barrios?comunaId=${value}`)
+          .then(r => r.json())
+          .then(res => setBarrios(res.data || []));
+      } else {
+        setBarrios([]);
+      }
+    } else if (name === "id_barrio") {
+      const selectedBarrio = barrios.find(b => String(b.id) === value);
+      setForm(prev => ({ 
+        ...prev, 
+        id_barrio: value, 
+        barrio: selectedBarrio?.nombre || "",
+        vereda: selectedBarrio?.nombre || ""
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
     setMessage(null);
   };
 
@@ -73,18 +150,19 @@ export default function FormularioCiudadano() {
     setLoading(true);
     setMessage(null);
 
-    try {
-      const geoRes = await fetch(
-        `/api/geocode?barrio=${encodeURIComponent(form.barrio)}&corregimiento=${encodeURIComponent(form.corregimiento)}&vereda=${encodeURIComponent(form.vereda)}`
-      );
-      const geoData = await geoRes.json();
+    if (!form.latitud || !form.longitud) {
+      if (!confirm("No se han capturado coordenadas GPS exactas. ¿Desea continuar de todos modos?")) {
+        setLoading(false);
+        return;
+      }
+    }
 
+    try {
       const body: Record<string, unknown> = {
         ...form,
         edad: form.edad ? parseInt(form.edad) : null,
         es_lider: form.es_lider === "Sí",
-        latitud: geoData.latitud,
-        longitud: geoData.longitud,
+        timestamp: new Date().toISOString(),
       };
 
       if (isAdmin && selectedLiderId) {
@@ -104,36 +182,45 @@ export default function FormularioCiudadano() {
       } else {
         setMessage({
           type: "success",
-          text: `Registro exitoso. ${geoData.latitud ? "Ubicación geocodificada." : "Ubicación no encontrada, se puede actualizar después."}`,
+          text: `Registro territorial exitoso. GPS Validado: ${form.latitud ? "Sí" : "No"}.`,
         });
-        setForm({
-          id_unico: "",
-          nombre_completo: "",
-          telefono: "",
-          sexo: "",
-          edad: "",
-          nivel_estudios: "",
-          ocupacion: "",
-          barrio: "",
-          corregimiento: "",
-          vereda: "",
-          es_lider: "No",
-          nombre_lider: "",
-        });
+        handleResetForm();
       }
     } catch {
-      setMessage({ type: "error", text: "Error de conexión. Intente nuevamente." });
+      setMessage({ type: "error", text: "Error de conexión con el servidor." });
     } finally {
       setLoading(false);
     }
   };
 
-  const fieldCount = Object.values(form).filter(v => v && v !== "No").length;
-  const totalFields = 10;
-  const progressPct = Math.round((fieldCount / totalFields) * 100);
+  const handleResetForm = () => {
+    setForm({
+      id_unico: "",
+      nombre_completo: "",
+      telefono: "",
+      sexo: "",
+      edad: "",
+      nivel_estudios: "",
+      ocupacion: "",
+      regimen_salud: "",
+      puesto_votacion: "",
+      problematica_principal: "",
+      zona: "urbana",
+      id_comuna: "",
+      id_barrio: "",
+      barrio: "",
+      corregimiento: "",
+      vereda: "",
+      es_lider: "No",
+      nombre_lider: "",
+      latitud: form.latitud,
+      longitud: form.longitud,
+    });
+    setBarrios([]);
+  };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} style={{ animation: "fadeIn 0.5s ease" }}>
       {/* Feedback message */}
       {message && (
         <div style={{
@@ -145,7 +232,6 @@ export default function FormularioCiudadano() {
           display: "flex",
           alignItems: "center",
           gap: 10,
-          animation: "fadeIn 0.3s ease",
         }}>
           <span style={{ fontSize: 20 }}>{message.type === "success" ? "✅" : "❌"}</span>
           <span style={{ fontSize: 13, fontWeight: 500, color: message.type === "success" ? "#15803d" : "#b91c1c", flex: 1 }}>
@@ -155,326 +241,143 @@ export default function FormularioCiudadano() {
         </div>
       )}
 
-      {/* Progress indicator */}
+      {/* GPS Status */}
       <div style={{
         display: "flex",
         alignItems: "center",
         gap: 12,
         marginBottom: 24,
         padding: "12px 18px",
-        background: "#f8fafc",
+        background: form.latitud ? "#f0fdf4" : "#fef2f2",
         borderRadius: 10,
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${form.latitud ? "#bbf7d0" : "#fecaca"}`,
       }}>
-        <div style={{
-          width: 44, height: 44,
-          borderRadius: "50%",
-          background: `conic-gradient(#3b82f6 ${progressPct * 3.6}deg, #e2e8f0 0deg)`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          flexShrink: 0,
-        }}>
-          <div style={{
-            width: 34, height: 34,
-            borderRadius: "50%",
-            background: "white",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 11, fontWeight: 700, color: "#3b82f6",
-          }}>
-            {progressPct}%
+        <div style={{ fontSize: 18 }}>{form.latitud ? "🧭" : "🚫"}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: form.latitud ? "#15803d" : "#b91c1c" }}>
+            {form.latitud ? "Coordenadas capturadas" : "Esperando señal GPS..."}
           </div>
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>Progreso del Formulario</div>
-          <div style={{ fontSize: 12, color: "#64748b" }}>{fieldCount} de {totalFields} campos completados</div>
-        </div>
-        <div style={{ flex: 1, height: 6, background: "#e2e8f0", borderRadius: 3, overflow: "hidden", marginLeft: 8 }}>
-          <div style={{
-            width: `${progressPct}%`,
-            height: "100%",
-            background: progressPct >= 80 ? "#16a34a" : progressPct >= 40 ? "#3b82f6" : "#f59e0b",
-            borderRadius: 3,
-            transition: "width 0.4s ease, background 0.4s ease",
-          }} />
+          <div style={{ fontSize: 11, color: form.latitud ? "#16a34a" : "#dc2626" }}>
+            {form.latitud ? `${form.latitud.toFixed(6)}, ${form.longitud?.toFixed(6)}` : "Habilite la ubicación en su navegador."}
+          </div>
         </div>
       </div>
 
       {/* SECTION: Identificación */}
-      <SectionHeader icon="👤" title="Identificación Personal" subtitle="Datos básicos del ciudadano" />
+      <SectionHeader icon="👤" title="Identificación y Perfil" subtitle="Datos básicos y demográficos" />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
         <FormField label="Cédula de Ciudadanía" required>
-          <input
-            type="text"
-            name="id_unico"
-            value={form.id_unico}
-            onChange={handleChange}
-            required
-            inputMode="numeric"
-            placeholder="Número de cédula"
-            className="input"
-          />
+          <input type="text" name="id_unico" value={form.id_unico} onChange={handleChange} required inputMode="numeric" placeholder="Número de cédula" className="input" />
         </FormField>
-
         <FormField label="Nombre Completo" required>
-          <input
-            type="text"
-            name="nombre_completo"
-            value={form.nombre_completo}
-            onChange={handleChange}
-            required
-            placeholder="Nombres y apellidos"
-            className="input"
-          />
+          <input type="text" name="nombre_completo" value={form.nombre_completo} onChange={handleChange} required placeholder="Nombres y apellidos" className="input" />
         </FormField>
-
-        <FormField label="Teléfono">
-          <input
-            type="tel"
-            name="telefono"
-            value={form.telefono}
-            onChange={handleChange}
-            inputMode="tel"
-            placeholder="Número de teléfono"
-            className="input"
-          />
-        </FormField>
-
         <FormField label="Sexo">
-          <select name="sexo" value={form.sexo} onChange={handleChange} className="input" style={{ background: "white" }}>
+          <select name="sexo" value={form.sexo} onChange={handleChange} className="input">
             <option value="">Seleccionar...</option>
-            {SEXO_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
+            {SEXO_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </FormField>
-
-        <FormField label="Edad">
-          <input
-            type="number"
-            name="edad"
-            value={form.edad}
-            onChange={handleChange}
-            min="1"
-            max="149"
-            inputMode="numeric"
-            placeholder="Edad"
-            className="input"
-          />
+        <FormField label="Edad Real" required>
+          <input type="number" name="edad" value={form.edad} onChange={handleChange} required min="1" max="149" className="input" />
         </FormField>
+      </div>
 
-        <FormField label="Nivel de Estudios">
-          <select name="nivel_estudios" value={form.nivel_estudios} onChange={handleChange} className="input" style={{ background: "white" }}>
-            <option value="">Seleccionar...</option>
-            {NIVEL_ESTUDIOS_OPTIONS.map((n) => (
-              <option key={n} value={n}>{n}</option>
+      {/* SECTION: Territorial */}
+      <SectionHeader icon="📍" title="Ubicación Territorial" subtitle="Estructura dinámica urbana/rural" />
+
+      {/* Selector de Zona */}
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 8 }}>Zona de Residencia</label>
+        <div style={{ display: "flex", gap: 10 }}>
+            {['urbana', 'rural'].map(z => (
+                <button
+                    key={z}
+                    type="button"
+                    onClick={() => handleChange({ target: { name: "zona", value: z } } as any)}
+                    style={{
+                        flex: 1, padding: "10px", borderRadius: 8, border: "1px solid #e2e8f0",
+                        background: form.zona === z ? "#6366f1" : "white",
+                        color: form.zona === z ? "white" : "#64748b",
+                        fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
+                    }}
+                >
+                    {z.toUpperCase()}
+                </button>
             ))}
-          </select>
-        </FormField>
-
-        <div style={{ gridColumn: "1 / -1" }}>
-          <FormField label="Ocupación">
-            <input
-              type="text"
-              name="ocupacion"
-              value={form.ocupacion}
-              onChange={handleChange}
-              placeholder="Ej: Agricultor, Comerciante, Estudiante..."
-              className="input"
-            />
-          </FormField>
         </div>
       </div>
 
-      {/* SECTION: Ubicación */}
-      <SectionHeader icon="📍" title="Ubicación Geográfica" subtitle="Seleccione el sector/barrio definido por el administrador" />
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 28 }}>
-        <FormField label="Barrio (Sector)" required>
-          <select
-            name="barrio"
-            value={form.barrio}
-            onChange={handleChange}
-            required
-            className="input"
-            style={{ background: "white" }}
-          >
-            <option value="">Seleccionar sector...</option>
-            {sectores.map((s) => (
-              <option key={s.id} value={s.nombre}>{s.nombre}</option>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
+        <FormField label={form.zona === 'urbana' ? "Comuna (Sector)" : "Corregimiento"} required>
+          <select name="id_comuna" value={form.id_comuna} onChange={handleChange} required className="input">
+            <option value="">Seleccionar...</option>
+            {comunas.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </select>
-          {sectores.length === 0 && (
-            <span style={{ fontSize: 11, color: "#f59e0b", marginTop: 4, display: "block" }}>
-              No hay sectores creados. Un administrador debe crearlos primero.
-            </span>
-          )}
         </FormField>
 
-        <FormField label="Corregimiento" required>
-          <input
-            type="text"
-            name="corregimiento"
-            value={form.corregimiento}
-            onChange={handleChange}
-            required
-            placeholder="Nombre del corregimiento"
-            className="input"
-          />
-        </FormField>
-
-        <FormField label="Vereda">
-          <input
-            type="text"
-            name="vereda"
-            value={form.vereda}
-            onChange={handleChange}
-            placeholder="Nombre de la vereda"
-            className="input"
-          />
+        <FormField label={form.zona === 'urbana' ? "Barrio" : "Vereda"} required>
+          <select 
+            name="id_barrio" 
+            value={form.id_barrio} 
+            onChange={handleChange} 
+            required 
+            disabled={!form.id_comuna}
+            className="input" 
+            style={{ background: form.id_comuna ? "white" : "#f1f5f9" }}
+          >
+            <option value="">Seleccionar...</option>
+            {barrios.map((b) => (
+              <option key={b.id} value={b.id}>{b.nombre}</option>
+            ))}
+          </select>
         </FormField>
       </div>
 
-      {/* SECTION: Liderazgo */}
-      <SectionHeader icon="⭐" title="Información de Liderazgo" subtitle="Relación con líderes comunitarios" />
+      {/* SECTION: Electoral y Social */}
+      <SectionHeader icon="📊" title="Estratégico y Social" subtitle="Análisis de entorno y elecciones" />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
-        <FormField label="¿Es líder comunitario?">
-          <div style={{ display: "flex", gap: 0, borderRadius: 8, overflow: "hidden", border: "1px solid #e2e8f0" }}>
-            {["Sí", "No"].map((opt) => (
-              <label
-                key={opt}
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                  padding: "10px 16px",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  background: form.es_lider === opt
-                    ? opt === "Sí" ? "#eff6ff" : "#f8fafc"
-                    : "white",
-                  color: form.es_lider === opt
-                    ? opt === "Sí" ? "#1d4ed8" : "#475569"
-                    : "#94a3b8",
-                  borderRight: opt === "Sí" ? "1px solid #e2e8f0" : "none",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="es_lider"
-                  value={opt}
-                  checked={form.es_lider === opt}
-                  onChange={handleChange}
-                  style={{ display: "none" }}
-                />
-                {form.es_lider === opt && (
-                  <span style={{
-                    width: 8, height: 8, borderRadius: "50%",
-                    background: opt === "Sí" ? "#3b82f6" : "#94a3b8",
-                  }} />
-                )}
-                {opt}
-              </label>
+        <FormField label="Puesto de Votación Referencia">
+          <select name="puesto_votacion" value={form.puesto_votacion} onChange={handleChange} className="input">
+            <option value="">Seleccionar puesto...</option>
+            {puestos.map((p) => (
+              <option key={p.id} value={p.nombre}>{p.nombre}</option>
             ))}
-          </div>
+          </select>
         </FormField>
-
-        <FormField label="Nombre del líder a cargo">
-          <input
-            type="text"
-            name="nombre_lider"
-            value={form.nombre_lider}
-            onChange={handleChange}
-            placeholder="Nombre del líder que hace seguimiento"
-            className="input"
-          />
+        <FormField label="Problemática Social Dominante">
+          <select name="problematica_principal" value={form.problematica_principal} onChange={handleChange} className="input">
+            <option value="">Seleccionar problemática...</option>
+            {problematicas.map((p) => (
+              <option key={p.id} value={p.nombre}>{p.nombre}</option>
+            ))}
+          </select>
         </FormField>
-
-        {isAdmin && lideres.length > 0 && (
-          <div style={{ gridColumn: "1 / -1" }}>
-            <FormField label="Registrado por (líder)">
-              <select
-                value={selectedLiderId}
-                onChange={(e) => setSelectedLiderId(e.target.value)}
-                className="input"
-                style={{ background: "white" }}
-              >
-                <option value="">Admin actual</option>
-                {lideres.map((l) => (
-                  <option key={l.id} value={l.id}>{l.nombre}</option>
-                ))}
-              </select>
-            </FormField>
-          </div>
-        )}
       </div>
 
-      {/* Submit button */}
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn btn-primary"
-        style={{
-          width: "100%",
-          justifyContent: "center",
-          padding: "16px 24px",
-          fontSize: 16,
-          fontWeight: 700,
-          borderRadius: 12,
-          position: "relative",
-          overflow: "hidden",
-          opacity: loading ? 0.7 : 1,
-          transition: "all 0.2s ease",
-          boxShadow: "0 4px 14px rgba(30, 58, 95, 0.3)",
-        }}
-      >
-        {loading ? (
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{
-              width: 18, height: 18,
-              border: "2px solid rgba(255,255,255,0.3)",
-              borderTop: "2px solid white",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-              display: "inline-block",
-            }} />
-            Registrando...
-          </span>
-        ) : (
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            Enviar Registro
-          </span>
-        )}
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: "100%", padding: "16px", borderRadius: 12, fontWeight: 700 }}>
+        {loading ? "Procesando..." : "Finalizar Registro"}
       </button>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      <style jsx>{`
+        .input { border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 8px; font-size: 14px; width: 100%; }
+        .input:focus { outline: none; border-color: #6366f1; }
+      `}</style>
     </form>
   );
 }
 
-// --- Sub-components ---
-
 function SectionHeader({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 16,
-      paddingBottom: 12,
-      borderBottom: "1px solid #e2e8f0",
-    }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid #e2e8f0" }}>
       <span style={{ fontSize: 22 }}>{icon}</span>
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{title}</div>
-        <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 1 }}>{subtitle}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{title}</div>
+        <div style={{ fontSize: 11, color: "#94a3b8" }}>{subtitle}</div>
       </div>
     </div>
   );
@@ -482,16 +385,9 @@ function SectionHeader({ icon, title, subtitle }: { icon: string; title: string;
 
 function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div>
-      <label style={{
-        display: "block",
-        fontSize: 12,
-        fontWeight: 600,
-        color: "#475569",
-        marginBottom: 6,
-      }}>
-        {label}
-        {required && <span style={{ color: "#dc2626", marginLeft: 3 }}>*</span>}
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 6 }}>
+        {label} {required && <span style={{ color: "#dc2626" }}>*</span>}
       </label>
       {children}
     </div>
