@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,6 +9,7 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
@@ -53,8 +55,11 @@ export async function POST(request: NextRequest) {
     let duplicados = 0;
     let errores = 0;
 
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
     if (mode === "replace") {
-      await pool.query("DELETE FROM ciudadanos");
+      await run("DELETE FROM ciudadanos");
     }
 
     for (let i = 1; i < lines.length; i++) {
@@ -70,7 +75,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const existing = await pool.query("SELECT id FROM ciudadanos WHERE id_unico = $1", [idUnico]);
+        const existing = await run("SELECT id FROM ciudadanos WHERE id_unico = $1", [idUnico]);
         if (existing.rows.length > 0) {
           duplicados++;
           continue;
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
         const lat = latIdx >= 0 ? parseFloat(values[latIdx]) || null : null;
         const lng = lngIdx >= 0 ? parseFloat(values[lngIdx]) || null : null;
 
-        await pool.query(
+        await run(
           `INSERT INTO ciudadanos (
             id_unico, nombre_completo, telefono, sexo, edad,
             nivel_estudios, ocupacion, regimen_salud, puesto_votacion,

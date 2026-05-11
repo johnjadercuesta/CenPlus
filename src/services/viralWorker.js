@@ -11,24 +11,17 @@ function calculateHeatIndex(volume, velocity, sentimentScore) {
   return parseFloat((vScore + aScore + sScore).toFixed(2));
 }
 
-/**
- * REAL DATA MODE - Production
- * 
- * This worker now queries REAL data from:
- * - social_posts table (Twitter/X scrapes)
- * - monitored_keywords table
- * - municipios and departamentos tables
- * 
- * All synthetic generation (Math.random()) has been removed.
- * To use: Configure real data sources and API integrations in .env
- */
-
-async function ingestTrends() {
-  console.log("🚀 Monitor Worker v4.3: Processing REAL trends data...");
-  
+async function processTenant(client, tenant) {
   try {
-    // Query real trend data from social_posts
-    const trendResults = await pool.query(`
+    await client.query(`SET search_path TO "${tenant}", public`);
+  } catch (err) {
+    console.error(`Error setting search_path for tenant ${tenant}:`, err.message || err);
+    return;
+  }
+
+  // Ingest trends for this tenant/schema
+  try {
+    const trendResults = await client.query(`
       SELECT 
         sp.keyword as topic,
         'Real Data Source' as platform,
@@ -40,7 +33,7 @@ async function ingestTrends() {
         m.longitud as lng,
         d.nombre as region
       FROM social_posts sp
-      LEFT JOIN municipios m ON sp.municipio_id = m.id  
+      LEFT JOIN municipios m ON sp.municipio_id = m.id
       LEFT JOIN departamentos d ON m.departamento_id = d.id
       WHERE sp.timestamp > NOW() - INTERVAL '24 hours'
       GROUP BY sp.keyword, m.id, d.id
@@ -52,18 +45,18 @@ async function ingestTrends() {
 
       const volume = row.volume || 0;
       const sentimentScore = row.sentimentScore || 0;
-      const velocity = Math.max(1, Math.floor(volume / 60)); // Real velocity from data
+      const velocity = Math.max(1, Math.floor(volume / 60));
       const heat = calculateHeatIndex(volume, velocity, sentimentScore);
 
       const metrics = {
         mentions: volume,
         growth_1h: velocity,
         reach: volume * 20,
-        engagement_avg: (volume * 0.05).toFixed(2) // Real engagement ratio
+        engagement_avg: (volume * 0.05).toFixed(2)
       };
 
       try {
-        await pool.query(`
+        await client.query(`
           INSERT INTO global_trends (topic, platform, metrics, sentiment_score, heat_index, region, pais, departamento, ciudad, latitude, longitude)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
           ON CONFLICT (topic, platform) DO UPDATE SET 
@@ -79,23 +72,16 @@ async function ingestTrends() {
             timestamp = NOW()
         `, [row.topic, row.platform, JSON.stringify(metrics), sentimentScore, heat, row.region, 'Colombia', row.departamento, row.ciudad, row.lat, row.lng]);
       } catch (err) {
-        console.error(`Error inserting trend ${row.topic}:`, err.message);
+        console.error(`Error inserting trend ${row.topic} (tenant=${tenant}):`, err.message || err);
       }
     }
-    
-    console.log("✅ Monitor Worker: Real data ingestion completed.");
   } catch (err) {
-    console.error("❌ Monitor Worker Error:", err);
+    console.error(`❌ Monitor Worker Error (tenant=${tenant}):`, err.message || err);
   }
-}
 
-async function ingestAgitadores() {
-  console.log("🚩 Monitor Worker: Synchronizing real influencers...");
-  
+  // Ingest influencers for this tenant/schema
   try {
-    // Query real influencer data from database
-    // Use opinion_leaders (social-listening) as canonical influencer source when available
-    const influencerResults = await pool.query(`
+    const influencerResults = await client.query(`
       SELECT DISTINCT
         nombre as name,
         COALESCE(profile_name, nombre) as handle,
@@ -106,27 +92,45 @@ async function ingestAgitadores() {
     `);
 
     for (const row of influencerResults.rows) {
-      await pool.query(`
-        INSERT INTO influencer_rankings (name, platform, handle, impact_score, last_updated)
-        VALUES ($1, $2, $3, $4, NOW())
-        ON CONFLICT (handle) DO UPDATE SET 
-          impact_score = EXCLUDED.impact_score,
-          last_updated = NOW()
-      `, [row.name, 'opinion_leaders', row.handle, row.impact_score || 0]);
+      try {
+        await client.query(`
+          INSERT INTO influencer_rankings (name, platform, handle, impact_score, last_updated)
+          VALUES ($1, $2, $3, $4, NOW())
+          ON CONFLICT (handle) DO UPDATE SET 
+            impact_score = EXCLUDED.impact_score,
+            last_updated = NOW()
+        `, [row.name, 'opinion_leaders', row.handle, row.impact_score || 0]);
+      } catch (err) {
+        console.error(`Error inserting influencer ${row.handle} (tenant=${tenant}):`, err.message || err);
+      }
     }
-    
-    console.log("✅ Monitor Worker: Real influencer data synchronized.");
   } catch (err) {
-    console.error("❌ Monitor Worker Influencer Sync Error:", err.message);
+    console.error(`❌ Monitor Worker Influencer Sync Error (tenant=${tenant}):`, err.message || err);
   }
 }
 
 async function cycle() {
-  await ingestTrends();
-  await ingestAgitadores();
+  const client = await pool.connect();
+  try {
+    // Obtener esquemas que podrían corresponder a tenants (excluir public y esquemas del sistema)
+    const { rows: schemas } = await client.query(`
+      SELECT schema_name FROM information_schema.schemata
+      WHERE schema_name NOT IN ('public', 'information_schema')
+        AND schema_name NOT LIKE 'pg_%'
+    `);
+
+    for (const s of schemas) {
+      const tenant = s.schema_name;
+      await processTenant(client, tenant);
+    }
+  } catch (err) {
+    console.error('Error enumerating schemas for ingestion:', err.message || err);
+  } finally {
+    client.release();
+  }
 }
 
-console.log("⚡ MONITOR v4.3 ACTIVE - Production Real Data Mode");
-cycle();
-setInterval(cycle, 15000);
+console.log("⚡ MONITOR v4.3 ACTIVE - Tenant-aware Real Data Mode");
+cycle().catch(err => console.error('Initial cycle error:', err));
+setInterval(() => cycle().catch(err => console.error('Cycle error:', err)), 15000);
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,8 +26,9 @@ export async function GET(request: NextRequest) {
 
     query += ` ORDER BY ciudad ASC`;
 
-    const { rows } = await pool.query(query, params);
-    return NextResponse.json({ ciudades: rows });
+    const tenant = getTenantFromRequest(request);
+    const res = tenant ? await queryWithTenant(tenant, query, params) : await pool.query(query, params);
+    return NextResponse.json({ ciudades: res.rows });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Error al obtener ciudades" }, { status: 500 });

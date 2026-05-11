@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function PUT(
   request: NextRequest,
@@ -11,12 +12,16 @@ export async function PUT(
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const id = params.id;
 
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
     // Control de Acceso: Líder solo puede editar sus propios registros
     if (token.role === "lider") {
-      const { rows } = await pool.query("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
+      const { rows } = await run("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
       const record = rows[0] as { lider_id: number } | undefined;
       if (!record || record.lider_id !== token.userId) {
         return NextResponse.json({ error: "Sin permisos para editar este registro" }, { status: 403 });
@@ -77,7 +82,7 @@ export async function PUT(
     values.push(id);
 
     const sql = `UPDATE ciudadanos SET ${fields.join(", ")} WHERE id = $${placeholderCount} RETURNING *`;
-    const { rows: updateRows } = await pool.query(sql, values);
+    const { rows: updateRows } = await run(sql, values);
     const data = updateRows[0];
 
     if (!data) {
@@ -102,19 +107,23 @@ export async function DELETE(
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const id = params.id;
 
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
     // Control de Acceso: Líder solo puede eliminar sus propios registros
     if (token.role === "lider") {
-      const { rows } = await pool.query("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
+      const { rows } = await run("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
       const record = rows[0] as { lider_id: number } | undefined;
       if (!record || record.lider_id !== token.userId) {
         return NextResponse.json({ error: "Sin permisos para eliminar este registro" }, { status: 403 });
       }
     }
 
-    const { rowCount } = await pool.query("DELETE FROM ciudadanos WHERE id = $1", [id]);
+    const { rowCount } = await run("DELETE FROM ciudadanos WHERE id = $1", [id]);
     if (rowCount === 0) {
       return NextResponse.json({ error: "Registro no encontrado" }, { status: 404 });
     }

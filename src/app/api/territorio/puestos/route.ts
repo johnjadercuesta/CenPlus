@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { rows } = await pool.query("SELECT * FROM puestos_votacion ORDER BY nombre ASC");
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    const { rows } = await run("SELECT * FROM puestos_votacion ORDER BY nombre ASC");
     return NextResponse.json({ data: rows });
   } catch (err) {
     console.error(err);
@@ -18,11 +22,15 @@ export async function POST(request: NextRequest) {
     if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const { nombre, comunaId, votosHistoricos } = await request.json();
     if (!nombre) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });
 
-    const { rows } = await pool.query(
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    const { rows } = await run(
       "INSERT INTO puestos_votacion (nombre, comuna_id, votos_historicos) VALUES ($1, $2, $3) RETURNING *",
       [
         nombre, 

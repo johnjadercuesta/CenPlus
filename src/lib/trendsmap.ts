@@ -1,9 +1,31 @@
 import { pool } from "@/lib/db";
+import { queryWithTenant } from "@/lib/tenant";
 
-export async function initTrendsmapTable() {
+type InsertData = {
+  text: string;
+  hashtags: string[];
+  latitude: number;
+  longitude: number;
+  pais?: string;
+  departamento?: string;
+  municipio?: string;
+  expires_at?: Date | string | null;
+  barrio?: string | null;
+  comuna?: string | null;
+  mentioned_profiles?: string[];
+  mentioned_sites?: string[];
+};
+
+async function runQuery(sql: string, params: any[] = [], tenant?: string | null) {
+  if (tenant) {
+    return await queryWithTenant(tenant, sql, params);
+  }
+  return await pool.query(sql, params);
+}
+
+export async function initTrendsmapTable(tenant?: string | null) {
   try {
-    // Crear tabla base si no existe (sin asumir columnas añadidas dinámicamente)
-    await pool.query(`
+    await runQuery(`
       CREATE TABLE IF NOT EXISTS trendsmap_entries (
         id SERIAL PRIMARY KEY,
         text TEXT NOT NULL,
@@ -17,25 +39,24 @@ export async function initTrendsmapTable() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
-    `);
+    `, [], tenant);
 
-    // Añadir columnas opcionales si faltan (migraciones idempotentes)
-    await pool.query(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE;`);
-    await pool.query(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS barrio VARCHAR(200);`);
-    await pool.query(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS comuna VARCHAR(100);`);
-    await pool.query(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS mentioned_profiles TEXT[] DEFAULT '{}'::text[];`);
-    await pool.query(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS mentioned_sites TEXT[] DEFAULT '{}'::text[];`);
+    await runQuery(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE;`, [], tenant);
+    await runQuery(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS barrio VARCHAR(200);`, [], tenant);
+    await runQuery(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS comuna VARCHAR(100);`, [], tenant);
+    await runQuery(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS mentioned_profiles TEXT[] DEFAULT '{}'::text[];`, [], tenant);
+    await runQuery(`ALTER TABLE trendsmap_entries ADD COLUMN IF NOT EXISTS mentioned_sites TEXT[] DEFAULT '{}'::text[];`, [], tenant);
 
     // Índices
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_lat_lng ON trendsmap_entries(latitude, longitude);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_depto ON trendsmap_entries(departamento);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_municipio ON trendsmap_entries(municipio);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_created ON trendsmap_entries(created_at DESC);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_hashtags ON trendsmap_entries USING GIN(hashtags);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_expires ON trendsmap_entries(expires_at);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_mentioned_profiles ON trendsmap_entries USING GIN(mentioned_profiles);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_mentioned_sites ON trendsmap_entries USING GIN(mentioned_sites);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_text_tsv ON trendsmap_entries USING GIN (to_tsvector('spanish', coalesce(text,'')));`);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_lat_lng ON trendsmap_entries(latitude, longitude);`, [], tenant);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_depto ON trendsmap_entries(departamento);`, [], tenant);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_municipio ON trendsmap_entries(municipio);`, [], tenant);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_created ON trendsmap_entries(created_at DESC);`, [], tenant);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_hashtags ON trendsmap_entries USING GIN(hashtags);`, [], tenant);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_expires ON trendsmap_entries(expires_at);`, [], tenant);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_mentioned_profiles ON trendsmap_entries USING GIN(mentioned_profiles);`, [], tenant);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_mentioned_sites ON trendsmap_entries USING GIN(mentioned_sites);`, [], tenant);
+    await runQuery(`CREATE INDEX IF NOT EXISTS idx_trendsmap_text_tsv ON trendsmap_entries USING GIN (to_tsvector('spanish', coalesce(text,'')));`, [], tenant);
 
     console.log("[trendsmap] Tabla inicializada correctamente (migraciones aseguradas)");
   } catch (err) {
@@ -43,26 +64,13 @@ export async function initTrendsmapTable() {
   }
 }
 
-export async function insertEntry(data: {
-  text: string;
-  hashtags: string[];
-  latitude: number;
-  longitude: number;
-  pais?: string;
-  departamento?: string;
-  municipio?: string;
-  expires_at?: Date | string | null;
-  barrio?: string | null;
-  comuna?: string | null;
-  mentioned_profiles?: string[];
-  mentioned_sites?: string[];
-}) {
+export async function insertEntry(data: InsertData, tenant?: string | null) {
   const ttlDays = Number(process.env.TRENDS_TTL_DAYS || 30);
   const expiresAt = data.expires_at
     ? new Date(data.expires_at)
     : new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
 
-  const { rows } = await pool.query(
+  const res = await runQuery(
     `INSERT INTO trendsmap_entries (text, hashtags, latitude, longitude, pais, departamento, municipio, expires_at, barrio, comuna, mentioned_profiles, mentioned_sites)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
@@ -79,13 +87,14 @@ export async function insertEntry(data: {
       data.comuna || null,
       data.mentioned_profiles || [],
       data.mentioned_sites || [],
-    ]
+    ],
+    tenant
   );
-  return rows[0];
+  return res.rows[0];
 }
 
-export async function getEntriesByRadius(lat: number, lng: number, radiusKm: number = 50, limit: number = 100) {
-  const { rows } = await pool.query(
+export async function getEntriesByRadius(lat: number, lng: number, radiusKm: number = 50, limit: number = 100, tenant?: string | null) {
+  const res = await runQuery(
     `SELECT *,
        (6371 * acos(
          cos(radians($1)) * cos(radians(latitude)) *
@@ -100,14 +109,15 @@ export async function getEntriesByRadius(lat: number, lng: number, radiusKm: num
      )) <= $3
      ORDER BY created_at DESC
      LIMIT $4`,
-    [lat, lng, radiusKm, limit]
+    [lat, lng, radiusKm, limit],
+    tenant
   );
-  return rows;
+  return res.rows;
 }
 
-export async function getTrendsByRegion(region: "pais" | "departamento" | "municipio", value: string, hours: number = 24) {
+export async function getTrendsByRegion(region: "pais" | "departamento" | "municipio", value: string, hours: number = 24, tenant?: string | null) {
   const col = region;
-  const { rows } = await pool.query(
+  const res = await runQuery(
     `SELECT 
        ${col} as region,
        COUNT(*) as entry_count,
@@ -121,13 +131,14 @@ export async function getTrendsByRegion(region: "pais" | "departamento" | "munic
        AND created_at > NOW() - ($2 || ' hours')::interval
      GROUP BY ${col}
      ORDER BY entry_count DESC`,
-    [value, hours]
+    [value, hours],
+    tenant
   );
-  return rows;
+  return res.rows;
 }
 
-export async function getHotspots(hours: number = 24, minEntries: number = 3) {
-  const { rows } = await pool.query(
+export async function getHotspots(hours: number = 24, minEntries: number = 3, tenant?: string | null) {
+  const res = await runQuery(
     `WITH base AS (
        SELECT 
          departamento,
@@ -166,52 +177,60 @@ export async function getHotspots(hours: number = 24, minEntries: number = 3) {
      FROM base b
      LEFT JOIN recent r ON r.departamento = b.departamento AND r.municipio = b.municipio
      ORDER BY b.entry_count DESC`,
-    [minEntries, hours]
+    [minEntries, hours],
+    tenant
   );
-  return rows;
+  return res.rows;
 }
 
-
-export async function getTrendGrowth(hours: number = 24) {
-  const { rows: current } = await pool.query(
+export async function getTrendGrowth(hours: number = 24, tenant?: string | null) {
+  const currRes = await runQuery(
     `SELECT departamento, municipio, COUNT(*) as count
      FROM trendsmap_entries
      WHERE created_at > NOW() - ($1 || ' hours')::interval
      GROUP BY departamento, municipio`,
-    [hours]
+    [hours],
+    tenant
   );
 
-  const { rows: previous } = await pool.query(
+  const prevRes = await runQuery(
     `SELECT departamento, municipio, COUNT(*) as count
      FROM trendsmap_entries
      WHERE created_at BETWEEN NOW() - ($1 || ' hours')::interval AND NOW() - ($2 || ' hours')::interval
      GROUP BY departamento, municipio`,
-    [hours * 2, hours]
+    [hours * 2, hours],
+    tenant
   );
 
-  const prevMap = new Map<string, number>();
-  previous.forEach(r => prevMap.set(`${r.departamento}-${r.municipio}`, parseInt(r.count)));
+  const previous = prevRes.rows;
+  const current = currRes.rows;
 
-  const growth = current.map(r => {
-    const key = `${r.departamento}-${r.municipio}`;
-    const prev = prevMap.get(key) || 0;
-    const curr = parseInt(r.count);
-    return {
-      departamento: r.departamento,
-      municipio: r.municipio,
-      currentCount: curr,
-      previousCount: prev,
-      growth: prev > 0 ? ((curr - prev) / prev) * 100 : curr > 0 ? 100 : 0,
-    };
-  }).filter(r => r.growth > 0).sort((a, b) => b.growth - a.growth);
+  const prevMap = new Map<string, number>();
+  previous.forEach((r: any) => prevMap.set(`${r.departamento}-${r.municipio}`, parseInt(r.count)));
+
+  const growth = current
+    .map((r: any) => {
+      const key = `${r.departamento}-${r.municipio}`;
+      const prev = prevMap.get(key) || 0;
+      const curr = parseInt(r.count);
+      return {
+        departamento: r.departamento,
+        municipio: r.municipio,
+        currentCount: curr,
+        previousCount: prev,
+        growth: prev > 0 ? ((curr - prev) / prev) * 100 : curr > 0 ? 100 : 0,
+      };
+    })
+    .filter((r) => r.growth > 0)
+    .sort((a, b) => b.growth - a.growth);
 
   return growth;
 }
 
-export async function syncFromGlobalTrends() {
+export async function syncFromGlobalTrends(tenant?: string | null) {
   try {
-    const { rows: globalTrends } = await pool.query(`
-      SELECT 
+    const globalRes = await runQuery(
+      `SELECT 
         id,
         topic,
         platform,
@@ -231,9 +250,12 @@ export async function syncFromGlobalTrends() {
         AND longitude IS NOT NULL
         AND ciudad IS NOT NULL
       ORDER BY timestamp DESC
-      LIMIT 1000
-    `);
+      LIMIT 1000`,
+      [],
+      tenant
+    );
 
+    const globalTrends = globalRes.rows;
     if (globalTrends.length === 0) return 0;
 
     let inserted = 0;
@@ -252,7 +274,7 @@ export async function syncFromGlobalTrends() {
         const createdAt = trend.timestamp ? new Date(trend.timestamp) : new Date();
         const expiresAt = new Date(createdAt.getTime() + ttlDays * 24 * 60 * 60 * 1000);
 
-        const result = await pool.query(
+        const res = await runQuery(
           `INSERT INTO trendsmap_entries (text, hashtags, latitude, longitude, departamento, municipio, pais, created_at, expires_at, barrio, comuna, mentioned_profiles, mentioned_sites)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
            ON CONFLICT DO NOTHING
@@ -271,15 +293,16 @@ export async function syncFromGlobalTrends() {
             null,
             [],
             [],
-          ]
+          ],
+          tenant
         );
-        if (result.rows.length > 0) inserted++;
+        if (res.rows.length > 0) inserted++;
       } catch (err) {
         // Silenciar conflictos de duplicados
       }
     }
 
-    console.log(`[trendsmap] Sincronizadas ${inserted} tendencias desde global_trends`);
+    console.log(`[trendsmap] Sincronizadas ${inserted} tendencias desde global_trends (tenant=${tenant||'public'})`);
     return inserted;
   } catch (err) {
     console.error("[trendsmap] Error sincronizando:", err);

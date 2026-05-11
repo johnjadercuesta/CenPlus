@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
     console.log("[API] POST /api/trendsmap/dedupe called");
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     // Crear extensión para búsqueda fuzzy (si no existe)
-    await pool.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    await run(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
 
     // Paso 1: Encontrar entradas similares (> 80% similitud)
-    const { rows: similarGroups } = await pool.query(`
+    const { rows: similarGroups } = await run(`
       SELECT 
         a.id as id1,
         b.id as id2,
@@ -38,7 +43,7 @@ export async function POST(request: NextRequest) {
         const idToDelete = group.id1;
         const idToKeep = group.id2;
 
-        await pool.query(
+        await run(
           `DELETE FROM trendsmap_entries WHERE id = $1`,
           [idToDelete]
         );
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     let normalized = 0;
     for (const rule of normalizationRules) {
-      const result = await pool.query(
+      const result = await run(
         `UPDATE trendsmap_entries 
          SET text = REGEXP_REPLACE(text, $1, $2, 'gi')
          WHERE text ~ $1`,
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener estadísticas finales
-    const stats = await pool.query(`
+    const stats = await run(`
       SELECT 
         COUNT(*) as total,
         COUNT(DISTINCT LOWER(text)) as unique_trends,

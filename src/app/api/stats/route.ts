@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,8 +9,11 @@ export async function GET(request: NextRequest) {
 
     let total, lideres, conCoords, hoy, semana, porEstudios, porSexo, topBarrios, topCorregimientos, topOcupaciones, topRegimenSalud, topProblematicas, porLider, rows7dias: { fecha: string; c: number }[], avgEdad;
 
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
     if (archivoId) {
-      const archivoRes = await pool.query(
+      const archivoRes = await run(
         "SELECT snapshot FROM archivos_electorales WHERE id = $1",
         [archivoId]
       );
@@ -58,57 +62,57 @@ export async function GET(request: NextRequest) {
       rows7dias = [];
       avgEdad = countEdad > 0 ? Math.round(totalEdad / countEdad) : 0;
     } else {
-      const totalRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos");
+      const totalRes = await run("SELECT COUNT(*) as c FROM ciudadanos");
       total = parseInt(totalRes.rows[0].c);
 
-      const lideresRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos WHERE es_lider = 1");
+      const lideresRes = await run("SELECT COUNT(*) as c FROM ciudadanos WHERE es_lider = 1");
       lideres = parseInt(lideresRes.rows[0].c);
 
-      const conCoordsRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos WHERE latitud IS NOT NULL");
+      const conCoordsRes = await run("SELECT COUNT(*) as c FROM ciudadanos WHERE latitud IS NOT NULL");
       conCoords = parseInt(conCoordsRes.rows[0].c);
 
-      const hoyRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos WHERE created_at::date = CURRENT_DATE");
+      const hoyRes = await run("SELECT COUNT(*) as c FROM ciudadanos WHERE created_at::date = CURRENT_DATE");
       hoy = parseInt(hoyRes.rows[0].c);
 
-      const semanaRes = await pool.query("SELECT COUNT(*) as c FROM ciudadanos WHERE created_at >= NOW() - INTERVAL '7 days'");
+      const semanaRes = await run("SELECT COUNT(*) as c FROM ciudadanos WHERE created_at >= NOW() - INTERVAL '7 days'");
       semana = parseInt(semanaRes.rows[0].c);
 
-      const { rows: porEstudiosRows } = await pool.query(
+      const { rows: porEstudiosRows } = await run(
         "SELECT nivel_estudios, COUNT(*) as c FROM ciudadanos WHERE nivel_estudios IS NOT NULL GROUP BY nivel_estudios ORDER BY c DESC"
       );
       porEstudios = porEstudiosRows;
 
-      const { rows: porSexoRows } = await pool.query(
+      const { rows: porSexoRows } = await run(
         "SELECT sexo, COUNT(*) as c FROM ciudadanos WHERE sexo IS NOT NULL GROUP BY sexo"
       );
       porSexo = porSexoRows;
 
-      const { rows: topBarriosRows } = await pool.query(
+      const { rows: topBarriosRows } = await run(
         "SELECT barrio, COUNT(*) as c FROM ciudadanos GROUP BY barrio ORDER BY c DESC LIMIT 10"
       );
       topBarrios = topBarriosRows;
 
-      const { rows: topCorregimientosRows } = await pool.query(
+      const { rows: topCorregimientosRows } = await run(
         "SELECT corregimiento, COUNT(*) as c FROM ciudadanos GROUP BY corregimiento ORDER BY c DESC LIMIT 10"
       );
       topCorregimientos = topCorregimientosRows;
 
-      const { rows: topOcupacionesRows } = await pool.query(
+      const { rows: topOcupacionesRows } = await run(
         "SELECT ocupacion, COUNT(*) as c FROM ciudadanos WHERE ocupacion IS NOT NULL AND ocupacion != '' GROUP BY ocupacion ORDER BY c DESC LIMIT 10"
       );
       topOcupaciones = topOcupacionesRows;
 
-      const { rows: topRegimenSaludRows } = await pool.query(
+      const { rows: topRegimenSaludRows } = await run(
         "SELECT regimen_salud, COUNT(*) as c FROM ciudadanos WHERE regimen_salud IS NOT NULL GROUP BY regimen_salud ORDER BY c DESC"
       );
       topRegimenSalud = topRegimenSaludRows;
 
-      const { rows: topProblematicasRows } = await pool.query(
+      const { rows: topProblematicasRows } = await run(
         "SELECT problematica_principal as problematica, COUNT(*) as c FROM ciudadanos WHERE problematica_principal IS NOT NULL GROUP BY problematica_principal ORDER BY c DESC"
       );
       topProblematicas = topProblematicasRows;
 
-      const { rows: porLiderRows } = await pool.query(`
+      const { rows: porLiderRows } = await run(`
         SELECT COALESCE(a.nombre, 'Sin Asignar') as nombre, COUNT(c.id) as c
         FROM ciudadanos c
         LEFT JOIN admins a ON c.lider_id = a.id
@@ -117,7 +121,7 @@ export async function GET(request: NextRequest) {
       `);
       porLider = porLiderRows;
 
-      const { rows: rows7diasResult } = await pool.query(`
+      const { rows: rows7diasResult } = await run(`
         SELECT d::date as fecha, COUNT(c.id) as c
         FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, INTERVAL '1 day') d
         LEFT JOIN ciudadanos c ON c.created_at::date = d::date
@@ -129,11 +133,10 @@ export async function GET(request: NextRequest) {
         c: parseInt(r.c)
       }));
 
-      const { rows: avgRes } = await pool.query("SELECT AVG(edad) as avg FROM ciudadanos WHERE edad IS NOT NULL");
+      const { rows: avgRes } = await run("SELECT AVG(edad) as avg FROM ciudadanos WHERE edad IS NOT NULL");
       avgEdad = avgRes[0].avg ? Math.round(parseFloat(avgRes[0].avg)) : 0;
     }
-
-    const { rows: configRows } = await pool.query("SELECT valor FROM config WHERE clave = 'meta_global'");
+    const { rows: configRows } = await run("SELECT valor FROM config WHERE clave = 'meta_global'");
     const meta = configRows.length > 0 ? parseInt(configRows[0].valor) : 1000;
     const porcentajeMeta = Math.round((total / meta) * 1000) / 10;
 

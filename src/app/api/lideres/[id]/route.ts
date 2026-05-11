@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
 
 export async function PUT(
@@ -12,8 +13,11 @@ export async function PUT(
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const id = params.id;
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
     const body = await request.json();
 
     const fields: string[] = [];
@@ -25,7 +29,7 @@ export async function PUT(
       values.push(body.nombre);
     }
     if (body.email !== undefined) {
-      const { rows: existingRows } = await pool.query(
+      const { rows: existingRows } = await run(
         "SELECT id FROM admins WHERE email = $1 AND id != $2",
         [body.email, id]
       );
@@ -56,7 +60,7 @@ export async function PUT(
 
     values.push(id);
     const sql = `UPDATE admins SET ${fields.join(", ")} WHERE id = $${pCount} RETURNING id, email, nombre, role, activo, created_at`;
-    const { rows: updateRows } = await pool.query(sql, values);
+    const { rows: updateRows } = await run(sql, values);
 
     if (updateRows.length === 0) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -78,14 +82,17 @@ export async function DELETE(
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const id = params.id;
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
     if (parseInt(id) === token.userId) {
       return NextResponse.json({ error: "No puede eliminarse a sí mismo" }, { status: 400 });
     }
 
-    const { rowCount } = await pool.query("DELETE FROM admins WHERE id = $1", [id]);
+    const { rowCount } = await run("DELETE FROM admins WHERE id = $1", [id]);
     if (rowCount === 0) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }

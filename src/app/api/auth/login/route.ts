@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { signToken } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, tenant: tenantParam } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -14,7 +15,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { rows } = await pool.query(
+    // Get tenant from request or from body parameter
+    let tenant = getTenantFromRequest(request);
+    if (!tenant && tenantParam) {
+      tenant = tenantParam;
+    }
+
+    if (!tenant) {
+      return NextResponse.json(
+        { error: "Tenant no especificado" },
+        { status: 400 }
+      );
+    }
+
+    const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
+
+    const { rows } = await run(
       "SELECT * FROM admins WHERE email = $1 AND activo = 1",
       [email]
     );
@@ -40,6 +56,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       nombre: user.nombre,
       role: user.role as "administrador" | "estratega" | "lider",
+      tenant: tenant || null,
     });
 
     const response = NextResponse.json({

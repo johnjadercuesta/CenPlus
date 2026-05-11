@@ -1,12 +1,18 @@
 import { pool } from "@/lib/db";
+import { queryWithTenant } from "@/lib/tenant";
 import Sentiment from "sentiment";
 
 const sentiment = new Sentiment();
 
-export async function initTables() {
+async function runQuery(sql: string, params: any[] = [], tenant?: string | null) {
+  if (tenant) return await queryWithTenant(tenant, sql, params);
+  return await pool.query(sql, params);
+}
+
+export async function initTables(tenant?: string | null) {
   try {
     // Crear tablas
-    await pool.query(`
+    await runQuery(`
       CREATE TABLE IF NOT EXISTS facebook_group_posts (
         id SERIAL PRIMARY KEY,
         municipio VARCHAR(150),
@@ -50,13 +56,13 @@ export async function initTables() {
       CREATE INDEX IF NOT EXISTS idx_ads_mun ON ads_library_records(municipio);
       CREATE INDEX IF NOT EXISTS idx_leaders_mun ON opinion_leaders(municipio);
       CREATE INDEX IF NOT EXISTS idx_keywords_mun ON keywords_by_municipio(municipio);
-    `);
+    `, [], tenant);
 
     // Agregar columna profile_name si no existe
-    await pool.query(`
+    await runQuery(`
       ALTER TABLE opinion_leaders
       ADD COLUMN IF NOT EXISTS profile_name VARCHAR(200)
-    `);
+    `, [], tenant);
 
     console.log("[social-listening] Tablas inicializadas");
     return { success: true };
@@ -92,7 +98,7 @@ export function extractKeywords(text: string): string[] {
   return words.filter(w => !stopwords.includes(w)).slice(0, 5);
 }
 
-export async function insertPost(municipio: string, postText: string) {
+export async function insertPost(municipio: string, postText: string, tenant?: string | null) {
   const sent = analyzeSentiment(postText);
   const kw = extractKeywords(postText);
   
@@ -103,28 +109,31 @@ export async function insertPost(municipio: string, postText: string) {
     // Until real data available, using NULL to prevent synthetic metrics
     const engagementCount = null; // Real engagement data required
     
-    const { rows } = await pool.query(
+    const { rows } = await runQuery(
       `INSERT INTO facebook_group_posts (municipio, post_text, sentiment_score, sentiment_label, keywords, engagement_count) 
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [municipio, postText, sent.score, sent.label, JSON.stringify(kw), engagementCount]
+      [municipio, postText, sent.score, sent.label, JSON.stringify(kw), engagementCount],
+      tenant
     );
     
     // Insert keywords into keywords_by_municipio table
     for (const keyword of kw) {
       try {
         // Try to update first
-        const { rowCount } = await pool.query(
+        const { rowCount } = await runQuery(
           `UPDATE keywords_by_municipio SET frequency_count = frequency_count + 1 
            WHERE municipio = $1 AND keyword = $2`,
-          [municipio, keyword]
+          [municipio, keyword],
+          tenant
         );
         
         // If no rows updated, insert new one
         if (rowCount === 0) {
-          await pool.query(
+          await runQuery(
             `INSERT INTO keywords_by_municipio (municipio, keyword, frequency_count) 
              VALUES ($1, $2, 1)`,
-            [municipio, keyword]
+            [municipio, keyword],
+            tenant
           );
         }
       } catch (kwErr) {
@@ -138,7 +147,7 @@ export async function insertPost(municipio: string, postText: string) {
   }
 }
 
-export async function insertAd(municipio: string, adText: string, concern: string, spend: number = 50) {
+export async function insertAd(municipio: string, adText: string, concern: string, spend: number = 50, tenant?: string | null) {
   try {
     // REFACTORED: Removed synthetic impression generation
     // Previous: impressions = Math.floor(Math.random() * 10000) + 1000
@@ -146,10 +155,11 @@ export async function insertAd(municipio: string, adText: string, concern: strin
     // Until real data available, using NULL to indicate "unknown"
     const impressions = null; // Real data required
     
-    const { rows } = await pool.query(
+    const { rows } = await runQuery(
       `INSERT INTO ads_library_records (municipio, ad_text, concern_category, spend_usd, impressions) 
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [municipio, adText, concern, spend, impressions]
+      [municipio, adText, concern, spend, impressions],
+      tenant
     );
     return rows[0];
   } catch (err) {
@@ -157,7 +167,7 @@ export async function insertAd(municipio: string, adText: string, concern: strin
   }
 }
 
-export async function insertOpinionLeader(municipio: string, nombre: string, relevancia: number, profileName?: string) {
+export async function insertOpinionLeader(municipio: string, nombre: string, relevancia: number, profileName?: string, tenant?: string | null) {
   try {
     // REFACTORED: Removed synthetic metric generation
     // Previous: 
@@ -167,49 +177,56 @@ export async function insertOpinionLeader(municipio: string, nombre: string, rel
     const postsCount = null; // Real data from social media APIs required
     const engagementTotal = null; // Real data from social media APIs required
     
-    await pool.query(
+    await runQuery(
       `INSERT INTO opinion_leaders (municipio, nombre, profile_name, relevancia_score, posts_count, engagement_total) 
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [municipio, nombre, profileName || `@${nombre.toLowerCase().replace(/\s+/g, '')}`, relevancia, postsCount, engagementTotal]
+      [municipio, nombre, profileName || `@${nombre.toLowerCase().replace(/\s+/g, '')}`, relevancia, postsCount, engagementTotal],
+      tenant
     );
   } catch (err) {
     console.error("[social-listening] Error inserting leader:", err);
   }
 }
 
-export async function getAnalysisByMunicipio(municipio: string) {
+export async function getAnalysisByMunicipio(municipio: string, tenant?: string | null) {
   try {
-    const { rows: posts } = await pool.query(
+    const { rows: posts } = await runQuery(
       `SELECT id::text, municipio, post_text, sentiment_score, sentiment_label, engagement_count FROM facebook_group_posts WHERE municipio ILIKE $1 ORDER BY created_at DESC LIMIT 10`,
-      [municipio]
+      [municipio],
+      tenant
     );
 
-    const { rows: ads } = await pool.query(
+    const { rows: ads } = await runQuery(
       `SELECT id::text, municipio, ad_text, concern_category, spend_usd as spend_estimate FROM ads_library_records WHERE municipio ILIKE $1 ORDER BY created_at DESC LIMIT 10`,
-      [municipio]
+      [municipio],
+      tenant
     );
 
-    const { rows: leaders } = await pool.query(
+    const { rows: leaders } = await runQuery(
       `SELECT id::text, municipio, nombre, profile_name, relevancia_score FROM opinion_leaders WHERE municipio ILIKE $1 ORDER BY relevancia_score DESC LIMIT 5`,
-      [municipio]
+      [municipio],
+      tenant
     );
 
-    const { rows: keywords } = await pool.query(
+    const { rows: keywords } = await runQuery(
       `SELECT id::text, municipio, keyword, frequency_count as frequency FROM keywords_by_municipio WHERE municipio ILIKE $1 ORDER BY frequency_count DESC LIMIT 8`,
-      [municipio]
+      [municipio],
+      tenant
     );
 
-    const { rows: sentiment_data } = await pool.query(
+    const { rows: sentiment_data } = await runQuery(
       `SELECT AVG(sentiment_score) as avg_sent FROM facebook_group_posts WHERE municipio ILIKE $1 AND created_at > NOW() - INTERVAL '7 days'`,
-      [municipio]
+      [municipio],
+      tenant
     );
 
     const avgSent = sentiment_data[0]?.avg_sent || 0;
     const climaOrgánico = avgSent < -0.5 ? "negativo" : avgSent > 0.5 ? "positivo" : "neutral";
 
-    const { rows: concern_data } = await pool.query(
+    const { rows: concern_data } = await runQuery(
       `SELECT concern_category, COUNT(*) as cnt FROM ads_library_records WHERE municipio ILIKE $1 GROUP BY concern_category ORDER BY cnt DESC LIMIT 1`,
-      [municipio]
+      [municipio],
+      tenant
     );
 
     const interésPagado = concern_data[0]?.concern_category || "no_especificado";
@@ -237,18 +254,20 @@ export async function getAnalysisByMunicipio(municipio: string) {
   }
 }
 
-export async function getAllMunicipiosSummary() {
+export async function getAllMunicipiosSummary(tenant?: string | null) {
   try {
-    const { rows: municipios } = await pool.query(
+    const { rows: municipios } = await runQuery(
       `SELECT DISTINCT municipio FROM facebook_group_posts 
        UNION 
        SELECT DISTINCT municipio FROM ads_library_records 
-       ORDER BY municipio`
+       ORDER BY municipio`,
+      [],
+      tenant
     );
 
     const results = [];
     for (const m of municipios) {
-      const analysis = await getAnalysisByMunicipio(m.municipio);
+      const analysis = await getAnalysisByMunicipio(m.municipio, tenant);
       if (analysis) {
         results.push({
           municipio: analysis.municipio,
@@ -268,12 +287,13 @@ export async function getAllMunicipiosSummary() {
   }
 }
 
-export async function deleteAllData() {
   try {
-    await pool.query(`DELETE FROM facebook_group_posts`);
-    await pool.query(`DELETE FROM ads_library_records`);
-    await pool.query(`DELETE FROM opinion_leaders`);
-    await pool.query(`DELETE FROM keywords_by_municipio`);
+export async function deleteAllData(tenant?: string | null) {
+  try {
+    await runQuery(`DELETE FROM facebook_group_posts`, [], tenant);
+    await runQuery(`DELETE FROM ads_library_records`, [], tenant);
+    await runQuery(`DELETE FROM opinion_leaders`, [], tenant);
+    await runQuery(`DELETE FROM keywords_by_municipio`, [], tenant);
     return { success: true };
   } catch (err) {
     console.error("[social-listening] Error deleting data:", err);

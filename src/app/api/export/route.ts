@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { rows: data } = await pool.query("SELECT * FROM ciudadanos ORDER BY created_at DESC");
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    const { rows: data } = await run("SELECT * FROM ciudadanos ORDER BY created_at DESC");
 
     if (data.length === 0) {
       return NextResponse.json({ error: "No hay datos para exportar" }, { status: 404 });

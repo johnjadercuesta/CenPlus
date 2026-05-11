@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
     console.log("[API] POST /api/trendsmap/cleanup called");
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
+
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
     // Limpiar duplicados: mantener solo 1 registro por (text, latitude, longitude)
-    const result = await pool.query(`
+    const result = await run(`
       DELETE FROM trendsmap_entries
       WHERE id NOT IN (
         SELECT DISTINCT ON (text, latitude, longitude) id
@@ -21,7 +26,7 @@ export async function POST(request: NextRequest) {
     console.log(`[cleanup] Eliminados ${result.rowCount} registros duplicados`);
 
     // Obtener estadísticas finales
-    const stats = await pool.query(`
+    const stats = await run(`
       SELECT 
         COUNT(*) as total,
         COUNT(DISTINCT departamento) as departments,

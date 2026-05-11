@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,6 +9,7 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
@@ -27,8 +29,11 @@ export async function GET(request: NextRequest) {
     let rows: any[] = [];
     let count = 0;
 
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
     if (archivoId) {
-      const archivoRes = await pool.query(
+      const archivoRes = await run(
         "SELECT snapshot FROM archivos_electorales WHERE id = $1",
         [archivoId]
       );
@@ -124,7 +129,7 @@ export async function GET(request: NextRequest) {
 
       const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
 
-      const countRes = await pool.query(`SELECT COUNT(*) as c FROM ciudadanos c ${where}`, params);
+      const countRes = await run(`SELECT COUNT(*) as c FROM ciudadanos c ${where}`, params);
       count = parseInt(countRes.rows[0].c);
 
       let query = `SELECT c.*, a.nombre as registrado_por FROM ciudadanos c LEFT JOIN admins a ON c.lider_id = a.id ${where} ORDER BY c.created_at DESC`;
@@ -135,7 +140,7 @@ export async function GET(request: NextRequest) {
         params.push(limit, offset);
       }
 
-      const dbResult = await pool.query(query, params);
+      const dbResult = await run(query, params);
 
       rows = dbResult.rows.map((row: any) => ({
         ...row,
@@ -162,6 +167,7 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const body = await request.json();
 
@@ -172,7 +178,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { rows: existingRows } = await pool.query("SELECT id FROM ciudadanos WHERE id_unico = $1", [String(body.id_unico).trim()]);
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    const { rows: existingRows } = await run("SELECT id FROM ciudadanos WHERE id_unico = $1", [String(body.id_unico).trim()]);
     if (existingRows.length > 0) {
       return NextResponse.json({ error: "Esta cédula ya está registrada" }, { status: 409 });
     }
@@ -226,7 +235,7 @@ export async function POST(request: NextRequest) {
       body.zona || 'urbana'
     ];
 
-    const { rows } = await pool.query(sql, values);
+    const { rows } = await run(sql, values);
     const data = rows[0];
     data.es_lider = data.es_lider === 1;
 

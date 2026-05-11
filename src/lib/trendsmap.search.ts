@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { queryWithTenant } from "@/lib/tenant";
 
 export type SearchOptions = {
   q?: string;
@@ -10,7 +11,12 @@ export type SearchOptions = {
   limit?: number;
 };
 
-export async function searchEntries(opts: SearchOptions) {
+async function runQuery(sql: string, params: any[] = [], tenant?: string | null) {
+  if (tenant) return await queryWithTenant(tenant, sql, params);
+  return await pool.query(sql, params);
+}
+
+export async function searchEntries(opts: SearchOptions, tenant?: string | null) {
   const { q, hashtags, lat, lng, radiusKm = 50, days = 30, limit = 100 } = opts || {};
   const daysInt = Math.min(Math.max(1, Number(days || 30)), 365);
   const limitInt = Math.min(Math.max(1, Number(limit || 100)), 1000);
@@ -57,15 +63,15 @@ export async function searchEntries(opts: SearchOptions) {
   const sql = `${select} FROM trendsmap_entries ${whereSQL} ${orderBy} LIMIT $${idx}`;
   params.push(limitInt);
 
-  const { rows } = await pool.query(sql, params);
-  return rows;
+  const res = await runQuery(sql, params, tenant);
+  return res.rows;
 }
 
-export async function searchByHashtag(hashtag: string, days?: number, limit?: number) {
+export async function searchByHashtag(hashtag: string, days?: number, limit?: number, tenant?: string | null) {
   const h = hashtag.startsWith("#") ? hashtag.toLowerCase() : `#${hashtag.toLowerCase()}`;
-  return searchEntries({ hashtags: [h], days, limit });
+  return searchEntries({ hashtags: [h], days, limit }, tenant);
 }
 
-export async function searchByKeyword(keyword: string, days?: number, limit?: number) {
-  return searchEntries({ q: keyword, days, limit });
+export async function searchByKeyword(keyword: string, days?: number, limit?: number, tenant?: string | null) {
+  return searchEntries({ q: keyword, days, limit }, tenant);
 }

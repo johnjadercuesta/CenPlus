@@ -1,20 +1,30 @@
 import { pool } from "@/lib/db";
+import { queryWithTenant } from "@/lib/tenant";
 import cron from "node-cron";
 
 let scheduledJob: cron.ScheduledTask | null = null;
 
-export async function deleteExpiredTrends() {
-  const { rows } = await pool.query(
-    `DELETE FROM trendsmap_entries WHERE expires_at IS NOT NULL AND expires_at < NOW() RETURNING id`
-  );
-  return rows.length;
+async function runQuery(sql: string, params: any[] = [], tenant?: string | null) {
+  if (tenant) return await queryWithTenant(tenant, sql, params);
+  return await pool.query(sql, params);
 }
 
-export async function countExpiredTrends() {
-  const { rows } = await pool.query(
-    `SELECT COUNT(*)::int AS cnt FROM trendsmap_entries WHERE expires_at IS NOT NULL AND expires_at < NOW()`
+export async function deleteExpiredTrends(tenant?: string | null) {
+  const res = await runQuery(
+    `DELETE FROM trendsmap_entries WHERE expires_at IS NOT NULL AND expires_at < NOW() RETURNING id`,
+    [],
+    tenant
   );
-  return rows[0]?.cnt || 0;
+  return res.rows.length;
+}
+
+export async function countExpiredTrends(tenant?: string | null) {
+  const res = await runQuery(
+    `SELECT COUNT(*)::int AS cnt FROM trendsmap_entries WHERE expires_at IS NOT NULL AND expires_at < NOW()`,
+    [],
+    tenant
+  );
+  return res.rows[0]?.cnt || 0;
 }
 
 export async function startScheduler(interval: string = "24h"): Promise<{ success: boolean; message: string }> {
@@ -39,14 +49,28 @@ export async function startScheduler(interval: string = "24h"): Promise<{ succes
 
     scheduledJob = cron.schedule(cronSchedule, async () => {
       const timestamp = new Date().toISOString();
-      console.log(`[CRON] ${timestamp} - Limpiando tendencias expiradas...`);
+      console.log(`[CRON] ${timestamp} - Limpiando tendencias expiradas por tenant...`);
       try {
-        const deleted = await deleteExpiredTrends();
-        if (deleted > 0) {
-          console.log(`[CRON] ${new Date().toISOString()} - ${deleted} tendencias expiradas eliminadas`);
+        // Enumerar esquemas/tenants y ejecutar limpieza por cada uno
+        const { rows: schemas } = await pool.query(`
+          SELECT schema_name FROM information_schema.schemata
+          WHERE schema_name NOT IN ('public', 'information_schema')
+            AND schema_name NOT LIKE 'pg_%'
+        `);
+
+        for (const s of schemas) {
+          try {
+            const tenantName = s.schema_name;
+            const deleted = await deleteExpiredTrends(tenantName);
+            if (deleted > 0) {
+              console.log(`[CRON] ${new Date().toISOString()} - tenant=${tenantName} - ${deleted} tendencias expiradas eliminadas`);
+            }
+          } catch (err) {
+            console.error(`[CRON] Error limpiando tenant ${s.schema_name}:`, err);
+          }
         }
       } catch (err) {
-        console.error(`[CRON] Error limpiando tendencias:`, err);
+        console.error(`[CRON] Error enumerando esquemas para limpieza:`, err);
       }
     });
 

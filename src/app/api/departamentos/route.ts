@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +11,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const pais = searchParams.get("pais") || "Colombia";
 
-    const { rows } = await pool.query(
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    const { rows } = await run(
       `SELECT DISTINCT departamento FROM global_trends 
        WHERE pais ILIKE $1 AND departamento IS NOT NULL AND departamento != ''
        ORDER BY departamento ASC`,

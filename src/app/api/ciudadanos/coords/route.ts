@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,8 +9,11 @@ export async function GET(request: NextRequest) {
 
     let rows: any[];
 
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
     if (archivoId) {
-      const archivoRes = await pool.query(
+      const archivoRes = await run(
         "SELECT snapshot FROM archivos_electorales WHERE id = $1",
         [archivoId]
       );
@@ -21,7 +25,7 @@ export async function GET(request: NextRequest) {
         (c: any) => c.latitud != null && c.longitud != null
       );
     } else {
-      const result = await pool.query(
+      const result = await run(
         "SELECT latitud, longitud, es_lider, problematica_principal FROM ciudadanos WHERE latitud IS NOT NULL AND longitud IS NOT NULL"
       );
       rows = result.rows;

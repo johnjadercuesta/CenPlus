@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
 
 export async function GET(request: NextRequest) {
@@ -9,8 +10,12 @@ export async function GET(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
-    const { rows: data } = await pool.query(
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    const { rows: data } = await run(
       "SELECT id, email, nombre, role, activo, created_at FROM admins ORDER BY created_at DESC"
     );
 
@@ -27,6 +32,7 @@ export async function POST(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     const { email, password, nombre, role } = await request.json();
 
@@ -34,7 +40,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email, contraseña y nombre son obligatorios" }, { status: 400 });
     }
 
-    const { rows: existingRows } = await pool.query("SELECT id FROM admins WHERE email = $1", [email]);
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    const { rows: existingRows } = await run("SELECT id FROM admins WHERE email = $1", [email]);
     if (existingRows.length > 0) {
       return NextResponse.json({ error: "Este email ya está registrado" }, { status: 409 });
     }
@@ -43,7 +52,7 @@ export async function POST(request: NextRequest) {
     const validRoles = ["administrador", "estratega", "lider", "analista"];
     const targetRole = validRoles.includes(role) ? role : "lider";
 
-    const { rows } = await pool.query(
+    const { rows } = await run(
       "INSERT INTO admins (email, password, nombre, role) VALUES ($1, $2, $3, $4) RETURNING id, email, nombre, role, activo, created_at",
       [email, hash, nombre, targetRole]
     );

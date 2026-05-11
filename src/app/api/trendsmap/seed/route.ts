@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
     console.log("[API] POST /api/trendsmap/seed called");
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
 
     // Verificar que la tabla existe y crear si no (pg no soporta múltiples statements en una query)
-    await pool.query(`
+    const tenant = getTenantFromRequest(request);
+    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+
+    await run(`
       CREATE TABLE IF NOT EXISTS trendsmap_entries (
         id SERIAL PRIMARY KEY,
         text TEXT NOT NULL,
@@ -24,15 +29,15 @@ export async function POST(request: NextRequest) {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_lat_lng ON trendsmap_entries(latitude, longitude)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_depto ON trendsmap_entries(departamento)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_municipio ON trendsmap_entries(municipio)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_created ON trendsmap_entries(created_at DESC)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_hashtags ON trendsmap_entries USING GIN(hashtags)`);
+    await run(`CREATE INDEX IF NOT EXISTS idx_trendsmap_lat_lng ON trendsmap_entries(latitude, longitude)`);
+    await run(`CREATE INDEX IF NOT EXISTS idx_trendsmap_depto ON trendsmap_entries(departamento)`);
+    await run(`CREATE INDEX IF NOT EXISTS idx_trendsmap_municipio ON trendsmap_entries(municipio)`);
+    await run(`CREATE INDEX IF NOT EXISTS idx_trendsmap_created ON trendsmap_entries(created_at DESC)`);
+    await run(`CREATE INDEX IF NOT EXISTS idx_trendsmap_hashtags ON trendsmap_entries USING GIN(hashtags)`);
 
     // Sincronizar datos de global_trends a trendsmap_entries
     // Toma tendencias ÚNICAS (sin duplicados) ordenadas por heat_index
-    const { rows: globalTrends } = await pool.query(`
+    const globalRes = await run(`
       SELECT DISTINCT ON (topic, latitude, longitude)
         id,
         topic,
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
       ORDER BY topic, latitude, longitude, heat_index DESC, timestamp DESC
       LIMIT 500
     `);
-
+    const globalTrends = globalRes.rows;
     console.log(`[trendsmap/seed] Encontradas ${globalTrends.length} tendencias para sincronizar`);
 
     let inserted = 0;
@@ -73,7 +78,7 @@ export async function POST(request: NextRequest) {
       ];
       
       for (const entry of testData) {
-        await pool.query(
+        await run(
           `INSERT INTO trendsmap_entries (text, hashtags, latitude, longitude, departamento, municipio, pais, created_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
            ON CONFLICT DO NOTHING`,
@@ -90,7 +95,7 @@ export async function POST(request: NextRequest) {
       });
     }
     // Crear constraint único para evitar duplicados (IF NOT EXISTS no es válido en PG para CONSTRAINT)
-    await pool.query(`
+    await run(`
       DO $$
       BEGIN
         IF NOT EXISTS (
@@ -114,7 +119,7 @@ export async function POST(request: NextRequest) {
           hashtags.push(...hashtagMatches);
         }
 
-        await pool.query(
+        await run(
           `INSERT INTO trendsmap_entries (text, hashtags, latitude, longitude, departamento, municipio, pais, created_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            ON CONFLICT (text, latitude, longitude) DO UPDATE SET updated_at = NOW()`,
