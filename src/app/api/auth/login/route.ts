@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { signToken } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { getTenantFromRequest, queryWithTenant, sanitizeTenantValue } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
@@ -18,12 +18,12 @@ export async function POST(request: NextRequest) {
     // Get tenant from request or from body parameter
     let tenant = getTenantFromRequest(request);
     if (!tenant && tenantParam) {
-      tenant = tenantParam;
+      tenant = sanitizeTenantValue(tenantParam);
     }
 
     if (!tenant) {
       return NextResponse.json(
-        { error: "Tenant no especificado" },
+        { error: "Tenant no especificado o inválido" },
         { status: 400 }
       );
     }

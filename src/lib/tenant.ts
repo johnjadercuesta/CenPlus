@@ -1,7 +1,7 @@
 import { pool } from './db';
 import type { NextRequest } from 'next/server';
 
-function sanitizeTenantValue(raw?: string | null) {
+export function sanitizeTenantValue(raw?: string | null) {
   if (!raw) return null;
   const t = String(raw).trim().toLowerCase();
   // Allow only lowercase letters, numbers and underscore. Limit length to 63 (Postgres limit for identifiers)
