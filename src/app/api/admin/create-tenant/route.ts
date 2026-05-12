@@ -199,6 +199,30 @@ export async function POST(request: NextRequest) {
         ]
       );
 
+      // Crear tabla global de mapeo usuario→tenant (si no existe)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS public.user_tenants (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          tenant VARCHAR(63) NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email);
+      `);
+
+      // Registrar los usuarios en la tabla global
+      await client.query(
+        `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2)
+         ON CONFLICT (email) DO UPDATE SET tenant = $2`,
+        [email, sanitizedName]
+      );
+      
+      await client.query(
+        `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2), ($3, $4)
+         ON CONFLICT (email) DO UPDATE SET tenant = EXCLUDED.tenant`,
+        ['estratega@cenplus.com', sanitizedName, 'lider@cenplus.com', sanitizedName]
+      );
+
       client.release();
 
       return NextResponse.json({
