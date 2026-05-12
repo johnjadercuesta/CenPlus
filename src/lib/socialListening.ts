@@ -287,7 +287,6 @@ export async function getAllMunicipiosSummary(tenant?: string | null) {
   }
 }
 
-  try {
 export async function deleteAllData(tenant?: string | null) {
   try {
     await runQuery(`DELETE FROM facebook_group_posts`, [], tenant);
