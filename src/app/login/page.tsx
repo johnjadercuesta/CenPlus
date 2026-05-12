@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [tenant, setTenant] = useState("municipio1");
+  const [email, setEmail] = useState("admin@municipio1.com");
+  const [password, setPassword] = useState("Admin123456!");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, tenant }),
       });
 
       const data = await res.json();
@@ -130,6 +131,24 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                Tenant / Municipio
+              </label>
+              <input
+                type="text"
+                value={tenant}
+                onChange={(e) => setTenant(e.target.value.toLowerCase())}
+                required
+                placeholder="municipio1"
+                className="input"
+                style={{ padding: "12px 16px" }}
+              />
+              <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                Ej: municipio1, municipio2, etc.
+              </p>
+            </div>
+
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
                 Correo electrónico
