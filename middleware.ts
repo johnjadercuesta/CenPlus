@@ -1,23 +1,32 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const HOSTING_DOMAINS = [
+  'railway.app',
+  'vercel.app',
+  'onrender.com',
+  'fly.dev',
+  'herokuapp.com',
+  'netlify.app',
+  'pages.dev',
+];
+
 /**
  * Middleware sencillo para detectar tenant por subdominio.
- * - tenant.example.com -> tenant
- * - tenant.localhost -> tenant (cuando se mapea en hosts)
+ * Solo detecta tenant en dominios personalizados (no en hosting conocidos ni localhost).
  */
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
   const hostname = host.split(':')[0];
   const parts = hostname.split('.');
 
+  const isHostingDomain = HOSTING_DOMAINS.some(d => hostname.endsWith(d));
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
   let tenant: string | null = null;
-  if (parts.length >= 3) {
+
+  if (!isHostingDomain && !isLocalhost && parts.length >= 3) {
     tenant = parts[0];
-  } else if (hostname.endsWith('localhost')) {
-    // soporta tenant.localhost cuando el host se mapea en /etc/hosts
-    const maybe = hostname.split('.');
-    if (maybe.length >= 2 && maybe[0] !== 'localhost') tenant = maybe[0];
   }
 
   const res = NextResponse.next();

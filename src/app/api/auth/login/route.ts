@@ -36,10 +36,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Último recurso: buscar el usuario recorriendo todos los esquemas (incluyendo public)
+    if (!tenant) {
+      try {
+        const { rows: schemas } = await pool.query(`
+          SELECT schema_name FROM information_schema.schemata
+          WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+            AND schema_name NOT LIKE 'pg_%'
+          ORDER BY schema_name = 'public' DESC, schema_name
+        `);
+
+        for (const s of schemas) {
+          const schemaName = s.schema_name;
+          try {
+            const { rows: users } = await pool.query(
+              `SELECT id FROM "${schemaName}".admins WHERE email = $1 AND activo = 1 LIMIT 1`,
+              [email]
+            );
+            if (users.length > 0) {
+              tenant = schemaName;
+              break;
+            }
+          } catch {
+            // Schema no tiene tabla admins, continuar
+          }
+        }
+      } catch (e) {
+        // Error enumerando schemas, ignorar
+      }
+    }
+
     if (!tenant) {
       return NextResponse.json(
-        { error: "Tenant no especificado o inválido" },
-        { status: 400 }
+        { error: "Credenciales inválidas" },
+        { status: 401 }
       );
     }
 

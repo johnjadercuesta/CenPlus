@@ -3,6 +3,14 @@ import { pool } from '@/lib/db';
 import { sanitizeTenantValue } from '@/lib/tenant';
 import bcrypt from 'bcryptjs';
 
+const SUPER_KEY = process.env.SUPER_ADMIN_KEY || '';
+
+function checkSuperKey(request: NextRequest): boolean {
+  if (!SUPER_KEY) return true; // If not configured, allow (backwards compat)
+  const key = request.headers.get('x-super-key') || '';
+  return key === SUPER_KEY;
+}
+
 /**
  * POST /api/admin/create-tenant
  * 
@@ -29,6 +37,14 @@ import bcrypt from 'bcryptjs';
  * }
  */
 export async function POST(request: NextRequest) {
+  // Check SUPER_ADMIN_KEY if set
+  if (!checkSuperKey(request)) {
+    return NextResponse.json(
+      { error: 'No autorizado. Se requiere SUPER_ADMIN_KEY válida en el header x-super-key.' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { name, email, password, fullName } = body;
@@ -85,24 +101,26 @@ export async function POST(request: NextRequest) {
       // Crear schema
       await client.query(`CREATE SCHEMA IF NOT EXISTS "${sanitizedName}"`);
 
-      // Crear tablas en el schema
-      await client.query(`
-        SET search_path TO "${sanitizedName}", public;
+      // Cambiar search_path
+      await client.query(`SET search_path TO "${sanitizedName}", public`);
 
-        -- Tabla de admins/líderes
+      // Crear tabla de admins
+      await client.query(`
         CREATE TABLE IF NOT EXISTS admins (
           id SERIAL PRIMARY KEY,
           email VARCHAR(255) UNIQUE NOT NULL,
           nombre VARCHAR(255) NOT NULL,
           role VARCHAR(50) DEFAULT 'administrador',
-          password_hash VARCHAR(255) NOT NULL,
+          password VARCHAR(255) NOT NULL,
           telefono VARCHAR(20),
           activo INT DEFAULT 1,
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW()
-        );
+        )
+      `);
 
-        -- Tabla de ciudadanos
+      // Crear tabla de ciudadanos
+      await client.query(`
         CREATE TABLE IF NOT EXISTS ciudadanos (
           id_unico VARCHAR(50) PRIMARY KEY,
           nombre_completo VARCHAR(255),
@@ -122,27 +140,33 @@ export async function POST(request: NextRequest) {
           longitud FLOAT,
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW()
-        );
+        )
+      `);
 
-        -- Tabla de comunas
+      // Crear tabla de comunas
+      await client.query(`
         CREATE TABLE IF NOT EXISTS comunas (
           id SERIAL PRIMARY KEY,
           nombre VARCHAR(255) NOT NULL,
           numero INT,
           activo INT DEFAULT 1,
           created_at TIMESTAMP DEFAULT NOW()
-        );
+        )
+      `);
 
-        -- Tabla de barrios
+      // Crear tabla de barrios
+      await client.query(`
         CREATE TABLE IF NOT EXISTS barrios (
           id SERIAL PRIMARY KEY,
           nombre VARCHAR(255) NOT NULL,
           id_comuna INT REFERENCES comunas(id),
           activo INT DEFAULT 1,
           created_at TIMESTAMP DEFAULT NOW()
-        );
+        )
+      `);
 
-        -- Tabla de puestos de votación
+      // Crear tabla de puestos de votación
+      await client.query(`
         CREATE TABLE IF NOT EXISTS puestos_votacion (
           id SERIAL PRIMARY KEY,
           nombre VARCHAR(255) NOT NULL,
@@ -152,51 +176,45 @@ export async function POST(request: NextRequest) {
           longitud FLOAT,
           activo INT DEFAULT 1,
           created_at TIMESTAMP DEFAULT NOW()
-        );
+        )
+      `);
 
-        -- Tabla de problemáticas sociales
+      // Crear tabla de problemáticas sociales
+      await client.query(`
         CREATE TABLE IF NOT EXISTS problematicas_sociales (
           id SERIAL PRIMARY KEY,
           nombre VARCHAR(255) NOT NULL,
           descripcion TEXT,
           activo INT DEFAULT 1,
           created_at TIMESTAMP DEFAULT NOW()
-        );
-
-        -- Índices para performance
-        CREATE INDEX IF NOT EXISTS idx_ciudadanos_lider ON ciudadanos(lider_id);
-        CREATE INDEX IF NOT EXISTS idx_ciudadanos_zona ON ciudadanos(zona);
-        CREATE INDEX IF NOT EXISTS idx_ciudadanos_comuna ON ciudadanos(id_comuna);
-        CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
+        )
       `);
 
-      // Hash del password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // Crear índices
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_lider ON ciudadanos(lider_id)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_zona ON ciudadanos(zona)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_comuna ON ciudadanos(id_comuna)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email)`);
 
-      // Crear admin inicial
+      // Crear admin principal
+      const adminPassHash = await bcrypt.hash(password, 10);
       await client.query(
-        `
-        SET search_path TO "${sanitizedName}", public;
-        INSERT INTO admins (email, nombre, role, password_hash, telefono, activo)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        `,
-        [email, fullName || 'Admin User', 'administrador', hashedPassword, '', 1]
+        `INSERT INTO admins (email, nombre, role, password, telefono, activo)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [email, fullName || 'Admin User', 'administrador', adminPassHash, '', 1]
       );
 
       // Crear 2 admins adicionales de test (opcional)
       const testPassHash = await bcrypt.hash('admin123', 10);
       await client.query(
-        `
-        SET search_path TO "${sanitizedName}", public;
-        INSERT INTO admins (email, nombre, role, password_hash, telefono, activo)
-        VALUES 
-          ($1, $2, $3, $4, $5, $6),
-          ($7, $8, $9, $10, $11, $12)
-        `,
-        [
-          'estratega@cenplus.com', 'Estratega Test', 'estratega', testPassHash, '', 1,
-          'lider@cenplus.com', 'Líder Test', 'lider', testPassHash, '', 1
-        ]
+        `INSERT INTO admins (email, nombre, role, password, telefono, activo)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['estratega@cenplus.com', 'Estratega Test', 'estratega', testPassHash, '', 1]
+      );
+      await client.query(
+        `INSERT INTO admins (email, nombre, role, password, telefono, activo)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['lider@cenplus.com', 'Líder Test', 'lider', testPassHash, '', 1]
       );
 
       // Crear tabla global de mapeo usuario→tenant (si no existe)
@@ -206,21 +224,32 @@ export async function POST(request: NextRequest) {
           email VARCHAR(255) UNIQUE NOT NULL,
           tenant VARCHAR(63) NOT NULL,
           created_at TIMESTAMP DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email);
+        )
+      `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email)
       `);
 
       // Registrar los usuarios en la tabla global
+      // Registrar admin principal
       await client.query(
         `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2)
          ON CONFLICT (email) DO UPDATE SET tenant = $2`,
         [email, sanitizedName]
       );
       
+      // Registrar usuario estratega
       await client.query(
-        `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2), ($3, $4)
-         ON CONFLICT (email) DO UPDATE SET tenant = EXCLUDED.tenant`,
-        ['estratega@cenplus.com', sanitizedName, 'lider@cenplus.com', sanitizedName]
+        `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2)
+         ON CONFLICT (email) DO UPDATE SET tenant = $2`,
+        ['estratega@cenplus.com', sanitizedName]
+      );
+      
+      // Registrar usuario líder
+      await client.query(
+        `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2)
+         ON CONFLICT (email) DO UPDATE SET tenant = $2`,
+        ['lider@cenplus.com', sanitizedName]
       );
 
       client.release();
