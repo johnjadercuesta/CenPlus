@@ -377,8 +377,8 @@ export default function InteligenciaTerritorial() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-xs text-slate-400">Sentimiento</span>
-                      <span className={`text-xs ${trend?.sentiment > 0 ? 'text-green-500' : trend?.sentiment < 0 ? 'text-red-500' : 'text-slate-400'}`}>
-                        {trend?.sentiment > 0 ? 'Positivo' : trend?.sentiment < 0 ? 'Negativo' : 'Neutral'}
+                      <span className={`text-xs ${(trend?.sentiment ?? 0) > 0 ? 'text-green-500' : (trend?.sentiment ?? 0) < 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                        {(trend?.sentiment ?? 0) > 0 ? 'Positivo' : (trend?.sentiment ?? 0) < 0 ? 'Negativo' : 'Neutral'}
                       </span>
                     </div>
                     <div className="flex justify-between">
