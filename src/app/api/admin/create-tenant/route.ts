@@ -5,10 +5,27 @@ import bcrypt from 'bcryptjs';
 
 const SUPER_KEY = process.env.SUPER_ADMIN_KEY || '';
 
-function checkSuperKey(request: NextRequest): boolean {
-  if (!SUPER_KEY) return true; // If not configured, allow (backwards compat)
+/**
+ * Authorizes the request.
+ * - No SUPER_KEY configured → always allow
+ * - Key matches → allow
+ * - No tenants exist yet (first-run) → allow without key
+ */
+async function isAuthorized(request: NextRequest): Promise<boolean> {
+  if (!SUPER_KEY) return true;
   const key = request.headers.get('x-super-key') || '';
-  return key === SUPER_KEY;
+  if (key === SUPER_KEY) return true;
+  // First-run: allow if no tenant schemas exist yet
+  try {
+    const { rows } = await pool.query(`
+      SELECT COUNT(*) as cnt
+      FROM information_schema.schemata
+      WHERE schema_name NOT IN ('information_schema','pg_catalog','pg_toast','public')
+        AND schema_name NOT LIKE 'pg_%'
+    `);
+    if (parseInt(rows[0]?.cnt || '0') === 0) return true;
+  } catch { /* deny */ }
+  return false;
 }
 
 /**
@@ -37,8 +54,8 @@ function checkSuperKey(request: NextRequest): boolean {
  * }
  */
 export async function POST(request: NextRequest) {
-  // Check SUPER_ADMIN_KEY if set
-  if (!checkSuperKey(request)) {
+  // Check authorization (first-run aware)
+  if (!await isAuthorized(request)) {
     return NextResponse.json(
       { error: 'No autorizado. Se requiere SUPER_ADMIN_KEY válida en el header x-super-key.' },
       { status: 401 }
