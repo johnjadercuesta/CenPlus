@@ -36,11 +36,19 @@ async function isAuthorized(request: NextRequest): Promise<{ authorized: boolean
       reason: `Existen ${rows.length} esquemas (${rows.map(r => r.schema_name).join(', ')}). Se requiere la clave SUPER_ADMIN_KEY para continuar.` 
     };
   } catch (e) {
-    return { authorized: false, reason: `Error verificando estado de la base de datos: ${(e as any).message}` };
+    return { authorized: false, reason: `Error verificando estado de la base de datos: ${String(e)}` };
   }
 }
 
 export async function POST(request: NextRequest) {
+  // Verificación de conexión básica
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json(
+      { error: '❌ Error: La variable DATABASE_URL no está configurada en Railway. Ve a Settings -> Variables y agrégala.' },
+      { status: 500 }
+    );
+  }
+
   const auth = await isAuthorized(request);
   if (!auth.authorized) {
     return NextResponse.json(
