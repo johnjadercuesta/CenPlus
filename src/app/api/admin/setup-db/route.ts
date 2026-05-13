@@ -36,7 +36,7 @@ async function isAuthorized(request: NextRequest): Promise<{ authorized: boolean
       reason: `Existen ${rows.length} esquemas (${rows.map(r => r.schema_name).join(', ')}). Se requiere la clave SUPER_ADMIN_KEY para continuar.` 
     };
   } catch (e) {
-    return { authorized: false, reason: "Error verificando estado de la base de datos." };
+    return { authorized: false, reason: `Error verificando estado de la base de datos: ${(e as any).message}` };
   }
 }
 
