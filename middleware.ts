@@ -25,14 +25,29 @@ export function middleware(request: NextRequest) {
 
   let tenant: string | null = null;
 
-  if (!isHostingDomain && !isLocalhost && parts.length >= 3) {
+  // Si tenemos un dominio base configurado (ej: cenplus.com)
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
+  
+  if (baseDomain && hostname.endsWith(baseDomain) && hostname !== baseDomain) {
+    // Si hostname es cliente1.cenplus.com y baseDomain es cenplus.com
+    tenant = hostname.replace(`.${baseDomain}`, '');
+  } else if (!isHostingDomain && !isLocalhost && parts.length >= 3) {
+    // Fallback para otros dominios personalizados con 3 partes
     tenant = parts[0];
   }
 
   const res = NextResponse.next();
   if (tenant) {
-    res.headers.set('x-tenant', tenant);
-    res.cookies.set('tenant', tenant, { path: '/' });
+    // Sanitizar el valor detectado
+    const sanitizedTenant = tenant.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (sanitizedTenant) {
+      res.headers.set('x-tenant', sanitizedTenant);
+      res.cookies.set('tenant', sanitizedTenant, { 
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production'
+      });
+    }
   }
   return res;
 }

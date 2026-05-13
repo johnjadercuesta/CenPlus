@@ -11,30 +11,48 @@ interface Tenant {
 
 type Tab = "setup" | "create" | "list";
 
+// Base domain configured in Railway env NEXT_PUBLIC_BASE_DOMAIN (e.g. "cenplus.com")
+const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "";
+
+function tenantUrl(tenantName: string, path = "/login"): string {
+  if (BASE_DOMAIN) return `https://${tenantName}.${BASE_DOMAIN}${path}`;
+  return `${path}?tenant=${tenantName}`;
+}
+
+function tenantDisplayUrl(tenantName: string): string {
+  if (BASE_DOMAIN) return `${tenantName}.${BASE_DOMAIN}`;
+  return `(sin dominio — usar: /login?tenant=${tenantName})`;
+}
+
 export default function SetupPage() {
   const [tab, setTab] = useState<Tab>("setup");
   const [superKey, setSuperKey] = useState("");
   const [keyVerified, setKeyVerified] = useState(false);
 
-  // DB Setup state
-  const [dbStatus, setDbStatus] = useState<{ dbReady?: boolean; tenantsCount?: number; tenants?: string[] } | null>(null);
+  const [dbStatus, setDbStatus] = useState<{
+    dbReady?: boolean; tenantsCount?: number; tenants?: string[];
+    firstRun?: boolean; requiresKey?: boolean; message?: string;
+  } | null>(null);
   const [setupLoading, setSetupLoading] = useState(false);
-  const [setupResult, setSetupResult] = useState<{ success?: boolean; message?: string; results?: string[]; error?: string } | null>(null);
+  const [setupResult, setSetupResult] = useState<{
+    success?: boolean; message?: string; results?: string[]; error?: string;
+  } | null>(null);
 
-  // Create tenant state
   const [createForm, setCreateForm] = useState({ name: "", email: "", password: "", fullName: "" });
   const [createLoading, setCreateLoading] = useState(false);
   const [createResult, setCreateResult] = useState<any>(null);
 
-  // List tenants state
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [listLoading, setListLoading] = useState(false);
 
+  const headers = (extra: Record<string, string> = {}) => ({
+    "x-super-key": superKey,
+    ...extra,
+  });
+
   const checkDbStatus = async () => {
     try {
-      const res = await fetch("/api/admin/setup-db", {
-        headers: { "x-super-key": superKey },
-      });
+      const res = await fetch("/api/admin/setup-db", { headers: headers() });
       const data = await res.json();
       setDbStatus(data);
     } catch {
@@ -52,15 +70,12 @@ export default function SetupPage() {
     setSetupLoading(true);
     setSetupResult(null);
     try {
-      const res = await fetch("/api/admin/setup-db", {
-        method: "POST",
-        headers: { "x-super-key": superKey },
-      });
+      const res = await fetch("/api/admin/setup-db", { method: "POST", headers: headers() });
       const data = await res.json();
       setSetupResult(data);
       await checkDbStatus();
-    } catch (err) {
-      setSetupResult({ error: "Error de conexión" });
+    } catch {
+      setSetupResult({ error: "Error de conexión al servidor" });
     } finally {
       setSetupLoading(false);
     }
@@ -73,7 +88,7 @@ export default function SetupPage() {
     try {
       const res = await fetch("/api/admin/create-tenant", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-super-key": superKey },
+        headers: headers({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           name: createForm.name,
           email: createForm.email,
@@ -83,9 +98,9 @@ export default function SetupPage() {
       });
       const data = await res.json();
       setCreateResult(data);
-      if (data.success) await checkDbStatus();
+      if (data.success) { await checkDbStatus(); }
     } catch {
-      setCreateResult({ error: "Error de conexión" });
+      setCreateResult({ error: "Error de conexión al servidor" });
     } finally {
       setCreateLoading(false);
     }
@@ -94,9 +109,7 @@ export default function SetupPage() {
   const handleListTenants = async () => {
     setListLoading(true);
     try {
-      const res = await fetch("/api/admin/list-tenants", {
-        headers: { "x-super-key": superKey },
-      });
+      const res = await fetch("/api/admin/list-tenants", { headers: headers() });
       const data = await res.json();
       setTenants(data.tenants || []);
     } catch {
@@ -110,7 +123,7 @@ export default function SetupPage() {
     if (tab === "list" && keyVerified) handleListTenants();
   }, [tab]);
 
-  const inputStyle: React.CSSProperties = {
+  const inp: React.CSSProperties = {
     width: "100%", padding: "12px 16px",
     background: "rgba(255,255,255,0.07)",
     border: "1px solid rgba(255,255,255,0.15)",
@@ -118,8 +131,8 @@ export default function SetupPage() {
     outline: "none", boxSizing: "border-box",
   };
 
-  const cardStyle: React.CSSProperties = {
-    width: "100%", maxWidth: 560,
+  const card: React.CSSProperties = {
+    width: "100%", maxWidth: 580,
     background: "rgba(255,255,255,0.04)",
     backdropFilter: "blur(20px)",
     border: "1px solid rgba(255,255,255,0.1)",
@@ -145,35 +158,34 @@ export default function SetupPage() {
             justifyContent: "center", fontSize: 36, fontWeight: 900, color: "white",
             boxShadow: "0 20px 40px rgba(59,130,246,0.4)",
           }}>C+</div>
-          <h1 style={{ color: "white", fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>
-            Panel de Administración
+          <h1 style={{ color: "white", fontSize: 28, fontWeight: 800, margin: "0 0 6px" }}>
+            Panel de Super Admin
           </h1>
-          <p style={{ color: "#64748b", fontSize: 15 }}>Acceso restringido · Ingresa tu clave de Super Admin</p>
+          <p style={{ color: "#64748b", fontSize: 15, margin: 0 }}>
+            Gestión Multi-Tenant · CenPlus
+          </p>
         </div>
 
-        <div style={cardStyle}>
+        <div style={card}>
           <form onSubmit={handleVerifyKey}>
             <label style={{ display: "block", color: "#cbd5e1", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-              🔑 SUPER_ADMIN_KEY
+              🔑 Clave de Super Administrador
             </label>
             <input
               type="password"
               value={superKey}
               onChange={e => setSuperKey(e.target.value)}
-              placeholder="Ingresa la clave de super administrador"
-              required
-              style={{ ...inputStyle, marginBottom: 16 }}
+              placeholder="Deja vacío si es la primera instalación"
+              style={{ ...inp, marginBottom: 16 }}
             />
-            <div style={{
-              padding: "12px 16px", background: "rgba(234,179,8,0.1)",
-              border: "1px solid rgba(234,179,8,0.25)", borderRadius: 10, marginBottom: 20,
-            }}>
-              <p style={{ color: "#fcd34d", fontSize: 12, margin: 0, lineHeight: 1.7 }}>
-                💡 <strong>¿Dónde encuentro la clave?</strong><br />
-                Railway → tu proyecto → pestaña <em>Variables</em> → busca o crea <code>SUPER_ADMIN_KEY</code>.<br />
-                Si no existe, créala con cualquier valor seguro y redeploy.
+
+            <div style={{ padding: "12px 16px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, marginBottom: 20 }}>
+              <p style={{ color: "#93c5fd", fontSize: 12, margin: 0, lineHeight: 1.8 }}>
+                💡 <strong>Primera instalación:</strong> Deja el campo <em>vacío</em> y haz clic en Ingresar.<br />
+                🔒 <strong>Instalaciones posteriores:</strong> Requiere la <code>SUPER_ADMIN_KEY</code> de Railway → Variables.
               </p>
             </div>
+
             <button type="submit" style={{
               width: "100%", padding: "14px",
               background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
@@ -181,7 +193,7 @@ export default function SetupPage() {
               fontSize: 15, fontWeight: 700, cursor: "pointer",
               boxShadow: "0 10px 30px rgba(59,130,246,0.35)",
             }}>
-              Ingresar →
+              Ingresar al Panel →
             </button>
           </form>
           <div style={{ textAlign: "center", marginTop: 20 }}>
@@ -204,7 +216,7 @@ export default function SetupPage() {
       fontFamily: "'Inter', 'Segoe UI', sans-serif",
     }}>
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 32 }}>
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{
           width: 70, height: 70, margin: "0 auto 16px",
           background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
@@ -212,22 +224,44 @@ export default function SetupPage() {
           justifyContent: "center", fontSize: 30, fontWeight: 900, color: "white",
           boxShadow: "0 16px 32px rgba(59,130,246,0.4)",
         }}>C+</div>
-        <h1 style={{ color: "white", fontSize: 28, fontWeight: 800, margin: "0 0 4px" }}>
+        <h1 style={{ color: "white", fontSize: 26, fontWeight: 800, margin: "0 0 4px" }}>
           CenPlus — Super Admin
         </h1>
-        <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>
-          Gestión de Tenants · {dbStatus?.tenantsCount ?? "?"} organización(es) activa(s)
+        <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
+          {BASE_DOMAIN
+            ? `Dominio: *.${BASE_DOMAIN} · ${dbStatus?.tenantsCount ?? "?"} tenant(s)`
+            : `${dbStatus?.tenantsCount ?? "?"} tenant(s) activo(s)`}
         </p>
       </div>
 
-      {/* DB Status Badge */}
-      {dbStatus && (
+      {/* Domain banner */}
+      {BASE_DOMAIN ? (
         <div style={{
           padding: "8px 20px", borderRadius: 20,
-          background: dbStatus.dbReady ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-          border: `1px solid ${dbStatus.dbReady ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
-          color: dbStatus.dbReady ? "#4ade80" : "#f87171",
-          fontSize: 13, fontWeight: 600, marginBottom: 24,
+          background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)",
+          color: "#4ade80", fontSize: 13, fontWeight: 600, marginBottom: 16,
+        }}>
+          🌐 Subdominio activo: <strong>*.{BASE_DOMAIN}</strong>
+        </div>
+      ) : (
+        <div style={{
+          padding: "8px 20px", borderRadius: 20,
+          background: "rgba(234,179,8,0.12)", border: "1px solid rgba(234,179,8,0.3)",
+          color: "#fbbf24", fontSize: 13, fontWeight: 600, marginBottom: 16,
+          maxWidth: 560, textAlign: "center",
+        }}>
+          ⚠️ Sin dominio configurado — configura <code>NEXT_PUBLIC_BASE_DOMAIN</code> en Railway para subdominios
+        </div>
+      )}
+
+      {/* DB Status */}
+      {dbStatus && (
+        <div style={{
+          padding: "8px 20px", borderRadius: 20, marginBottom: 24,
+          background: dbStatus.dbReady ? "rgba(59,130,246,0.12)" : "rgba(239,68,68,0.12)",
+          border: `1px solid ${dbStatus.dbReady ? "rgba(59,130,246,0.3)" : "rgba(239,68,68,0.3)"}`,
+          color: dbStatus.dbReady ? "#60a5fa" : "#f87171",
+          fontSize: 13, fontWeight: 600,
         }}>
           {dbStatus.dbReady ? "✅ Base de datos lista" : "⚠️ DB no inicializada — ve a 'Inicializar DB'"}
         </div>
@@ -247,9 +281,7 @@ export default function SetupPage() {
           <button key={t.key} onClick={() => setTab(t.key as Tab)} style={{
             padding: "10px 22px", borderRadius: 10, border: "none",
             cursor: "pointer", fontWeight: 600, fontSize: 13,
-            background: tab === t.key
-              ? "linear-gradient(135deg, #3b82f6, #8b5cf6)"
-              : "transparent",
+            background: tab === t.key ? "linear-gradient(135deg, #3b82f6, #8b5cf6)" : "transparent",
             color: tab === t.key ? "white" : "#94a3b8",
             boxShadow: tab === t.key ? "0 4px 15px rgba(59,130,246,0.3)" : "none",
             transition: "all 0.2s",
@@ -257,7 +289,7 @@ export default function SetupPage() {
         ))}
       </div>
 
-      <div style={cardStyle}>
+      <div style={card}>
 
         {/* ═══ TAB: SETUP DB ═══ */}
         {tab === "setup" && (
@@ -266,7 +298,8 @@ export default function SetupPage() {
               Inicializar Base de Datos
             </h2>
             <p style={{ color: "#64748b", fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>
-              Ejecuta esto <strong style={{ color: "#94a3b8" }}>una sola vez</strong> para preparar las tablas globales necesarias para el sistema multi-tenant en Railway.
+              Ejecuta esto <strong style={{ color: "#94a3b8" }}>una sola vez</strong> para preparar las tablas globales
+              necesarias. Si ya lo hiciste, no hay problema en ejecutarlo de nuevo (no borra datos).
             </p>
 
             {setupResult && (
@@ -285,21 +318,11 @@ export default function SetupPage() {
                 )}
                 {setupResult.success && (
                   <p style={{ color: "#60a5fa", fontSize: 13, margin: "12px 0 0" }}>
-                    👉 Ahora ve a la pestaña "Crear Tenant" para crear tu primera organización.
+                    👉 Ve a <strong>"➕ Crear Tenant"</strong> para crear tu primera organización.
                   </p>
                 )}
               </div>
             )}
-
-            <div style={{
-              padding: "16px 20px", background: "rgba(59,130,246,0.1)",
-              border: "1px solid rgba(59,130,246,0.25)", borderRadius: 12, marginBottom: 24,
-            }}>
-              <p style={{ color: "#93c5fd", fontSize: 13, margin: 0, lineHeight: 1.7 }}>
-                <strong>¿Qué hace esto?</strong><br />
-                Crea la tabla <code>public.user_tenants</code> que permite al sistema encontrar automáticamente el tenant de cada usuario al hacer login, sin necesidad de subdominios.
-              </p>
-            </div>
 
             <button
               onClick={handleSetupDb}
@@ -311,10 +334,36 @@ export default function SetupPage() {
                 fontSize: 15, fontWeight: 700,
                 cursor: setupLoading ? "not-allowed" : "pointer",
                 boxShadow: "0 10px 30px rgba(16,185,129,0.3)",
+                marginBottom: 20,
               }}
             >
               {setupLoading ? "⏳ Inicializando..." : "🛠️ Inicializar Base de Datos"}
             </button>
+
+            {/* Subdomain setup guide */}
+            <div style={{ padding: "16px 20px", background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 12 }}>
+              <p style={{ color: "#c4b5fd", fontSize: 13, fontWeight: 700, margin: "0 0 10px" }}>
+                🌐 Configurar Subdominios (cliente1.tudominio.com)
+              </p>
+              <ol style={{ color: "#a78bfa", fontSize: 12, lineHeight: 2, margin: 0, paddingLeft: 18 }}>
+                <li>En tu proveedor DNS agrega un <strong>registro CNAME wildcard</strong>:<br />
+                  <code style={{ background: "rgba(0,0,0,0.3)", padding: "2px 8px", borderRadius: 4, fontSize: 11 }}>
+                    * → {typeof window !== "undefined" ? window.location.hostname : "cenplus-production.up.railway.app"}
+                  </code>
+                </li>
+                <li>En <strong>Railway → Settings → Custom Domains</strong> agrega:<br />
+                  <code style={{ background: "rgba(0,0,0,0.3)", padding: "2px 8px", borderRadius: 4, fontSize: 11 }}>
+                    *.tudominio.com
+                  </code>
+                </li>
+                <li>En <strong>Railway → Variables</strong> agrega:<br />
+                  <code style={{ background: "rgba(0,0,0,0.3)", padding: "2px 8px", borderRadius: 4, fontSize: 11 }}>
+                    NEXT_PUBLIC_BASE_DOMAIN = tudominio.com
+                  </code>
+                </li>
+                <li>Redeploy Railway y ¡listo! Cada tenant tendrá su propio subdominio.</li>
+              </ol>
+            </div>
           </>
         )}
 
@@ -325,7 +374,8 @@ export default function SetupPage() {
               Crear Nuevo Tenant
             </h2>
             <p style={{ color: "#64748b", fontSize: 13, marginBottom: 24 }}>
-              Cada tenant es una organización aislada con su propio esquema de base de datos.
+              Cada tenant tiene su propia base de datos aislada
+              {BASE_DOMAIN ? ` y accederá por ${"{nombre}"}.${BASE_DOMAIN}` : ""}.
             </p>
 
             {createResult && (
@@ -336,21 +386,46 @@ export default function SetupPage() {
               }}>
                 {createResult.success ? (
                   <>
-                    <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 15, marginBottom: 10 }}>
+                    <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 15, marginBottom: 12 }}>
                       ✅ Tenant "{createResult.tenant}" creado exitosamente
                     </div>
+
+                    {/* URL del tenant */}
+                    <div style={{
+                      padding: "10px 14px", background: "rgba(0,0,0,0.3)",
+                      borderRadius: 8, marginBottom: 12, fontFamily: "monospace",
+                    }}>
+                      <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4 }}>🌐 URL de acceso:</div>
+                      {BASE_DOMAIN ? (
+                        <a
+                          href={tenantUrl(createResult.tenant)}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: "#60a5fa", fontSize: 14, fontWeight: 700 }}
+                        >
+                          https://{createResult.tenant}.{BASE_DOMAIN}/login
+                        </a>
+                      ) : (
+                        <a
+                          href={tenantUrl(createResult.tenant)}
+                          style={{ color: "#60a5fa", fontSize: 14, fontWeight: 700 }}
+                        >
+                          {window.location.origin}/login?tenant={createResult.tenant}
+                        </a>
+                      )}
+                    </div>
+
                     <div style={{ color: "#86efac", fontSize: 13, lineHeight: 1.9 }}>
-                      <strong>📧 Admin email:</strong> {createResult.credentials?.email}<br />
-                      <strong>🔐 Contraseña:</strong> la que ingresaste<br />
-                      <strong>👥 Usuarios de prueba:</strong><br />
-                      {createResult.credentials?.testUsers?.map((u: any) => (
-                        <span key={u.email}>&nbsp;&nbsp;• {u.email} / {u.password}<br /></span>
-                      ))}
-                      <br />
-                      <a href={`/login?tenant=${createResult.tenant}`}
-                        style={{ color: "#60a5fa", fontWeight: 700 }}>
-                        → Hacer login con este tenant
-                      </a>
+                      <strong>📧 Admin:</strong> {createResult.credentials?.email}<br />
+                      <strong>🔑 Contraseña:</strong> la que ingresaste<br />
+                      {createResult.credentials?.testUsers && (
+                        <>
+                          <strong>👥 Usuarios de prueba (pass: admin123):</strong><br />
+                          {createResult.credentials.testUsers.map((u: any) => (
+                            <span key={u.email}>&nbsp;&nbsp;• {u.email}<br /></span>
+                          ))}
+                        </>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -361,14 +436,25 @@ export default function SetupPage() {
 
             <form onSubmit={handleCreateTenant}>
               {[
-                { key: "name", label: "ID del Tenant", placeholder: "municipio1 (letras, números, _)", type: "text", hint: "Identificador único. Solo letras minúsculas, números y guión_bajo." },
-                { key: "fullName", label: "Nombre de la Organización (opcional)", placeholder: "Alcaldía de Municipio X", type: "text", hint: "" },
-                { key: "email", label: "Email del Administrador Principal", placeholder: "admin@tuorganizacion.com", type: "email", hint: "" },
-                { key: "password", label: "Contraseña del Admin", placeholder: "Mínimo 8 caracteres", type: "password", hint: "" },
+                {
+                  key: "name", label: "ID del Tenant", type: "text",
+                  placeholder: "municipio1",
+                  hint: BASE_DOMAIN
+                    ? `Accederá como: municipio1.${BASE_DOMAIN}`
+                    : "Solo letras minúsculas, números y guión_bajo.",
+                },
+                { key: "fullName", label: "Nombre de la Organización (opcional)", type: "text", placeholder: "Alcaldía de Municipio X", hint: "" },
+                { key: "email", label: "Email del Administrador", type: "email", placeholder: "admin@tuorganizacion.com", hint: "" },
+                { key: "password", label: "Contraseña del Admin", type: "password", placeholder: "Mínimo 8 caracteres", hint: "" },
               ].map(field => (
                 <div key={field.key} style={{ marginBottom: 16 }}>
                   <label style={{ display: "block", color: "#cbd5e1", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                     {field.label}
+                    {field.key === "name" && createForm.name && BASE_DOMAIN && (
+                      <span style={{ color: "#a78bfa", fontWeight: 400, marginLeft: 8 }}>
+                        → {createForm.name}.{BASE_DOMAIN}
+                      </span>
+                    )}
                   </label>
                   <input
                     type={field.type}
@@ -376,16 +462,14 @@ export default function SetupPage() {
                     onChange={e => setCreateForm(f => ({
                       ...f,
                       [field.key]: field.key === "name"
-                        ? e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
-                        : e.target.value
+                        ? e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "")
+                        : e.target.value,
                     }))}
                     placeholder={field.placeholder}
                     required={field.key !== "fullName"}
-                    style={inputStyle}
+                    style={inp}
                   />
-                  {field.hint && (
-                    <p style={{ color: "#475569", fontSize: 11, marginTop: 4 }}>{field.hint}</p>
-                  )}
+                  {field.hint && <p style={{ color: "#475569", fontSize: 11, marginTop: 4 }}>{field.hint}</p>}
                 </div>
               ))}
 
@@ -412,11 +496,10 @@ export default function SetupPage() {
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div>
-                <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, margin: 0 }}>
-                  Tenants Activos
-                </h2>
+                <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, margin: 0 }}>Tenants Activos</h2>
                 <p style={{ color: "#64748b", fontSize: 13, margin: "4px 0 0" }}>
-                  {tenants.length} organización(es) registrada(s)
+                  {tenants.length} organización(es)
+                  {BASE_DOMAIN ? ` · *.${BASE_DOMAIN}` : ""}
                 </p>
               </div>
               <button
@@ -424,10 +507,8 @@ export default function SetupPage() {
                 disabled={listLoading}
                 style={{
                   padding: "8px 18px",
-                  background: "rgba(59,130,246,0.2)",
-                  border: "1px solid rgba(59,130,246,0.4)",
-                  borderRadius: 8, color: "#60a5fa",
-                  fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  background: "rgba(59,130,246,0.2)", border: "1px solid rgba(59,130,246,0.4)",
+                  borderRadius: 8, color: "#60a5fa", fontSize: 13, fontWeight: 600, cursor: "pointer",
                 }}
               >
                 {listLoading ? "⏳" : "🔄 Refrescar"}
@@ -435,18 +516,15 @@ export default function SetupPage() {
             </div>
 
             {tenants.length === 0 ? (
-              <div style={{
-                textAlign: "center", padding: "40px 20px",
-                color: "#475569", fontSize: 14,
-              }}>
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569", fontSize: 14 }}>
                 {listLoading ? "Cargando..." : (
                   <>
                     <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
                     No hay tenants aún.<br />
-                    <a href="#" onClick={() => setTab("create")}
-                      style={{ color: "#60a5fa", marginTop: 8, display: "inline-block" }}>
+                    <button onClick={() => setTab("create")}
+                      style={{ background: "none", border: "none", color: "#60a5fa", marginTop: 8, cursor: "pointer", fontSize: 14 }}>
                       Crear primer tenant →
-                    </a>
+                    </button>
                   </>
                 )}
               </div>
@@ -458,29 +536,41 @@ export default function SetupPage() {
                     background: "rgba(255,255,255,0.05)",
                     border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 14,
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
                   }}>
-                    <div>
-                      <div style={{ color: "white", fontWeight: 700, fontSize: 16 }}>
-                        🏢 {t.name}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <div style={{ color: "white", fontWeight: 700, fontSize: 16 }}>🏢 {t.name}</div>
+                        <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
+                          {t.email} · {t.ciudadanos} ciudadano(s)
+                        </div>
+                        {BASE_DOMAIN && (
+                          <div style={{ marginTop: 6 }}>
+                            <a
+                              href={`https://${t.name}.${BASE_DOMAIN}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: "#a78bfa", fontSize: 12, textDecoration: "none" }}
+                            >
+                              🌐 {t.name}.{BASE_DOMAIN}
+                            </a>
+                          </div>
+                        )}
                       </div>
-                      <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
-                        Admin: {t.email} · Ciudadanos: {t.ciudadanos}
-                      </div>
+                      <a
+                        href={tenantUrl(t.name)}
+                        target={BASE_DOMAIN ? "_blank" : "_self"}
+                        rel="noreferrer"
+                        style={{
+                          padding: "8px 16px", flexShrink: 0,
+                          background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
+                          border: "1px solid rgba(59,130,246,0.4)",
+                          borderRadius: 8, color: "#60a5fa",
+                          textDecoration: "none", fontSize: 13, fontWeight: 600,
+                        }}
+                      >
+                        Login →
+                      </a>
                     </div>
-                    <a
-                      href={`/login?tenant=${t.name}`}
-                      style={{
-                        padding: "8px 16px",
-                        background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
-                        border: "1px solid rgba(59,130,246,0.4)",
-                        borderRadius: 8, color: "#60a5fa",
-                        textDecoration: "none", fontSize: 13, fontWeight: 600,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Login →
-                    </a>
                   </div>
                 ))}
               </div>
@@ -490,9 +580,7 @@ export default function SetupPage() {
       </div>
 
       <div style={{ marginTop: 24, display: "flex", gap: 20 }}>
-        <a href="/login" style={{ color: "#475569", textDecoration: "none", fontSize: 13 }}>
-          ← Ir al Login
-        </a>
+        <a href="/login" style={{ color: "#475569", textDecoration: "none", fontSize: 13 }}>← Ir al Login</a>
         <button
           onClick={() => { setKeyVerified(false); setSuperKey(""); }}
           style={{ background: "none", border: "none", color: "#475569", fontSize: 13, cursor: "pointer" }}

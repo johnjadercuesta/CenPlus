@@ -15,7 +15,20 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Pre-fill tenant from URL param: /login?tenant=xxx
+    // 1. Detectar tenant por subdominio (ej: cliente1.cenplus.com)
+    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
+    const hostname = window.location.hostname;
+
+    if (baseDomain && hostname.endsWith(baseDomain) && hostname !== baseDomain) {
+      const t = hostname.replace(`.${baseDomain}`, "").split(":")[0]; // Quitar puerto si existe
+      if (t && t !== "www") {
+        setTenant(t);
+        setShowTenant(true); // Mostrar para que el usuario sepa en qué organización está
+        return;
+      }
+    }
+
+    // 2. Pre-fill tenant from URL param: /login?tenant=xxx (fallback)
     const t = searchParams.get("tenant");
     if (t) {
       setTenant(t);

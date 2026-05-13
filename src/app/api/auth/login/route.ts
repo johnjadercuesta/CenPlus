@@ -15,11 +15,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get tenant from request or from body parameter
-    let tenant = getTenantFromRequest(request);
-    if (!tenant && tenantParam) {
-      tenant = sanitizeTenantValue(tenantParam);
-    }
+    // Prioridad de detección de tenant:
+    // 1. Parámetro explícito en el body (útil para el selector manual en /login)
+    // 2. Header x-tenant (puesto por el middleware al detectar subdominio)
+    // 3. Cookie 'tenant'
+    let tenant = sanitizeTenantValue(tenantParam) || getTenantFromRequest(request);
 
     // Si no hay tenant en request, buscar en tabla global de usuarios
     if (!tenant) {
