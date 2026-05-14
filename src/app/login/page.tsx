@@ -15,26 +15,24 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // 1. Detectar tenant por subdominio (ej: cliente1.cenplus.com)
+    // 1. Detectar tenant por subdominio
     const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
     const hostname = window.location.hostname;
 
     if (baseDomain && hostname.endsWith(baseDomain) && hostname !== baseDomain) {
-      const t = hostname.replace(`.${baseDomain}`, "").split(":")[0]; // Quitar puerto si existe
+      const t = hostname.replace(`.${baseDomain}`, "").split(":")[0];
       if (t && t !== "www") {
         setTenant(t);
-        setShowTenant(true); // Mostrar para que el usuario sepa en qué organización está
-        return;
       }
     }
 
-    // 2. Pre-fill tenant from URL param: /login?tenant=xxx (fallback)
-    const t = searchParams.get("tenant");
-    if (t) {
-      setTenant(t);
+    // 2. Pre-fill tenant from URL param
+    const tParam = searchParams.get("tenant");
+    if (tParam) {
+      setTenant(tParam);
     }
 
-    // 3. Mostrar selector de organización solo si es modo soporte (?admin=1)
+    // 3. Modo soporte oculto
     if (searchParams.get("admin") === "1") {
       setShowTenant(true);
     }
@@ -82,7 +80,7 @@ function LoginForm() {
       background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a5f 100%)",
       fontFamily: "'Inter', 'Segoe UI', sans-serif",
     }}>
-      {/* Left panel - branding */}
+      {/* Branding - Lado Izquierdo */}
       <div style={{
         flex: 1,
         display: "flex",
@@ -101,46 +99,24 @@ function LoginForm() {
             fontSize: 32, fontWeight: 800,
             marginBottom: 24,
             boxShadow: "0 20px 40px rgba(59,130,246,0.35)",
-          }}>
-            C+
-          </div>
-          <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 8, letterSpacing: -1 }}>
-            CenPlus
-          </h1>
+          }}>C+</div>
+          <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 8 }}>CenPlus</h1>
           <p style={{ fontSize: 18, color: "#94a3b8", marginBottom: 32, lineHeight: 1.6 }}>
             Plataforma de Gestión Comunitaria e Inteligencia Territorial
           </p>
           <div style={{ display: "flex", gap: 24, color: "#cbd5e1", fontSize: 13 }}>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#60a5fa" }}>PWA</div>
-              <div>Multiplataforma</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#a78bfa" }}>GPS</div>
-              <div>Geolocalización</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#34d399" }}>Multi</div>
-              <div>Multi-Tenant</div>
-            </div>
+            <div><div style={{ fontSize: 24, fontWeight: 800, color: "#60a5fa" }}>PWA</div><div>Mobile</div></div>
+            <div><div style={{ fontSize: 24, fontWeight: 800, color: "#a78bfa" }}>GPS</div><div>Mapas</div></div>
+            <div><div style={{ fontSize: 24, fontWeight: 800, color: "#34d399" }}>Multi</div><div>Tenants</div></div>
           </div>
-
-          {/* Setup link */}
           <div style={{ marginTop: 40, padding: "16px 20px", background: "rgba(255,255,255,0.05)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)" }}>
-            <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 8px", fontWeight: 600 }}>
-              ¿Eres administrador del sistema?
-            </p>
-            <a href="/setup" style={{
-              color: "#60a5fa", fontSize: 13, textDecoration: "none",
-              display: "flex", alignItems: "center", gap: 6,
-            }}>
-              ⚙️ Ir al Panel de Administración →
-            </a>
+            <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 8px", fontWeight: 600 }}>Administración</p>
+            <a href="/setup" style={{ color: "#60a5fa", fontSize: 13, textDecoration: "none" }}>⚙️ Configuración del Sistema →</a>
           </div>
         </div>
       </div>
 
-      {/* Right panel - login form */}
+      {/* Formulario - Lado Derecho */}
       <div style={{
         width: 480,
         display: "flex",
@@ -149,62 +125,37 @@ function LoginForm() {
         padding: 48,
       }}>
         <div style={{
-          width: "100%",
-          maxWidth: 400,
-          background: "white",
-          borderRadius: 20,
-          padding: 40,
+          width: "100%", maxWidth: 400, background: "white", borderRadius: 20, padding: 40,
           boxShadow: "0 40px 80px rgba(0, 0, 0, 0.35)",
         }}>
-          <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#0f172a", margin: "0 0 4px" }}>
-            Iniciar Sesión
-          </h2>
-          <p style={{ fontSize: 14, color: "#64748b", marginBottom: 28 }}>
-            Ingresa tus credenciales para acceder
-          </p>
+          <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#0f172a" }}>Iniciar Sesión</h2>
+          <p style={{ fontSize: 14, color: "#64748b", marginBottom: 28 }}>Ingresa tus credenciales para acceder</p>
 
           {error && (
             <div style={{
-              padding: "12px 16px",
-              background: "#fef2f2",
-              color: "#dc2626",
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 500,
-              marginBottom: 20,
-              border: "1px solid #fecaca",
-            }}>
-              ⚠️ {error}
-            </div>
+              padding: "12px 16px", background: "#fef2f2", color: "#dc2626",
+              borderRadius: 10, fontSize: 13, fontWeight: 500, marginBottom: 20, border: "1px solid #fecaca",
+            }}>⚠️ {error}</div>
           )}
 
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                Correo electrónico
-              </label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="admin@tuorganizacion.com"
+                placeholder="usuario@cenplus.com"
                 style={{
-                  width: "100%", padding: "12px 16px",
-                  border: "1.5px solid #e2e8f0", borderRadius: 10,
-                  fontSize: 14, outline: "none", boxSizing: "border-box",
-                  background: "#f8fafc", color: "#1e293b",
-                  transition: "border-color 0.2s",
+                  width: "100%", padding: "12px 16px", border: "1.5px solid #e2e8f0", borderRadius: 10,
+                  fontSize: 14, background: "#f8fafc", outline: "none", boxSizing: "border-box"
                 }}
-                onFocus={e => e.target.style.borderColor = "#3b82f6"}
-                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
               />
             </div>
 
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                Contraseña
-              </label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Contraseña</label>
               <input
                 type="password"
                 value={password}
@@ -212,68 +163,28 @@ function LoginForm() {
                 required
                 placeholder="••••••••"
                 style={{
-                  width: "100%", padding: "12px 16px",
-                  border: "1.5px solid #e2e8f0", borderRadius: 10,
-                  fontSize: 14, outline: "none", boxSizing: "border-box",
-                  background: "#f8fafc", color: "#1e293b",
-                  transition: "border-color 0.2s",
+                  width: "100%", padding: "12px 16px", border: "1.5px solid #e2e8f0", borderRadius: 10,
+                  fontSize: 14, background: "#f8fafc", outline: "none", boxSizing: "border-box"
                 }}
-                onFocus={e => e.target.style.borderColor = "#3b82f6"}
-                onBlur={e => e.target.style.borderColor = "#e2e8f0"}
               />
             </div>
 
-            {/* Tenant selector - toggle */}
-            <div style={{ marginBottom: 24 }}>
-              <button
-                type="button"
-                onClick={() => setShowTenant(!showTenant)}
-                style={{
-                  background: "none", border: "none", padding: 0,
-                  color: "#6366f1", fontSize: 13, fontWeight: 600,
-                  cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
-                  marginBottom: showTenant ? 10 : 0,
-                }}
-              >
-                {showTenant ? "▼" : "▶"} Especificar organización (tenant)
-              </button>
-
-              {showTenant && (
-                <div>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                    Nombre de organización
-                  </label>
-                  <input
-                    type="text"
-                    value={tenant}
-                    onChange={(e) => setTenant(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    placeholder="ejemplo: municipio1"
-                    style={{
-                      width: "100%", padding: "11px 16px",
-                      border: "1.5px solid #c7d2fe", borderRadius: 10,
-                      fontSize: 14, outline: "none", boxSizing: "border-box",
-                      background: "#eef2ff", color: "#312e81",
-            {/* Tenant selector - Solo visible en modo soporte (?admin=1) */}
-            {searchParams.get("admin") === "1" && (
-              <div style={{ marginBottom: 24, padding: "16px", background: "#f1f5f9", borderRadius: 12, border: "1px solid #e2e8f0" }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>
-                  🔧 Modo Soporte: Organización
+            {/* Selector de organización - SOLO en modo admin/soporte */}
+            {showTenant && (
+              <div style={{ marginBottom: 24, padding: "16px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase" }}>
+                  🔧 Organización (Modo Soporte)
                 </label>
                 <input
                   type="text"
                   value={tenant}
                   onChange={(e) => setTenant(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="ejemplo: municipio1"
+                  placeholder="ej: municipio1"
                   style={{
-                    width: "100%", padding: "11px 16px",
-                    border: "1.5px solid #cbd5e1", borderRadius: 10,
-                    fontSize: 14, outline: "none", boxSizing: "border-box",
-                    background: "white", color: "#0f172a",
+                    width: "100%", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 8,
+                    fontSize: 14, background: "white", outline: "none", boxSizing: "border-box"
                   }}
                 />
-                <p style={{ color: "#64748b", fontSize: 11, marginTop: 6, margin: 0 }}>
-                  Este campo solo es visible para ti.
-                </p>
               </div>
             )}
 
@@ -283,14 +194,11 @@ function LoginForm() {
               style={{
                 width: "100%", padding: "14px",
                 background: loading ? "#94a3b8" : "linear-gradient(135deg, #3b82f6, #6366f1)",
-                border: "none", borderRadius: 12,
-                color: "white", fontSize: 15, fontWeight: 700,
-                cursor: loading ? "not-allowed" : "pointer",
-                boxShadow: loading ? "none" : "0 10px 25px rgba(59,130,246,0.3)",
-                transition: "all 0.2s",
+                border: "none", borderRadius: 12, color: "white", fontSize: 15, fontWeight: 700,
+                cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 10px 25px rgba(59,130,246,0.3)"
               }}
             >
-              {loading ? "⏳ Ingresando..." : "Iniciar Sesión →"}
+              {loading ? "Ingresando..." : "Iniciar Sesión →"}
             </button>
           </form>
         </div>
