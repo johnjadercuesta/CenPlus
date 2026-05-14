@@ -3,21 +3,14 @@ import { pool } from '@/lib/db';
 
 const SUPER_KEY = process.env.SUPER_ADMIN_KEY || '';
 
-async function isAuthorized(request: NextRequest): Promise<boolean> {
-  if (!SUPER_KEY) return true;
+/**
+ * Strict Authorization:
+ * ONLY allows access if SUPER_ADMIN_KEY is set in environment AND matches the header.
+ */
+function isAuthorized(request: NextRequest): boolean {
+  if (!SUPER_KEY) return false; // Block if key is missing in env
   const key = request.headers.get('x-super-key') || '';
-  if (key === SUPER_KEY) return true;
-  // First-run: allow if no tenant schemas exist yet
-  try {
-    const { rows } = await pool.query(`
-      SELECT COUNT(*) as cnt
-      FROM information_schema.schemata
-      WHERE schema_name NOT IN ('information_schema','pg_catalog','pg_toast','public')
-        AND schema_name NOT LIKE 'pg_%'
-    `);
-    if (parseInt(rows[0]?.cnt || '0') === 0) return true;
-  } catch { /* deny */ }
-  return false;
+  return key === SUPER_KEY;
 }
 
 /**
@@ -25,9 +18,9 @@ async function isAuthorized(request: NextRequest): Promise<boolean> {
  * Lists all active tenant schemas.
  */
 export async function GET(request: NextRequest) {
-  if (!await isAuthorized(request)) {
+  if (!isAuthorized(request)) {
     return NextResponse.json(
-      { error: 'No autorizado. Se requiere SUPER_ADMIN_KEY válida.' },
+      { error: 'Acceso Denegado. Se requiere SUPER_ADMIN_KEY válida.' },
       { status: 401 }
     );
   }
