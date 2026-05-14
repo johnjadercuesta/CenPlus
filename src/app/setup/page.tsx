@@ -11,8 +11,9 @@ interface Tenant {
 
 type Tab = "setup" | "create" | "list";
 
-// Base domain configured in Railway env NEXT_PUBLIC_BASE_DOMAIN (e.g. "cenplus.com")
-const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "";
+// Limpiar el dominio base por si el usuario incluyó https:// o barras
+const rawDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "";
+const BASE_DOMAIN = rawDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 function tenantUrl(tenantName: string, path = "/login"): string {
   if (BASE_DOMAIN) return `https://${tenantName}.${BASE_DOMAIN}${path}`;
@@ -111,9 +112,11 @@ export default function SetupPage() {
     try {
       const res = await fetch("/api/admin/list-tenants", { headers: headers() });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al cargar tenants");
       setTenants(data.tenants || []);
-    } catch {
+    } catch (err: any) {
       setTenants([]);
+      alert("⚠️ No se pudo cargar la lista: " + err.message);
     } finally {
       setListLoading(false);
     }
