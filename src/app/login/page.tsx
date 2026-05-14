@@ -32,6 +32,10 @@ function LoginForm() {
     const t = searchParams.get("tenant");
     if (t) {
       setTenant(t);
+    }
+
+    // 3. Mostrar selector de organización solo si es modo soporte (?admin=1)
+    if (searchParams.get("admin") === "1") {
       setShowTenant(true);
     }
   }, [searchParams]);
@@ -249,14 +253,29 @@ function LoginForm() {
                       border: "1.5px solid #c7d2fe", borderRadius: 10,
                       fontSize: 14, outline: "none", boxSizing: "border-box",
                       background: "#eef2ff", color: "#312e81",
-                    }}
-                  />
-                  <p style={{ color: "#6366f1", fontSize: 11, marginTop: 4 }}>
-                    Déjalo vacío si no conoces tu organización (se detectará automáticamente).
-                  </p>
-                </div>
-              )}
-            </div>
+            {/* Tenant selector - Solo visible en modo soporte (?admin=1) */}
+            {searchParams.get("admin") === "1" && (
+              <div style={{ marginBottom: 24, padding: "16px", background: "#f1f5f9", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>
+                  🔧 Modo Soporte: Organización
+                </label>
+                <input
+                  type="text"
+                  value={tenant}
+                  onChange={(e) => setTenant(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  placeholder="ejemplo: municipio1"
+                  style={{
+                    width: "100%", padding: "11px 16px",
+                    border: "1.5px solid #cbd5e1", borderRadius: 10,
+                    fontSize: 14, outline: "none", boxSizing: "border-box",
+                    background: "white", color: "#0f172a",
+                  }}
+                />
+                <p style={{ color: "#64748b", fontSize: 11, marginTop: 6, margin: 0 }}>
+                  Este campo solo es visible para ti.
+                </p>
+              </div>
+            )}
 
             <button
               type="submit"
@@ -274,22 +293,6 @@ function LoginForm() {
               {loading ? "⏳ Ingresando..." : "Iniciar Sesión →"}
             </button>
           </form>
-
-          <div style={{
-            marginTop: 24, padding: "14px 16px",
-            background: "#f8fafc", borderRadius: 10,
-            border: "1px solid #e2e8f0",
-          }}>
-            <p style={{ fontSize: 12, color: "#64748b", marginBottom: 6, fontWeight: 700 }}>
-              💡 Credenciales por defecto (por organización):
-            </p>
-            <p style={{ fontSize: 12, color: "#475569", margin: "4px 0" }}>
-              Admin: <code style={{ background: "#e2e8f0", padding: "1px 5px", borderRadius: 3 }}>admin@cenplus.com</code> / <code style={{ background: "#e2e8f0", padding: "1px 5px", borderRadius: 3 }}>admin123</code>
-            </p>
-            <p style={{ fontSize: 12, color: "#475569", margin: "4px 0 0" }}>
-              Líder: <code style={{ background: "#e2e8f0", padding: "1px 5px", borderRadius: 3 }}>lider@cenplus.com</code> / <code style={{ background: "#e2e8f0", padding: "1px 5px", borderRadius: 3 }}>lider123</code>
-            </p>
-          </div>
         </div>
       </div>
     </div>

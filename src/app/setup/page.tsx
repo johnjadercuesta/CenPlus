@@ -15,14 +15,23 @@ type Tab = "setup" | "create" | "list";
 const rawDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "";
 const BASE_DOMAIN = rawDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
+// Los dominios .up.railway.app no soportan subdominios SSL (wildcard)
+const IS_RAILWAY_DOMAIN = BASE_DOMAIN.endsWith(".up.railway.app");
+
 function tenantUrl(tenantName: string, path = "/login"): string {
-  if (BASE_DOMAIN) return `https://${tenantName}.${BASE_DOMAIN}${path}`;
+  // Solo usar subdominio si hay un dominio base Y no es el de Railway
+  if (BASE_DOMAIN && !IS_RAILWAY_DOMAIN) {
+    return `https://${tenantName}.${BASE_DOMAIN}${path}`;
+  }
+  // Fallback: usar parámetro de URL
   return `${path}?tenant=${tenantName}`;
 }
 
 function tenantDisplayUrl(tenantName: string): string {
-  if (BASE_DOMAIN) return `${tenantName}.${BASE_DOMAIN}`;
-  return `(sin dominio — usar: /login?tenant=${tenantName})`;
+  if (BASE_DOMAIN && !IS_RAILWAY_DOMAIN) {
+    return `${tenantName}.${BASE_DOMAIN}`;
+  }
+  return `(vía parámetro: ?tenant=${tenantName})`;
 }
 
 export default function SetupPage() {
