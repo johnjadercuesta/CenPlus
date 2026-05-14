@@ -306,8 +306,8 @@ export default function DashboardPage() {
           </div>
           <div className="card-body">
              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 160, paddingBottom: 24 }}>
-                {stats?.ultimos7dias.map((d, i) => {
-                  const max7d = stats?.ultimos7dias ? Math.max(...stats.ultimos7dias.map(x => x.c)) : 1;
+                {(stats?.ultimos7dias || []).map((d, i) => {
+                  const max7d = stats?.ultimos7dias?.length ? Math.max(...stats.ultimos7dias.map(x => x.c)) : 1;
                   const height = (d.c / (max7d || 1)) * 130;
                   const isToday = i === 6;
                   return (

@@ -59,7 +59,18 @@ export async function GET(request: NextRequest) {
       topRegimenSalud = Object.entries(saludMap).map(([regimen_salud, c]) => ({ regimen_salud, c })).sort((a, b) => (b.c as number) - (a.c as number));
       topProblematicas = Object.entries(probMap).map(([problematica, c]) => ({ problematica, c })).sort((a, b) => (b.c as number) - (a.c as number));
       porLider = [];
+      // Populate rows7dias with 7 empty days for the chart
+      const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+      const today = new Date().getDay();
       rows7dias = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        rows7dias.push({
+          fecha: d.toLocaleDateString("es-CO", { weekday: "short" }),
+          c: 0
+        });
+      }
       avgEdad = countEdad > 0 ? Math.round(totalEdad / countEdad) : 0;
     } else {
       const totalRes = await run("SELECT COUNT(*) as c FROM ciudadanos");
