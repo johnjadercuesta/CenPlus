@@ -13,9 +13,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado. Solo administradores pueden cambiar la marca." }, { status: 401 });
     }
 
-    const tenant = getTenantFromRequest(request);
-    if (!tenant || tenant !== payload.tenant) {
-      return NextResponse.json({ error: "Error de contexto de organización." }, { status: 403 });
+    const tenant = payload.tenant;
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo identificar tu organización." }, { status: 403 });
     }
 
     const { primary_color, secondary_color, logo_url } = await request.json();
