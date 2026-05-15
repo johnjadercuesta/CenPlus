@@ -39,7 +39,26 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true, message: "Configuración de marca actualizada." });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message.includes('relation "public.tenants_config" does not exist')) {
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS public.tenants_config (
+            tenant VARCHAR(63) PRIMARY KEY,
+            primary_color VARCHAR(7) DEFAULT '#3b82f6',
+            secondary_color VARCHAR(7) DEFAULT '#6366f1',
+            logo_url TEXT,
+            config JSONB DEFAULT '{}',
+            updated_at TIMESTAMP DEFAULT NOW()
+          )
+        `);
+        // No hace falta reintentar el INSERT aquí, el usuario puede darle a Guardar de nuevo 
+        // o podemos re-ejecutarlo. Por simplicidad, pedimos reintentar o lo hacemos:
+        return NextResponse.json({ error: "La base de datos se estaba preparando. Por favor, dale a 'Guardar' una vez más." }, { status: 409 });
+      } catch (e) {
+        return NextResponse.json({ error: (e as any).message }, { status: 500 });
+      }
+    }
     return NextResponse.json({ error: (error as any).message }, { status: 500 });
   }
 }
