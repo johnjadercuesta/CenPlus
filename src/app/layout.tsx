@@ -22,6 +22,8 @@ export const viewport: Viewport = {
   themeColor: "#2563eb",
 };
 
+import ThemeHandler from "@/components/ThemeHandler";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,6 +32,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={inter.className}>
+        <ThemeHandler />
         {children}
       </body>
     </html>

@@ -40,6 +40,18 @@ export async function POST(request: NextRequest) {
     results.push('✅ Tabla public.user_tenants verificada');
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS public.tenants_config (
+        tenant VARCHAR(63) PRIMARY KEY,
+        primary_color VARCHAR(7) DEFAULT '#3b82f6',
+        secondary_color VARCHAR(7) DEFAULT '#6366f1',
+        logo_url TEXT,
+        config JSONB DEFAULT '{}',
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push('✅ Tabla public.tenants_config (Temas) verificada');
+
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email)
     `);
     results.push('✅ Índices globales verificados');

@@ -241,6 +241,14 @@ export async function POST(request: NextRequest) {
          ON CONFLICT (email) DO UPDATE SET tenant = $2`,
         [email, sanitizedName]
       );
+
+      // Registrar configuración inicial del tenant (colores, logo)
+      await client.query(
+        `INSERT INTO public.tenants_config (tenant, primary_color, secondary_color)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (tenant) DO NOTHING`,
+        [sanitizedName, '#3b82f6', '#6366f1']
+      );
       
       // Registrar usuario estratega
       await client.query(
