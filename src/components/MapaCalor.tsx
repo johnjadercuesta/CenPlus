@@ -99,19 +99,30 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
       if (typeof window === "undefined") return;
       if (leafletLibRef.current) return;
       
-      const leaflet = await import("leaflet");
-      const L = leaflet.default;
-      (window as any).L = L;
-      
-      await new Promise<void>((resolve) => {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js";
-        script.onload = () => resolve();
-        document.head.appendChild(script);
-      });
-      
-      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
-      leafletLibRef.current = L;
+      try {
+        // Importación dinámica más estable
+        const leaflet = await import("leaflet");
+        const L = leaflet.default || (leaflet as any);
+        (window as any).L = L;
+        
+        // Cargar plugin de calor desde CDN para evitar problemas de chunks locales
+        await new Promise<void>((resolve, reject) => {
+          if ((L as any).heatLayer) return resolve();
+          const script = document.createElement("script");
+          script.src = "https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js";
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = (e) => reject(e);
+          document.head.appendChild(script);
+        });
+        
+        if (cancelled || !mapRef.current || mapInstanceRef.current) return;
+        leafletLibRef.current = L;
+      } catch (err) {
+        console.error("Error cargando Leaflet:", err);
+        setFeedback({ type: "error", text: "Error al cargar el motor de mapas. Por favor, refresca la página (Ctrl+F5)." });
+        return;
+      }
 
       delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
       L.Icon.Default.mergeOptions({
