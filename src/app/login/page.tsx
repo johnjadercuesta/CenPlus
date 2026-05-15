@@ -11,6 +11,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showTenant, setShowTenant] = useState(false);
+  const [logo, setLogo] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -36,6 +37,14 @@ function LoginForm() {
     if (searchParams.get("admin") === "1") {
       setShowTenant(true);
     }
+
+    // 4. Cargar logo si ya se sabe el tenant
+    fetch("/api/tenant/config")
+      .then(r => r.json())
+      .then(data => {
+        if (data.logo_url) setLogo(data.logo_url);
+      })
+      .catch(() => {});
   }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -99,7 +108,14 @@ function LoginForm() {
             fontSize: 32, fontWeight: 800,
             marginBottom: 24,
             boxShadow: "0 20px 40px rgba(59,130,246,0.35)",
-          }}>C+</div>
+            overflow: "hidden"
+          }}>
+            {logo ? (
+              <img src={logo} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain", padding: logo.endsWith('.svg') ? 0 : 8 }} />
+            ) : (
+              "C+"
+            )}
+          </div>
           <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 8 }}>CenPlus</h1>
           <p style={{ fontSize: 18, color: "#94a3b8", marginBottom: 32, lineHeight: 1.6 }}>
             Plataforma de Gestión Comunitaria e Inteligencia Territorial

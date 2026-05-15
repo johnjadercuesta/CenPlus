@@ -15,6 +15,7 @@ export default function Sidebar() {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logo, setLogo] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -25,6 +26,14 @@ export default function Sidebar() {
           if (data.authenticated) {
             setUser({ nombre: data.nombre, email: data.email, role: data.role });
           }
+        })
+        .catch(() => {});
+      
+      // Cargar logo desde la config del tenant
+      fetch("/api/tenant/config")
+        .then(r => r.json())
+        .then(data => {
+          if (data.logo_url) setLogo(data.logo_url);
         })
         .catch(() => {});
     }
@@ -188,7 +197,13 @@ export default function Sidebar() {
 
       <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">C+</div>
+          <div className="sidebar-brand-icon">
+            {logo ? (
+              <img src={logo} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 8 }} />
+            ) : (
+              "C+"
+            )}
+          </div>
           <div>
             <h1>CenPlus</h1>
             <span>Inteligencia Territorial</span>
