@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { verifyToken } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const tenant = getTenantFromRequest(request);
+    if (!tenant) return NextResponse.json({ error: "Contexto no válido" }, { status: 400 });
+
     const { searchParams } = new URL(request.url);
     const comunaId = searchParams.get("comunaId");
+    const tipo = searchParams.get("tipo"); 
 
-    const tipo = searchParams.get("tipo"); // 'barrio' o 'vereda'
- 
     let query = "SELECT * FROM barrios";
     const params = [];
     let whereClauses = [];
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
     query += " ORDER BY nombre ASC";
 
-    const { rows } = await pool.query(query, params);
+    const { rows } = await queryWithTenant(tenant, query, params);
     return NextResponse.json({ data: rows });
   } catch (err) {
     console.error(err);
@@ -36,15 +38,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
+    const token = request.cookies.get("token")?.value;
+    const payload = token ? verifyToken(token) : null;
+    if (!payload || (payload.role !== "administrador" && payload.role !== "estratega")) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
+    const tenant = payload.tenant;
     const { nombre, comunaId, tipo } = await request.json();
     if (!nombre || !comunaId) return NextResponse.json({ error: "Nombre y comunaId obligatorios" }, { status: 400 });
 
-    const { rows } = await pool.query(
+    const { rows } = await queryWithTenant(tenant, 
       "INSERT INTO barrios (nombre, comuna_id, tipo) VALUES ($1, $2, $3) ON CONFLICT (nombre, comuna_id) DO UPDATE SET tipo = EXCLUDED.tipo RETURNING *",
       [nombre, parseInt(comunaId), tipo || 'barrio']
     );
@@ -55,3 +59,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Error al guardar barrio" }, { status: 500 });
   }
 }
+

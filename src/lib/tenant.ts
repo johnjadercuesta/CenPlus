@@ -13,28 +13,38 @@ export function sanitizeTenantValue(raw?: string | null) {
 export function getTenantFromRequest(req: NextRequest | { headers?: any; cookies?: any } | string | undefined) {
   if (!req) return null;
   if (typeof req === 'string') return sanitizeTenantValue(req);
+  
   const headers = (req as any).headers;
+  const cookies = (req as any).cookies;
+
+  // 1. Check Header (set by middleware)
   if (headers && typeof headers.get === 'function') {
     const t = headers.get('x-tenant');
     const s = sanitizeTenantValue(t);
     if (s) return s;
-  } else if (headers && headers['x-tenant']) {
-    const s = sanitizeTenantValue(headers['x-tenant']);
-    if (s) return s;
   }
 
-  const cookies = (req as any).cookies;
+  // 2. Check Cookie
   if (cookies) {
-    // NextRequest.cookies.get('tenant') case
     if (typeof cookies.get === 'function') {
       const c = cookies.get('tenant');
-      if (c) {
+      if (c && c.value) {
         const s = sanitizeTenantValue(c.value);
         if (s) return s;
       }
-    } else if (cookies['tenant']) {
-      const s = sanitizeTenantValue(cookies['tenant']);
-      if (s) return s;
+    }
+  }
+
+  // 3. Check Hostname (Subdomain)
+  if (headers && typeof headers.get === 'function') {
+    const host = headers.get('host') || '';
+    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'localhost';
+    if (host && host.includes(baseDomain) && host !== baseDomain) {
+      const subdomain = host.split('.')[0];
+      if (subdomain && subdomain !== 'www' && subdomain !== 'admin') {
+        const s = sanitizeTenantValue(subdomain);
+        if (s) return s;
+      }
     }
   }
 
