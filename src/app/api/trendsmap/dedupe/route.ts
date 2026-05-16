@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     console.log("[API] POST /api/trendsmap/dedupe called");
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
 
     // Crear extensión para búsqueda fuzzy (si no existe)
     const tenant = getTenantFromRequest(request);

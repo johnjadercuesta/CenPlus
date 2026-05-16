@@ -12,7 +12,7 @@ export async function PUT(
     if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const { nombre, tipo } = await request.json();
     if (!nombre) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });

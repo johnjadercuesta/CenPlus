@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     console.log("[API] POST /api/trendsmap/seed called");
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Token no corresponde al tenant" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     // Verificar que la tabla existe y crear si no (pg no soporta mÃºltiples statements en una query)
     const tenant = getTenantFromRequest(request);
