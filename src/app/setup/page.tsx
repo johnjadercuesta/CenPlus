@@ -11,7 +11,7 @@ interface Tenant {
 
 type Tab = "setup" | "create" | "list";
 
-// Limpiar el dominio base por si el usuario incluyó https:// o barras
+// Limpiar el dominio base por si el usuario incluyÃ³ https:// o barras
 const rawDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "";
 const BASE_DOMAIN = rawDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
@@ -23,7 +23,7 @@ function tenantUrl(tenantName: string, path = "/login"): string {
   if (BASE_DOMAIN && !IS_RAILWAY_DOMAIN) {
     return `https://${tenantName}.${BASE_DOMAIN}${path}`;
   }
-  // Fallback: usar parámetro de URL
+  // Fallback: usar parÃ¡metro de URL
   return `${path}?tenant=${tenantName}`;
 }
 
@@ -31,7 +31,7 @@ function tenantDisplayUrl(tenantName: string): string {
   if (BASE_DOMAIN && !IS_RAILWAY_DOMAIN) {
     return `${tenantName}.${BASE_DOMAIN}`;
   }
-  return `(vía parámetro: ?tenant=${tenantName})`;
+  return `(vÃ­a parÃ¡metro: ?tenant=${tenantName})`;
 }
 
 export default function SetupPage() {
@@ -85,7 +85,7 @@ export default function SetupPage() {
       setSetupResult(data);
       await checkDbStatus();
     } catch {
-      setSetupResult({ error: "Error de conexión al servidor" });
+      setSetupResult({ error: "Error de conexiÃ³n al servidor" });
     } finally {
       setSetupLoading(false);
     }
@@ -110,7 +110,7 @@ export default function SetupPage() {
       setCreateResult(data);
       if (data.success) { await checkDbStatus(); }
     } catch {
-      setCreateResult({ error: "Error de conexión al servidor" });
+      setCreateResult({ error: "Error de conexiÃ³n al servidor" });
     } finally {
       setCreateLoading(false);
     }
@@ -125,7 +125,7 @@ export default function SetupPage() {
       setTenants(data.tenants || []);
     } catch (err: any) {
       setTenants([]);
-      alert("⚠️ No se pudo cargar la lista: " + err.message);
+      alert("âš ï¸ No se pudo cargar la lista: " + err.message);
     } finally {
       setListLoading(false);
     }
@@ -152,7 +152,7 @@ export default function SetupPage() {
     boxShadow: "0 40px 80px rgba(0,0,0,0.4)",
   };
 
-  // ─── KEY GATE ───
+  // â”€â”€â”€ KEY GATE â”€â”€â”€
   if (!keyVerified) {
     return (
       <div style={{
@@ -174,27 +174,27 @@ export default function SetupPage() {
             Panel de Super Admin
           </h1>
           <p style={{ color: "#64748b", fontSize: 15, margin: 0 }}>
-            Gestión Multi-Tenant · CenPlus
+            GestiÃ³n Multi-Tenant Â· CenPlus
           </p>
         </div>
 
         <div style={card}>
           <form onSubmit={handleVerifyKey}>
             <label style={{ display: "block", color: "#cbd5e1", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-              🔑 Clave de Super Administrador
+              ðŸ”‘ Clave de Super Administrador
             </label>
             <input
               type="password"
               value={superKey}
               onChange={e => setSuperKey(e.target.value)}
-              placeholder="Deja vacío si es la primera instalación"
+              placeholder="Deja vacÃ­o si es la primera instalaciÃ³n"
               style={{ ...inp, marginBottom: 16 }}
             />
 
             <div style={{ padding: "12px 16px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, marginBottom: 20 }}>
               <p style={{ color: "#93c5fd", fontSize: 12, margin: 0, lineHeight: 1.8 }}>
-                💡 <strong>Primera instalación:</strong> Deja el campo <em>vacío</em> y haz clic en Ingresar.<br />
-                🔒 <strong>Instalaciones posteriores:</strong> Requiere la <code>SUPER_ADMIN_KEY</code> de Railway → Variables.
+                ðŸ’¡ <strong>Primera instalaciÃ³n:</strong> Deja el campo <em>vacÃ­o</em> y haz clic en Ingresar.<br />
+                ðŸ”’ <strong>Instalaciones posteriores:</strong> Requiere la <code>SUPER_ADMIN_KEY</code> de Railway â†’ Variables.
               </p>
             </div>
 
@@ -205,12 +205,12 @@ export default function SetupPage() {
               fontSize: 15, fontWeight: 700, cursor: "pointer",
               boxShadow: "0 10px 30px rgba(59,130,246,0.35)",
             }}>
-              Ingresar al Panel →
+              Ingresar al Panel â†’
             </button>
           </form>
           <div style={{ textAlign: "center", marginTop: 20 }}>
             <a href="/login" style={{ color: "#475569", fontSize: 13, textDecoration: "none" }}>
-              ← Volver al Login
+              â† Volver al Login
             </a>
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function SetupPage() {
     );
   }
 
-  // ─── MAIN PANEL ───
+  // â”€â”€â”€ MAIN PANEL â”€â”€â”€
   return (
     <div style={{
       minHeight: "100vh",
@@ -237,11 +237,11 @@ export default function SetupPage() {
           boxShadow: "0 16px 32px rgba(59,130,246,0.4)",
         }}>C+</div>
         <h1 style={{ color: "white", fontSize: 26, fontWeight: 800, margin: "0 0 4px" }}>
-          CenPlus — Super Admin
+          CenPlus â€” Super Admin
         </h1>
         <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
           {BASE_DOMAIN
-            ? `Dominio: *.${BASE_DOMAIN} · ${dbStatus?.tenantsCount ?? "?"} tenant(s)`
+            ? `Dominio: *.${BASE_DOMAIN} Â· ${dbStatus?.tenantsCount ?? "?"} tenant(s)`
             : `${dbStatus?.tenantsCount ?? "?"} tenant(s) activo(s)`}
         </p>
       </div>
@@ -253,7 +253,7 @@ export default function SetupPage() {
           background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)",
           color: "#4ade80", fontSize: 13, fontWeight: 600, marginBottom: 16,
         }}>
-          🌐 Subdominio activo: <strong>*.{BASE_DOMAIN}</strong>
+          ðŸŒ Subdominio activo: <strong>*.{BASE_DOMAIN}</strong>
         </div>
       ) : (
         <div style={{
@@ -262,7 +262,7 @@ export default function SetupPage() {
           color: "#fbbf24", fontSize: 13, fontWeight: 600, marginBottom: 16,
           maxWidth: 560, textAlign: "center",
         }}>
-          ⚠️ Sin dominio configurado — configura <code>NEXT_PUBLIC_BASE_DOMAIN</code> en Railway para subdominios
+          âš ï¸ Sin dominio configurado â€” configura <code>NEXT_PUBLIC_BASE_DOMAIN</code> en Railway para subdominios
         </div>
       )}
 
@@ -275,7 +275,7 @@ export default function SetupPage() {
           color: dbStatus.dbReady ? "#60a5fa" : "#f87171",
           fontSize: 13, fontWeight: 600,
         }}>
-          {dbStatus.dbReady ? "✅ Base de datos lista" : "⚠️ DB no inicializada — ve a 'Inicializar DB'"}
+          {dbStatus.dbReady ? "âœ… Base de datos lista" : "âš ï¸ DB no inicializada â€” ve a 'Inicializar DB'"}
         </div>
       )}
 
@@ -286,9 +286,9 @@ export default function SetupPage() {
         padding: 6, borderRadius: 14, flexWrap: "wrap", justifyContent: "center",
       }}>
         {[
-          { key: "setup", label: "🛠️ Inicializar DB" },
-          { key: "create", label: "➕ Crear Tenant" },
-          { key: "list", label: "📋 Ver Tenants" },
+          { key: "setup", label: "ðŸ› ï¸ Inicializar DB" },
+          { key: "create", label: "âž• Crear Tenant" },
+          { key: "list", label: "ðŸ“‹ Ver Tenants" },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key as Tab)} style={{
             padding: "10px 22px", borderRadius: 10, border: "none",
@@ -303,7 +303,7 @@ export default function SetupPage() {
 
       <div style={card}>
 
-        {/* ═══ TAB: SETUP DB ═══ */}
+        {/* â•â•â• TAB: SETUP DB â•â•â• */}
         {tab === "setup" && (
           <>
             <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, marginTop: 0, marginBottom: 6 }}>
@@ -321,7 +321,7 @@ export default function SetupPage() {
                 border: `1px solid ${setupResult.success ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
               }}>
                 <div style={{ color: setupResult.success ? "#4ade80" : "#f87171", fontWeight: 700, marginBottom: 10 }}>
-                  {setupResult.success ? "✅ " : "❌ "}{setupResult.message || setupResult.error}
+                  {setupResult.success ? "âœ… " : "âŒ "}{setupResult.message || setupResult.error}
                 </div>
                 {setupResult.results && (
                   <ul style={{ margin: 0, padding: "0 0 0 16px", color: "#86efac", fontSize: 13, lineHeight: 1.8 }}>
@@ -330,7 +330,7 @@ export default function SetupPage() {
                 )}
                 {setupResult.success && (
                   <p style={{ color: "#60a5fa", fontSize: 13, margin: "12px 0 0" }}>
-                    👉 Ve a <strong>"➕ Crear Tenant"</strong> para crear tu primera organización.
+                    ðŸ‘‰ Ve a <strong>"âž• Crear Tenant"</strong> para crear tu primera organizaciÃ³n.
                   </p>
                 )}
               </div>
@@ -349,37 +349,37 @@ export default function SetupPage() {
                 marginBottom: 20,
               }}
             >
-              {setupLoading ? "⏳ Inicializando..." : "🛠️ Inicializar Base de Datos"}
+              {setupLoading ? "â³ Inicializando..." : "ðŸ› ï¸ Inicializar Base de Datos"}
             </button>
 
             {/* Subdomain setup guide */}
             <div style={{ padding: "16px 20px", background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 12 }}>
               <p style={{ color: "#c4b5fd", fontSize: 13, fontWeight: 700, margin: "0 0 10px" }}>
-                🌐 Configurar Subdominios (cliente1.tudominio.com)
+                ðŸŒ Configurar Subdominios (cliente1.tudominio.com)
               </p>
               <ol style={{ color: "#a78bfa", fontSize: 12, lineHeight: 2, margin: 0, paddingLeft: 18 }}>
                 <li>En tu proveedor DNS agrega un <strong>registro CNAME wildcard</strong>:<br />
                   <code style={{ background: "rgba(0,0,0,0.3)", padding: "2px 8px", borderRadius: 4, fontSize: 11 }}>
-                    * → {typeof window !== "undefined" ? window.location.hostname : "cenplus-production.up.railway.app"}
+                    * â†’ {typeof window !== "undefined" ? window.location.hostname : "cenplus-production.up.railway.app"}
                   </code>
                 </li>
-                <li>En <strong>Railway → Settings → Custom Domains</strong> agrega:<br />
+                <li>En <strong>Railway â†’ Settings â†’ Custom Domains</strong> agrega:<br />
                   <code style={{ background: "rgba(0,0,0,0.3)", padding: "2px 8px", borderRadius: 4, fontSize: 11 }}>
                     *.tudominio.com
                   </code>
                 </li>
-                <li>En <strong>Railway → Variables</strong> agrega:<br />
+                <li>En <strong>Railway â†’ Variables</strong> agrega:<br />
                   <code style={{ background: "rgba(0,0,0,0.3)", padding: "2px 8px", borderRadius: 4, fontSize: 11 }}>
                     NEXT_PUBLIC_BASE_DOMAIN = tudominio.com
                   </code>
                 </li>
-                <li>Redeploy Railway y ¡listo! Cada tenant tendrá su propio subdominio.</li>
+                <li>Redeploy Railway y Â¡listo! Cada tenant tendrÃ¡ su propio subdominio.</li>
               </ol>
             </div>
           </>
         )}
 
-        {/* ═══ TAB: CREATE TENANT ═══ */}
+        {/* â•â•â• TAB: CREATE TENANT â•â•â• */}
         {tab === "create" && (
           <>
             <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, marginTop: 0, marginBottom: 6 }}>
@@ -387,7 +387,7 @@ export default function SetupPage() {
             </h2>
             <p style={{ color: "#64748b", fontSize: 13, marginBottom: 24 }}>
               Cada tenant tiene su propia base de datos aislada
-              {BASE_DOMAIN ? ` y accederá por ${"{nombre}"}.${BASE_DOMAIN}` : ""}.
+              {BASE_DOMAIN ? ` y accederÃ¡ por ${"{nombre}"}.${BASE_DOMAIN}` : ""}.
             </p>
 
             {createResult && (
@@ -399,7 +399,7 @@ export default function SetupPage() {
                 {createResult.success ? (
                   <>
                     <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 15, marginBottom: 12 }}>
-                      ✅ Tenant "{createResult.tenant}" creado exitosamente
+                      âœ… Tenant "{createResult.tenant}" creado exitosamente
                     </div>
 
                     {/* URL del tenant */}
@@ -407,7 +407,7 @@ export default function SetupPage() {
                       padding: "10px 14px", background: "rgba(0,0,0,0.3)",
                       borderRadius: 8, marginBottom: 12, fontFamily: "monospace",
                     }}>
-                      <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4 }}>🌐 URL de acceso:</div>
+                      <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4 }}>ðŸŒ URL de acceso:</div>
                       {BASE_DOMAIN ? (
                         <a
                           href={tenantUrl(createResult.tenant)}
@@ -428,20 +428,20 @@ export default function SetupPage() {
                     </div>
 
                     <div style={{ color: "#86efac", fontSize: 13, lineHeight: 1.9 }}>
-                      <strong>📧 Admin:</strong> {createResult.credentials?.email}<br />
-                      <strong>🔑 Contraseña:</strong> la que ingresaste<br />
+                      <strong>ðŸ“§ Admin:</strong> {createResult.credentials?.email}<br />
+                      <strong>ðŸ”‘ ContraseÃ±a:</strong> la que ingresaste<br />
                       {createResult.credentials?.testUsers && (
                         <>
-                          <strong>👥 Usuarios de prueba (pass: admin123):</strong><br />
+                          <strong>ðŸ‘¥ Usuarios de prueba (pass: admin123):</strong><br />
                           {createResult.credentials.testUsers.map((u: any) => (
-                            <span key={u.email}>&nbsp;&nbsp;• {u.email}<br /></span>
+                            <span key={u.email}>&nbsp;&nbsp;â€¢ {u.email}<br /></span>
                           ))}
                         </>
                       )}
                     </div>
                   </>
                 ) : (
-                  <div style={{ color: "#f87171", fontWeight: 600 }}>❌ {createResult.error}</div>
+                  <div style={{ color: "#f87171", fontWeight: 600 }}>âŒ {createResult.error}</div>
                 )}
               </div>
             )}
@@ -452,19 +452,19 @@ export default function SetupPage() {
                   key: "name", label: "ID del Tenant", type: "text",
                   placeholder: "municipio1",
                   hint: BASE_DOMAIN
-                    ? `Accederá como: municipio1.${BASE_DOMAIN}`
-                    : "Solo letras minúsculas, números y guión_bajo.",
+                    ? `AccederÃ¡ como: municipio1.${BASE_DOMAIN}`
+                    : "Solo letras minÃºsculas, nÃºmeros y guiÃ³n_bajo.",
                 },
-                { key: "fullName", label: "Nombre de la Organización (opcional)", type: "text", placeholder: "Alcaldía de Municipio X", hint: "" },
+                { key: "fullName", label: "Nombre de la OrganizaciÃ³n (opcional)", type: "text", placeholder: "AlcaldÃ­a de Municipio X", hint: "" },
                 { key: "email", label: "Email del Administrador", type: "email", placeholder: "admin@tuorganizacion.com", hint: "" },
-                { key: "password", label: "Contraseña del Admin", type: "password", placeholder: "Mínimo 8 caracteres", hint: "" },
+                { key: "password", label: "ContraseÃ±a del Admin", type: "password", placeholder: "MÃ­nimo 8 caracteres", hint: "" },
               ].map(field => (
                 <div key={field.key} style={{ marginBottom: 16 }}>
                   <label style={{ display: "block", color: "#cbd5e1", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
                     {field.label}
                     {field.key === "name" && createForm.name && BASE_DOMAIN && (
                       <span style={{ color: "#a78bfa", fontWeight: 400, marginLeft: 8 }}>
-                        → {createForm.name}.{BASE_DOMAIN}
+                        â†’ {createForm.name}.{BASE_DOMAIN}
                       </span>
                     )}
                   </label>
@@ -497,21 +497,21 @@ export default function SetupPage() {
                   boxShadow: "0 10px 30px rgba(59,130,246,0.35)",
                 }}
               >
-                {createLoading ? "⏳ Creando..." : "🚀 Crear Tenant"}
+                {createLoading ? "â³ Creando..." : "ðŸš€ Crear Tenant"}
               </button>
             </form>
           </>
         )}
 
-        {/* ═══ TAB: LIST TENANTS ═══ */}
+        {/* â•â•â• TAB: LIST TENANTS â•â•â• */}
         {tab === "list" && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div>
                 <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, margin: 0 }}>Tenants Activos</h2>
                 <p style={{ color: "#64748b", fontSize: 13, margin: "4px 0 0" }}>
-                  {tenants.length} organización(es)
-                  {BASE_DOMAIN ? ` · *.${BASE_DOMAIN}` : ""}
+                  {tenants.length} organizaciÃ³n(es)
+                  {BASE_DOMAIN ? ` Â· *.${BASE_DOMAIN}` : ""}
                 </p>
               </div>
               <button
@@ -523,7 +523,7 @@ export default function SetupPage() {
                   borderRadius: 8, color: "#60a5fa", fontSize: 13, fontWeight: 600, cursor: "pointer",
                 }}
               >
-                {listLoading ? "⏳" : "🔄 Refrescar"}
+                {listLoading ? "â³" : "ðŸ”„ Refrescar"}
               </button>
             </div>
 
@@ -531,11 +531,11 @@ export default function SetupPage() {
               <div style={{ textAlign: "center", padding: "40px 20px", color: "#475569", fontSize: 14 }}>
                 {listLoading ? "Cargando..." : (
                   <>
-                    <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
-                    No hay tenants aún.<br />
+                    <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ¢</div>
+                    No hay tenants aÃºn.<br />
                     <button onClick={() => setTab("create")}
                       style={{ background: "none", border: "none", color: "#60a5fa", marginTop: 8, cursor: "pointer", fontSize: 14 }}>
-                      Crear primer tenant →
+                      Crear primer tenant â†’
                     </button>
                   </>
                 )}
@@ -551,9 +551,9 @@ export default function SetupPage() {
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div>
-                        <div style={{ color: "white", fontWeight: 700, fontSize: 16 }}>🏢 {t.name}</div>
+                        <div style={{ color: "white", fontWeight: 700, fontSize: 16 }}>ðŸ¢ {t.name}</div>
                         <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
-                          {t.email} · {t.ciudadanos} ciudadano(s)
+                          {t.email} Â· {t.ciudadanos} ciudadano(s)
                         </div>
                         {BASE_DOMAIN && (
                           <div style={{ marginTop: 6 }}>
@@ -563,7 +563,7 @@ export default function SetupPage() {
                               rel="noreferrer"
                               style={{ color: "#a78bfa", fontSize: 12, textDecoration: "none" }}
                             >
-                              🌐 {t.name}.{BASE_DOMAIN}
+                              ðŸŒ {t.name}.{BASE_DOMAIN}
                             </a>
                           </div>
                         )}
@@ -580,7 +580,7 @@ export default function SetupPage() {
                           textDecoration: "none", fontSize: 13, fontWeight: 600,
                         }}
                       >
-                        Login →
+                        Login â†’
                       </a>
                     </div>
                   </div>
@@ -592,12 +592,12 @@ export default function SetupPage() {
       </div>
 
       <div style={{ marginTop: 24, display: "flex", gap: 20 }}>
-        <a href="/login" style={{ color: "#475569", textDecoration: "none", fontSize: 13 }}>← Ir al Login</a>
+        <a href="/login" style={{ color: "#475569", textDecoration: "none", fontSize: 13 }}>â† Ir al Login</a>
         <button
           onClick={() => { setKeyVerified(false); setSuperKey(""); }}
           style={{ background: "none", border: "none", color: "#475569", fontSize: 13, cursor: "pointer" }}
         >
-          🔒 Cerrar sesión admin
+          ðŸ”’ Cerrar sesiÃ³n admin
         </button>
       </div>
     </div>

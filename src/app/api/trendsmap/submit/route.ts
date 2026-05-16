@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-      return NextResponse.json({ error: "Coordenadas inválidas" }, { status: 400 });
+      return NextResponse.json({ error: "Coordenadas invÃ¡lidas" }, { status: 400 });
     }
 
     const geo = await reverseGeocode(latitude, longitude);
@@ -58,6 +58,6 @@ export async function POST(request: NextRequest) {
 }
 
 function extractHashtags(text: string): string[] {
-  const matches = text.match(/#[\wáéíóúÁÉÍÓÚñÑ]+/g);
+  const matches = text.match(/#[\wÃ¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘]+/g);
   return matches ? matches.map(h => h.toLowerCase()) : [];
 }

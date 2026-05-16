@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!lat || !lng) {
-      return NextResponse.json({ error: "Debe proporcionar coordenadas o dibujar un polígono" }, { status: 400 });
+      return NextResponse.json({ error: "Debe proporcionar coordenadas o dibujar un polÃ­gono" }, { status: 400 });
     }
 
     const sql = `

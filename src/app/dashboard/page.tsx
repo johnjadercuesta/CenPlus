@@ -44,7 +44,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Lógica de Alertas
+  // LÃ³gica de Alertas
   const alertas = [];
   if (stats && stats.porcentajeMeta < 20) {
     alertas.push({ type: "critical", msg: "Bajo cumplimiento de meta global territorial." });
@@ -52,12 +52,12 @@ export default function DashboardPage() {
   
   const sectoresCriticos = sectores.filter(s => s.porcentaje < 30);
   if (sectoresCriticos.length > 3) {
-    alertas.push({ type: "warning", msg: `${sectoresCriticos.length} sectores en estado crítico de captación.` });
+    alertas.push({ type: "warning", msg: `${sectoresCriticos.length} sectores en estado crÃ­tico de captaciÃ³n.` });
   }
 
   const problematicaUrgente = stats?.topProblematicas?.[0];
   if (problematicaUrgente && (problematicaUrgente.c / (stats?.total || 1)) > 0.4) {
-    alertas.push({ type: "info", msg: `Alerta social: '${problematicaUrgente.problematica}' es la problemática dominante (>40%).` });
+    alertas.push({ type: "info", msg: `Alerta social: '${problematicaUrgente.problematica}' es la problemÃ¡tica dominante (>40%).` });
   }
 
   return (
@@ -65,7 +65,7 @@ export default function DashboardPage() {
       <div className="main-header" style={{ paddingBottom: 20 }}>
         <div>
           <h1 className="main-header-title">Inteligencia Territorial</h1>
-          <p className="main-header-subtitle">Análisis geoespacial y estratégico multi-capa</p>
+          <p className="main-header-subtitle">AnÃ¡lisis geoespacial y estratÃ©gico multi-capa</p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <ArchivoSelector value={archivoId} onChange={setArchivoId} compact />
@@ -102,7 +102,7 @@ export default function DashboardPage() {
                 border: `1px solid ${a.type === "critical" ? "#fecaca" : a.type === "warning" ? "#fef3c7" : "#dbeafe"}`,
                 display: "flex", alignItems: "center", gap: 10,
               }}>
-                <span style={{ fontSize: 18 }}>{a.type === "critical" ? "🚨" : a.type === "warning" ? "⚠️" : "ℹ️"}</span>
+                <span style={{ fontSize: 18 }}>{a.type === "critical" ? "ðŸš¨" : a.type === "warning" ? "âš ï¸" : "â„¹ï¸"}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: a.type === "critical" ? "#991b1b" : a.type === "warning" ? "#92400e" : "#1e40af" }}>
                   {a.msg}
                 </span>
@@ -120,13 +120,13 @@ export default function DashboardPage() {
             label="Base de Apoyos"
             color="#3b82f6"
             bgColor="#eff6ff"
-            change={stats?.semana ? `+${stats.semana} últimos 7d` : undefined}
+            change={stats?.semana ? `+${stats.semana} Ãºltimos 7d` : undefined}
             changeUp
           />
           <KPICard
             icon={<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />}
             value={stats?.lideres || 0}
-            label="Estructura Líderes"
+            label="Estructura LÃ­deres"
             color="#f59e0b"
             bgColor="#fffbeb"
           />
@@ -147,7 +147,7 @@ export default function DashboardPage() {
           <KPICard
             icon={<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />}
             value={stats?.conCoords || 0}
-            label="Geolocalización Ok"
+            label="GeolocalizaciÃ³n Ok"
             color="#ec4899"
             bgColor="#fdf2f8"
           />
@@ -159,8 +159,8 @@ export default function DashboardPage() {
           <div className="card">
             <div className="card-header">
               <div>
-                <span style={{ fontWeight: 700, fontSize: 16, color: "#1e293b" }}>Análisis de Capas Espaciales</span>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Cruce de apoyos vs problemáticas por zona</div>
+                <span style={{ fontWeight: 700, fontSize: 16, color: "#1e293b" }}>AnÃ¡lisis de Capas Espaciales</span>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Cruce de apoyos vs problemÃ¡ticas por zona</div>
               </div>
             </div>
             <div className="card-body" style={{ padding: 16 }}>
@@ -168,10 +168,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Strategic Gap (Análisis de Brecha) */}
+          {/* Strategic Gap (AnÃ¡lisis de Brecha) */}
           <div className="card">
             <div className="card-header">
-              <span style={{ fontWeight: 700, fontSize: 16, color: "#1e293b" }}>Brecha Estratégica (Meta vs Real)</span>
+              <span style={{ fontWeight: 700, fontSize: 16, color: "#1e293b" }}>Brecha EstratÃ©gica (Meta vs Real)</span>
             </div>
             <div className="card-body" style={{ padding: "0 20px 20px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -196,7 +196,7 @@ export default function DashboardPage() {
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b" }}>
                         <span>Real: {s.registros}</span>
-                        <span>Meta Histórica: {s.votosHistoricos}</span>
+                        <span>Meta HistÃ³rica: {s.votosHistoricos}</span>
                         <span style={{ fontWeight: 600, color: "#475569" }}>Faltan: {s.brecha}</span>
                       </div>
                     </div>
@@ -207,7 +207,7 @@ export default function DashboardPage() {
                 display: "block", textAlign: "center", marginTop: 16, fontSize: 12, 
                 color: "#3b82f6", fontWeight: 700, textDecoration: "none" 
               }}>
-                Ver todos los sectores →
+                Ver todos los sectores â†’
               </Link>
             </div>
           </div>
@@ -218,7 +218,7 @@ export default function DashboardPage() {
           {/* Social Problems */}
           <div className="card">
             <div className="card-header">
-              <span style={{ fontWeight: 700, fontSize: 15 }}>Problemáticas Sociales Diagnóstico</span>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>ProblemÃ¡ticas Sociales DiagnÃ³stico</span>
             </div>
             <div className="card-body">
               {(stats?.topProblematicas || []).map((p, i) => {
@@ -246,7 +246,7 @@ export default function DashboardPage() {
           {/* Health Distribution */}
           <div className="card">
             <div className="card-header">
-              <span style={{ fontWeight: 700, fontSize: 15 }}>Régimen de Salud (Cobertura)</span>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>RÃ©gimen de Salud (Cobertura)</span>
             </div>
             <div className="card-body">
               {(stats?.topRegimenSalud || []).map((r, i) => {
@@ -301,8 +301,8 @@ export default function DashboardPage() {
         {/* Efficiency Analysis */}
         <div className="card">
           <div className="card-header">
-            <span style={{ fontWeight: 700, fontSize: 15 }}>Eficiencia Operativa (Últimos 7 Días)</span>
-            <span style={{ fontSize: 12, color: "#64748b" }}>Tasa de recolección diaria</span>
+            <span style={{ fontWeight: 700, fontSize: 15 }}>Eficiencia Operativa (Ãšltimos 7 DÃ­as)</span>
+            <span style={{ fontSize: 12, color: "#64748b" }}>Tasa de recolecciÃ³n diaria</span>
           </div>
           <div className="card-body">
              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 160, paddingBottom: 24 }}>

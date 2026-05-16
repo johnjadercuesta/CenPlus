@@ -5,13 +5,13 @@ import { verifyToken } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     const tenant = getTenantFromRequest(request);
-    if (!tenant) return NextResponse.json({ error: "Contexto no válido" }, { status: 400 });
+    if (!tenant) return NextResponse.json({ error: "Contexto no vÃ¡lido" }, { status: 400 });
 
     const { rows } = await queryWithTenant(tenant, "SELECT * FROM puestos_votacion ORDER BY nombre ASC");
     return NextResponse.json({ data: rows });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error al obtener puestos de votación" }, { status: 500 });
+    return NextResponse.json({ error: "Error al obtener puestos de votaciÃ³n" }, { status: 500 });
   }
 }
 

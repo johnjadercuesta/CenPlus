@@ -8,9 +8,9 @@ export async function POST(request: NextRequest) {
     console.log("[API] POST /api/trendsmap/dedupe called");
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
-    // Crear extensión para búsqueda fuzzy (si no existe)
+    // Crear extensiÃ³n para bÃºsqueda fuzzy (si no existe)
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
@@ -36,10 +36,10 @@ export async function POST(request: NextRequest) {
 
     let merged = 0;
 
-    // Paso 2: Para cada grupo de similares, mantener el más reciente y eliminar los otros
+    // Paso 2: Para cada grupo de similares, mantener el mÃ¡s reciente y eliminar los otros
     for (const group of similarGroups) {
       try {
-        // Mantener el más reciente, eliminar el más viejo
+        // Mantener el mÃ¡s reciente, eliminar el mÃ¡s viejo
         const idToDelete = group.id1;
         const idToKeep = group.id2;
 
@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
 
     // Paso 3: Normalizar textos - remover variaciones comunes
     const normalizationRules = [
-      { pattern: / - (Turbo|Caucasia|Medellín|Bogotá)$/i, replacement: '' },
+      { pattern: / - (Turbo|Caucasia|MedellÃ­n|BogotÃ¡)$/i, replacement: '' },
       { pattern: / \(Parte \d+\)$/i, replacement: '' },
-      { pattern: / - .*\d{4}$/i, replacement: '' }, // Remover año al final
+      { pattern: / - .*\d{4}$/i, replacement: '' }, // Remover aÃ±o al final
     ];
 
     let normalized = 0;
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       normalized += result.rowCount || 0;
     }
 
-    // Obtener estadísticas finales
+    // Obtener estadÃ­sticas finales
     const stats = await run(`
       SELECT 
         COUNT(*) as total,

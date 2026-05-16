@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   // Check authorization (STRICT)
   if (!isAuthorized(request)) {
     return NextResponse.json(
-      { error: 'Acceso Denegado. Se requiere SUPER_ADMIN_KEY válida.' },
+      { error: 'Acceso Denegado. Se requiere SUPER_ADMIN_KEY vÃ¡lida.' },
       { status: 401 }
     );
   }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     const sanitizedName = sanitizeTenantValue(name);
     if (!sanitizedName) {
       return NextResponse.json(
-        { error: 'Nombre de tenant inválido. Usa solo letras, números y guiones.' },
+        { error: 'Nombre de tenant invÃ¡lido. Usa solo letras, nÃºmeros y guiones.' },
         { status: 400 }
       );
     }
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Validar email
     if (!email.includes('@')) {
       return NextResponse.json(
-        { error: 'Email inválido' },
+        { error: 'Email invÃ¡lido' },
         { status: 400 }
       );
     }
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
         )
       `);
 
-      // Crear tabla de puestos de votación
+      // Crear tabla de puestos de votaciÃ³n
       await client.query(`
         CREATE TABLE IF NOT EXISTS puestos_votacion (
           id SERIAL PRIMARY KEY,
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
         )
       `);
 
-      // Crear tabla de problemáticas sociales
+      // Crear tabla de problemÃ¡ticas sociales
       await client.query(`
         CREATE TABLE IF NOT EXISTS problematicas_sociales (
           id SERIAL PRIMARY KEY,
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
         )
       `);
 
-      // Crear índices
+      // Crear Ã­ndices
       await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_lider ON ciudadanos(lider_id)`);
       await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_zona ON ciudadanos(zona)`);
       await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_comuna ON ciudadanos(id_comuna)`);
@@ -218,10 +218,10 @@ export async function POST(request: NextRequest) {
       await client.query(
         `INSERT INTO admins (email, nombre, role, password, telefono, activo)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        ['lider@cenplus.com', 'Líder Test', 'lider', testPassHash, '', 1]
+        ['lider@cenplus.com', 'LÃ­der Test', 'lider', testPassHash, '', 1]
       );
 
-      // Crear tabla global de mapeo usuario→tenant (si no existe)
+      // Crear tabla global de mapeo usuarioâ†’tenant (si no existe)
       await client.query(`
         CREATE TABLE IF NOT EXISTS public.user_tenants (
           id SERIAL PRIMARY KEY,
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
         [email, sanitizedName]
       );
 
-      // Registrar configuración inicial del tenant (colores, logo)
+      // Registrar configuraciÃ³n inicial del tenant (colores, logo)
       await client.query(
         `INSERT INTO public.tenants_config (tenant, primary_color, secondary_color)
          VALUES ($1, $2, $3)
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest) {
         ['estratega@cenplus.com', sanitizedName]
       );
       
-      // Registrar usuario líder
+      // Registrar usuario lÃ­der
       await client.query(
         `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2)
          ON CONFLICT (email) DO UPDATE SET tenant = $2`,
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
         nextSteps: [
           `1. Accede con: POST /api/auth/login`,
           `2. Body: { "email": "${email}", "password": "[tu password]", "tenant": "${sanitizedName}" }`,
-          `3. Recibirás JWT token`
+          `3. RecibirÃ¡s JWT token`
         ]
       }, { status: 201 });
 

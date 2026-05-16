@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     const tenant = getTenantFromRequest(request);
     if (!tenant) {
-        return NextResponse.json({ error: "Contexto no válido" }, { status: 400 });
+        return NextResponse.json({ error: "Contexto no vÃ¡lido" }, { status: 400 });
     }
 
     const { rows } = await pool.query(

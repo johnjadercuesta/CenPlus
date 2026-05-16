@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
@@ -32,12 +32,12 @@ export async function POST(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const { email, password, nombre, role } = await request.json();
 
     if (!email || !password || !nombre) {
-      return NextResponse.json({ error: "Email, contraseña y nombre son obligatorios" }, { status: 400 });
+      return NextResponse.json({ error: "Email, contraseÃ±a y nombre son obligatorios" }, { status: 400 });
     }
 
     const tenant = getTenantFromRequest(request);
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     const { rows: existingRows } = await run("SELECT id FROM admins WHERE email = $1", [email]);
     if (existingRows.length > 0) {
-      return NextResponse.json({ error: "Este email ya está registrado" }, { status: 409 });
+      return NextResponse.json({ error: "Este email ya estÃ¡ registrado" }, { status: 409 });
     }
 
     const hash = bcrypt.hashSync(password, 10);

@@ -29,10 +29,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(rows[0]);
   } catch (error: any) {
-    // Si la tabla no existe, intentamos crearla (auto-migración)
+    // Si la tabla no existe, intentamos crearla (auto-migraciÃ³n)
     if (error.message.includes('relation "public.tenants_config" does not exist')) {
       try {
-        console.log("🛠️ Detectada falta de tabla public.tenants_config. Creándola...");
+        console.log("ðŸ› ï¸ Detectada falta de tabla public.tenants_config. CreÃ¡ndola...");
         await pool.query(`
           CREATE TABLE IF NOT EXISTS public.tenants_config (
             tenant VARCHAR(63) PRIMARY KEY,

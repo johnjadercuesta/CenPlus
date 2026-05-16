@@ -81,7 +81,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       });
     }
 
-    return NextResponse.json({ error: "Tab no válido" }, { status: 400 });
+    return NextResponse.json({ error: "Tab no vÃ¡lido" }, { status: 400 });
   } catch (err: any) {
     console.error("[archivos/detalle] Error:", err);
     return NextResponse.json({ error: "Error al consultar archivo" }, { status: 500 });

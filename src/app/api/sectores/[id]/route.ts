@@ -96,7 +96,7 @@ export async function PUT(
     const { rows: updateRows } = await client.query(sql, values);
     
     if (isChangingName) {
-      // Actualizar también el nombre del barrio en todos los ciudadanos asociados
+      // Actualizar tambiÃ©n el nombre del barrio en todos los ciudadanos asociados
       await client.query("UPDATE ciudadanos SET barrio = $1 WHERE barrio ILIKE $2", [newNombre, oldNombre]);
     }
 

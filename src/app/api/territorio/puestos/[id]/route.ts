@@ -12,7 +12,7 @@ export async function PUT(
     if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const { nombre, comunaId, votosHistoricos } = await request.json();
     if (!nombre) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });
@@ -32,7 +32,7 @@ export async function PUT(
 
     if (rowCount === 0) return NextResponse.json({ error: "Puesto no encontrado" }, { status: 404 });
 
-    return NextResponse.json({ message: "Puesto de votación actualizado" });
+    return NextResponse.json({ message: "Puesto de votaciÃ³n actualizado" });
   } catch (err: any) {
     console.error(err);
     if (err.code === "23505") return NextResponse.json({ error: "Ya existe un puesto con ese nombre" }, { status: 400 });
@@ -57,7 +57,7 @@ export async function DELETE(
 
     if (rowCount === 0) return NextResponse.json({ error: "Puesto no encontrado" }, { status: 404 });
 
-    return NextResponse.json({ message: "Puesto de votación eliminado" });
+    return NextResponse.json({ message: "Puesto de votaciÃ³n eliminado" });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Error al eliminar puesto" }, { status: 500 });
