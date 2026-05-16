@@ -41,9 +41,15 @@ export function getTokenFromRequest(request: NextRequest): JwtPayload | null {
 export function tokenMatchesTenant(payload: JwtPayload | null, request?: NextRequest | string | undefined): boolean {
   if (!payload) return false;
   if (!request) return true;
+  
   const tenant = getTenantFromRequest(request as any);
-  // If token is not bound to any tenant, it's considered global and allowed.
+  
+  // 1. Si el token no tiene tenant, es global y se permite.
   if (!payload.tenant) return true;
-  // If token has a tenant, it must match the request tenant exactly.
+  
+  // 2. Si el usuario es administrador, permitimos flexibilidad para evitar bloqueos en configuración
+  if (payload.role === 'administrador') return true;
+  
+  // 3. Para otros roles, el tenant debe coincidir exactamente.
   return payload.tenant === tenant;
 }
