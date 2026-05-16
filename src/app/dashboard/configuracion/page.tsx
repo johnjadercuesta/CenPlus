@@ -51,17 +51,26 @@ export default function ConfiguracionPage() {
 
   const loadThemeConfig = async () => {
     try {
-      const res = await fetch("/api/tenant/config");
+      // Usamos un timestamp para evitar que el navegador nos de una versión vieja (caché)
+      const res = await fetch(`/api/tenant/config?t=${Date.now()}`);
       const data = await res.json();
-      if (data.primary_color) setPrimaryColor(data.primary_color);
+      if (data.primary_color) {
+        setPrimaryColor(data.primary_color);
+        document.documentElement.style.setProperty('--brand-accent', data.primary_color);
+      }
       if (data.logo_url) setLogoUrl(data.logo_url);
       
-      const statsRes = await fetch("/api/stats", { headers: authHeadersWithJson() });
+      const statsRes = await fetch(`/api/stats?t=${Date.now()}`, { headers: authHeadersWithJson() });
       const statsData = await statsRes.json();
       if (statsData.meta) setMetaGlobal(String(statsData.meta));
     } catch (error) {
-      console.error("Error cargando configuración:", error);
+      console.error("Error cargando configuracion:", error);
     }
+  };
+
+  const handleResetColor = () => {
+    setPrimaryColor("#3b82f6");
+    document.documentElement.style.setProperty('--brand-accent', "#3b82f6");
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,6 +92,7 @@ export default function ConfiguracionPage() {
   const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setMessage(null);
     try {
       const res = await fetch("/api/tenant/config/update", {
         method: "POST",
@@ -94,16 +104,20 @@ export default function ConfiguracionPage() {
         }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        setMessage({ type: "success", text: "Marca actualizada correctamente" });
+        setMessage({ type: "success", text: "Marca actualizada correctamente. Aplicando cambios..." });
         document.documentElement.style.setProperty('--brand-accent', primaryColor);
-        setTimeout(() => window.location.reload(), 1500);
+        // Recargamos después de un momento para que se vea el mensaje de éxito
+        setTimeout(() => {
+          window.location.href = window.location.pathname + "?refresh=" + Date.now();
+        }, 1500);
       } else {
-        const err = await res.json();
-        setMessage({ type: "error", text: err.error || "Error al guardar" });
+        setMessage({ type: "error", text: data.error || "Error al guardar" });
       }
     } catch {
-      setMessage({ type: "error", text: "Error de conexión" });
+      setMessage({ type: "error", text: "Error de conexion" });
     } finally {
       setSaving(false);
     }
@@ -146,7 +160,8 @@ export default function ConfiguracionPage() {
           padding: "12px 16px", borderRadius: "8px", marginBottom: "24px",
           background: message.type === "success" ? "#f0fdf4" : "#fef2f2",
           border: `1px solid ${message.type === "success" ? "#bbf7d0" : "#fecaca"}`,
-          color: message.type === "success" ? "#15803d" : "#b91c1c"
+          color: message.type === "success" ? "#15803d" : "#b91c1c",
+          fontWeight: 600
         }}>
           {message.text}
         </div>
@@ -197,11 +212,12 @@ export default function ConfiguracionPage() {
             <form onSubmit={handleSaveBranding}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", marginBottom: "32px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Color de la Aplicación</label>
-                  <div style={{ display: "flex", gap: "12px" }}>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Color de la Aplicacion</label>
+                  <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
                     <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
                     <input type="text" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ flex: 1, padding: "8px", border: "1px solid #ccc" }} />
                   </div>
+                  <button type="button" onClick={handleResetColor} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: "13px", padding: 0, textDecoration: "underline" }}>Restablecer color original</button>
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Logo Corporativo</label>
@@ -212,7 +228,7 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button type="submit" disabled={saving} style={{ background: primaryColor, color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", cursor: "pointer", fontWeight: 700 }}>{saving ? "Guardando..." : "Guardar Personalización"}</button>
+                <button type="submit" disabled={saving} style={{ background: primaryColor, color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", cursor: "pointer", fontWeight: 700 }}>{saving ? "Guardando..." : "Guardar Personalizacion"}</button>
               </div>
             </form>
           </div>

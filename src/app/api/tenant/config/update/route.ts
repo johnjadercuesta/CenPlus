@@ -14,9 +14,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado. Solo administradores pueden cambiar la marca." }, { status: 401 });
     }
 
-    const tenant = payload.tenant;
+    let tenant = payload.tenant;
     if (!tenant) {
-      return NextResponse.json({ error: "No se pudo identificar tu organizaciÃ³n." }, { status: 403 });
+      // Si el administrador es global (sin tenant en token), intentamos detectarlo del request
+      tenant = getTenantFromRequest(request);
+    }
+
+    if (!tenant || tenant === 'public') {
+      return NextResponse.json({ error: "No se pudo identificar la organización para aplicar la marca." }, { status: 403 });
     }
 
     const { primary_color, secondary_color, logo_url } = await request.json();
