@@ -219,8 +219,8 @@ export default function Sidebar() {
             )}
           </div>
           <div>
-            <h1>CenPlus V2</h1>
-            <span style={{ color: "#10b981", fontWeight: "bold" }}>SISTEMA DE AUDITORÍA ACTIVO</span>
+            <h1>CenPlus</h1>
+            <span>Inteligencia Territorial</span>
           </div>
         </div>
 
