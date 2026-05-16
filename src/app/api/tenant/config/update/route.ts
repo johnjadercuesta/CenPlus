@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTenantFromRequest } from "@/lib/tenant";
 import { verifyToken } from "@/lib/auth";
+import { recordLog } from "@/lib/audit";
 
 export async function POST(request: NextRequest) {
   try {

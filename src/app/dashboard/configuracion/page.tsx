@@ -160,6 +160,8 @@ export default function ConfiguracionPage() {
       if (res.ok) {
         setMessage({ type: "success", text: "Personalización guardada con éxito." });
         document.documentElement.style.setProperty('--brand-accent', primaryColor);
+        // Recargar para aplicar logo en sidebar
+        setTimeout(() => window.location.reload(), 1500);
       } else {
         const err = await res.json();
         setMessage({ type: "error", text: err.error || "Error al guardar marca" });
@@ -169,6 +171,22 @@ export default function ConfiguracionPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 1024 * 1024) { // 1MB limit
+      setMessage({ type: "error", text: "El logo no debe superar 1MB" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLogoUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveMeta = async () => {
@@ -202,7 +220,7 @@ export default function ConfiguracionPage() {
 
   return (
     <div className="container" style={{ padding: "20px 0" }}>
-      <div className="main-header" style={{ marginBottom: 24 }}>
+      <div className="main-header" style={{ marginBottom: 24, background: 'transparent', border: 'none' }}>
         <div>
           <h1 className="main-header-title">Configuración del Sistema</h1>
           <p className="main-header-subtitle">Administra el territorio, las referencias y la identidad de marca</p>
@@ -341,22 +359,38 @@ export default function ConfiguracionPage() {
             <div className="card">
               <div className="card-header"><span style={{ fontWeight: 700 }}>Personalización de Identidad</span></div>
               <form onSubmit={handleSaveBranding} className="card-body">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Color Primario</label>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>Color Primario de la App</label>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ width: 40, height: 40, border: "none", borderRadius: 4 }} />
-                      <input type="text" className="input" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} />
+                      <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ width: 44, height: 44, border: "2px solid #e2e8f0", borderRadius: 8, cursor: "pointer" }} />
+                      <input type="text" className="input" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ textTransform: 'uppercase', fontWeight: 600 }} />
                     </div>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>Logo (URL)</label>
-                    <input type="url" className="input" placeholder="https://..." value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>Logo de la Organización</label>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ fontSize: 12 }} />
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>O ingresa una URL:</div>
+                      <input type="url" className="input" placeholder="https://..." value={logoUrl} onChange={e => setLogoUrl(e.target.value)} style={{ fontSize: 12 }} />
+                    </div>
                   </div>
                 </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 20, padding: 20, background: "#f8fafc", borderRadius: 12, marginBottom: 24, border: "1px solid #e2e8f0" }}>
+                  <div style={{ width: 60, height: 60, background: "white", borderRadius: 8, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                    {logoUrl ? <img src={logoUrl} alt="Logo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} /> : <span style={{ fontSize: 10, color: "#94a3b8" }}>Sin Logo</span>}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>Previsualización</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>Así se verá tu marca en el menú lateral y login.</div>
+                  </div>
+                  <button type="button" className="btn" style={{ background: primaryColor, color: "white", fontSize: 12 }}>Botón de Muestra</button>
+                </div>
+
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                   <button type="button" onClick={() => { setPrimaryColor("#3b82f6"); setSecondaryColor("#6366f1"); setLogoUrl(""); }} style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, textDecoration: "underline", cursor: "pointer" }}>Restablecer originales</button>
-                   <button type="submit" disabled={saving} className="btn btn-primary">{saving ? "Guardando..." : "Guardar Marca"}</button>
+                   <button type="button" onClick={() => { setPrimaryColor("#3b82f6"); setSecondaryColor("#6366f1"); setLogoUrl(""); }} style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, textDecoration: "underline", cursor: "pointer" }}>Restablecer valores originales</button>
+                   <button type="submit" disabled={saving} className="btn btn-primary" style={{ background: primaryColor }}>{saving ? "Guardando..." : "Guardar Cambios de Marca"}</button>
                 </div>
               </form>
             </div>
@@ -382,7 +416,8 @@ export default function ConfiguracionPage() {
         .card-body { padding: 20px; }
         .input { border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-size: 13px; width: 100%; transition: border-color 0.2s; }
         .input:focus { outline: none; border-color: #6366f1; }
-        .btn-primary { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: var(--brand-accent, #3b82f6); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-primary:hover { filter: brightness(1.1); }
         .btn-success { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
       `}</style>
     </div>

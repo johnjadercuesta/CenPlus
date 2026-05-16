@@ -52,7 +52,23 @@ export async function POST(request: NextRequest) {
     results.push('✅ Tabla public.tenants_config (Temas) verificada');
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS public.system_logs (
+        id SERIAL PRIMARY KEY,
+        tenant VARCHAR(63) NOT NULL,
+        usuario_email VARCHAR(255) NOT NULL,
+        usuario_nombre VARCHAR(255),
+        modulo VARCHAR(100),
+        accion TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    results.push('✅ Tabla public.system_logs (Auditoría) verificada');
+
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_system_logs_tenant ON public.system_logs(tenant)
     `);
     results.push('✅ Índices globales verificados');
 
