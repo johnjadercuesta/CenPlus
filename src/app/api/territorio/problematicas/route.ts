@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const tenant = payload.tenant;
+    const tenant = payload.tenant as string;
     const { nombre } = await request.json();
     if (!nombre) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });
 

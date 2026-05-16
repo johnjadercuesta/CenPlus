@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
-    const tenant = payload.tenant;
+    const tenant = payload.tenant as string;
     const { nombre, comunaId, tipo } = await request.json();
     if (!nombre || !comunaId) return NextResponse.json({ error: "Nombre y comunaId obligatorios" }, { status: 400 });
 

@@ -124,27 +124,28 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
         return;
       }
 
-      delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-      L.Icon.Default.mergeOptions({
+      const winL = (window as any).L;
+      delete (winL.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+      winL.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
         iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
         shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
 
-      const map = L.map(mapRef.current!, {
+      const map = winL.map(mapRef.current!, {
         zoomControl: true,
         attributionControl: true,
       }).setView([4.5709, -74.2973], 6);
 
       // Better tile layer
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      winL.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
         subdomains: "abcd",
         maxZoom: 20,
       }).addTo(map);
 
       mapInstanceRef.current = map;
-      leafletLibRef.current = L;
+      leafletLibRef.current = winL;
       setMapReady(true);
 
       // Fit bounds only on initial load with sectors
@@ -154,7 +155,7 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
           if (filteredData.length > 0) {
             const allPts = filteredData.map((c) => [c.latitud!, c.longitud!] as [number, number]);
             if (allPts.length > 0) {
-              const bounds = L.latLngBounds(allPts);
+              const bounds = winL.latLngBounds(allPts);
               mapInstanceRef.current.fitBounds(bounds, { padding: [60, 60] });
             }
           }
