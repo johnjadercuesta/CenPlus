@@ -19,7 +19,7 @@ export async function PUT(
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
-    // Control de Acceso: LÃ­der solo puede editar sus propios registros
+    // Control de Acceso: Líder solo puede editar sus propios registros
     if (token.role === "lider") {
       const { rows } = await run("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
       const record = rows[0] as { lider_id: number } | undefined;
@@ -49,7 +49,7 @@ export async function PUT(
       barrio: (v) => String(v).trim(),
       corregimiento: (v) => String(v).trim(),
       vereda: (v) => (v ? String(v).trim() : null),
-      es_lider: (v) => (v === true || v === "SÃ­" || v === "true" || v === 1 ? 1 : 0),
+      es_lider: (v) => (v === true || v === "Sí" || v === "true" || v === 1 ? 1 : 0),
       nombre_lider: (v) => (v ? String(v).trim() : null),
       latitud: (v) => (v ? parseFloat(String(v)) : null),
       longitud: (v) => (v ? parseFloat(String(v)) : null),
@@ -91,7 +91,7 @@ export async function PUT(
 
     data.es_lider = data.es_lider === 1;
 
-    return NextResponse.json({ data, message: "ActualizaciÃ³n exitosa" });
+    return NextResponse.json({ data, message: "Actualización exitosa" });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
@@ -114,7 +114,7 @@ export async function DELETE(
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
-    // Control de Acceso: LÃ­der solo puede eliminar sus propios registros
+    // Control de Acceso: Líder solo puede eliminar sus propios registros
     if (token.role === "lider") {
       const { rows } = await run("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
       const record = rows[0] as { lider_id: number } | undefined;

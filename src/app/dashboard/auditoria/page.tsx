@@ -28,7 +28,7 @@ export default function AuditoriaPage() {
     <div style={{ padding: 32 }}>
       <div className="main-header" style={{ marginBottom: 32 }}>
         <div>
-          <h1 className="main-header-title">AuditorÃ­a del Sistema</h1>
+          <h1 className="main-header-title">Auditoría del Sistema</h1>
           <p className="main-header-subtitle">Registro inalterable de actividad de usuarios</p>
         </div>
       </div>
@@ -40,15 +40,15 @@ export default function AuditoriaPage() {
               <tr>
                 <th>Fecha y Hora</th>
                 <th>Usuario</th>
-                <th>MÃ³dulo</th>
-                <th>AcciÃ³n</th>
+                <th>Módulo</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr><td colSpan={4} style={{ textAlign: "center", padding: 40 }}>Cargando registros...</td></tr>
               ) : logs.length === 0 ? (
-                <tr><td colSpan={4} style={{ textAlign: "center", padding: 40 }}>No hay registros de actividad aÃºn.</td></tr>
+                <tr><td colSpan={4} style={{ textAlign: "center", padding: 40 }}>No hay registros de actividad aún.</td></tr>
               ) : (
                 logs.map(log => (
                   <tr key={log.id}>

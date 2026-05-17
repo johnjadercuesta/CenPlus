@@ -67,7 +67,7 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Error al iniciar sesiÃ³n");
+        setError(data.error || "Error al iniciar sesión");
       } else {
         localStorage.setItem("token", data.token);
         if (data.tenant || body.tenant) {
@@ -76,7 +76,7 @@ function LoginForm() {
         router.push("/dashboard");
       }
     } catch {
-      setError("Error de conexiÃ³n");
+      setError("Error de conexión");
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ function LoginForm() {
           </div>
           <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 8 }}>CenPlus</h1>
           <p style={{ fontSize: 18, color: "#94a3b8", marginBottom: 32, lineHeight: 1.6 }}>
-            Plataforma de GestiÃ³n Comunitaria e Inteligencia Territorial
+            Plataforma de Gestión Comunitaria e Inteligencia Territorial
           </p>
           <div style={{ display: "flex", gap: 24, color: "#cbd5e1", fontSize: 13 }}>
             <div><div style={{ fontSize: 24, fontWeight: 800, color: "#60a5fa" }}>PWA</div><div>Mobile</div></div>
@@ -126,8 +126,8 @@ function LoginForm() {
             <div><div style={{ fontSize: 24, fontWeight: 800, color: "#34d399" }}>Multi</div><div>Tenants</div></div>
           </div>
           <div style={{ marginTop: 40, padding: "16px 20px", background: "rgba(255,255,255,0.05)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)" }}>
-            <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 8px", fontWeight: 600 }}>AdministraciÃ³n</p>
-            <a href="/setup" style={{ color: "#60a5fa", fontSize: 13, textDecoration: "none" }}>âš™ï¸ ConfiguraciÃ³n del Sistema â†’</a>
+            <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 8px", fontWeight: 600 }}>Administración</p>
+            <a href="/setup" style={{ color: "#60a5fa", fontSize: 13, textDecoration: "none" }}>âš™ï¸ Configuración del Sistema â†’</a>
           </div>
         </div>
       </div>
@@ -144,7 +144,7 @@ function LoginForm() {
           width: "100%", maxWidth: 400, background: "white", borderRadius: 20, padding: 40,
           boxShadow: "0 40px 80px rgba(0, 0, 0, 0.35)",
         }}>
-          <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#0f172a" }}>Iniciar SesiÃ³n</h2>
+          <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: "#0f172a" }}>Iniciar Sesión</h2>
           <p style={{ fontSize: 14, color: "#64748b", marginBottom: 28 }}>Ingresa tus credenciales para acceder</p>
 
           {error && (
@@ -171,7 +171,7 @@ function LoginForm() {
             </div>
 
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>ContraseÃ±a</label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Contraseña</label>
               <input
                 type="password"
                 value={password}
@@ -185,11 +185,11 @@ function LoginForm() {
               />
             </div>
 
-            {/* Selector de organizaciÃ³n - SOLO en modo admin/soporte */}
+            {/* Selector de organización - SOLO en modo admin/soporte */}
             {showTenant && (
               <div style={{ marginBottom: 24, padding: "16px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase" }}>
-                  ðŸ”§ OrganizaciÃ³n (Modo Soporte)
+                  ðŸ”§ Organización (Modo Soporte)
                 </label>
                 <input
                   type="text"
@@ -214,7 +214,7 @@ function LoginForm() {
                 cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 10px 25px rgba(59,130,246,0.3)"
               }}
             >
-              {loading ? "Ingresando..." : "Iniciar SesiÃ³n â†’"}
+              {loading ? "Ingresando..." : "Iniciar Sesión â†’"}
             </button>
           </form>
         </div>

@@ -89,7 +89,7 @@ export async function DELETE(
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
     if (parseInt(id) === token.userId) {
-      return NextResponse.json({ error: "No puede eliminarse a sÃ­ mismo" }, { status: 400 });
+      return NextResponse.json({ error: "No puede eliminarse a sí mismo" }, { status: 400 });
     }
 
     const { rowCount } = await run("DELETE FROM admins WHERE id = $1", [id]);

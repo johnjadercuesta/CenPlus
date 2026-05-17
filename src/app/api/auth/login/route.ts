@@ -10,13 +10,13 @@ export async function POST(request: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email y contraseÃ±a son obligatorios" },
+        { error: "Email y contraseña son obligatorios" },
         { status: 400 }
       );
     }
 
-    // Prioridad de detecciÃ³n de tenant:
-    // 1. ParÃ¡metro explÃ­cito en el body (Ãºtil para el selector manual en /login)
+    // Prioridad de detección de tenant:
+    // 1. Parámetro explícito en el body (útil para el selector manual en /login)
     // 2. Header x-tenant (puesto por el middleware al detectar subdominio)
     // 3. Cookie 'tenant'
     let tenant = sanitizeTenantValue(tenantParam) || getTenantFromRequest(request);
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Ãšltimo recurso: buscar el usuario recorriendo todos los esquemas (incluyendo public)
+    // Último recurso: buscar el usuario recorriendo todos los esquemas (incluyendo public)
     if (!tenant) {
       try {
         const { rows: schemas } = await pool.query(`
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     if (!tenant) {
       return NextResponse.json(
-        { error: "Credenciales invÃ¡lidas" },
+        { error: "Credenciales inválidas" },
         { status: 401 }
       );
     }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Credenciales invÃ¡lidas" },
+        { error: "Credenciales inválidas" },
         { status: 401 }
       );
     }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const valid = bcrypt.compareSync(password, user.password);
     if (!valid) {
       return NextResponse.json(
-        { error: "Credenciales invÃ¡lidas" },
+        { error: "Credenciales inválidas" },
         { status: 401 }
       );
     }

@@ -142,7 +142,7 @@ export default function ArchivosPage() {
   };
 
   const handleRestore = async (id: number) => {
-    if (!confirm("Â¿Restaurar este archivo? Esto reemplazarÃ¡ TODOS los datos actuales con los del archivo.")) return;
+    if (!confirm("¿Restaurar este archivo? Esto reemplazará TODOS los datos actuales con los del archivo.")) return;
     setRestoringId(id);
     try {
       const res = await fetch(`/api/archivos/${id}/restaurar`, {
@@ -158,7 +158,7 @@ export default function ArchivosPage() {
       }
     } catch (err) {
       console.error("Error restaurando:", err);
-      alert("Error de conexiÃ³n al restaurar");
+      alert("Error de conexión al restaurar");
     }
     setRestoringId(null);
   };
@@ -251,7 +251,7 @@ export default function ArchivosPage() {
             Archivos Electorales
           </h1>
           <p style={{ fontSize: 12, color: "#64748b", margin: "4px 0 0" }}>
-            Gestiona y consulta el histÃ³rico de Ã©pocas electorales
+            Gestiona y consulta el histórico de épocas electorales
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -286,7 +286,7 @@ export default function ArchivosPage() {
           <div style={{ fontSize: 28, fontWeight: 900, color: "#f8fafc", marginTop: 4 }}>{archivos.reduce((a, b) => a + b.total_ciudadanos, 0)}</div>
         </div>
         <div style={{ background: "#1e293b", borderRadius: 10, padding: 16, borderLeft: "4px solid #f59e0b" }}>
-          <div style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Ãšltimo Archivo</div>
+          <div style={{ fontSize: 10, color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Último Archivo</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#f8fafc", marginTop: 4 }}>
             {archivos.length > 0 ? new Date(archivos[0].fecha_creacion).toLocaleDateString("es-CO") : "N/A"}
           </div>
@@ -299,14 +299,14 @@ export default function ArchivosPage() {
         <div style={{ textAlign: "center", padding: 60, background: "#1e293b", borderRadius: 12 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ“</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>No hay archivos electorales</div>
-          <div style={{ fontSize: 12, color: "#64748b" }}>Crea tu primer archivo para archivar una Ã©poca electoral</div>
+          <div style={{ fontSize: 12, color: "#64748b" }}>Crea tu primer archivo para archivar una época electoral</div>
         </div>
       ) : (
         <div style={{ background: "#1e293b", borderRadius: 12, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid #334155" }}>
-                {["Nombre", "Fecha Corte", "Creado", "Ciudadanos", "LÃ­deres", "Sectores", "Acciones"].map((h) => (
+                {["Nombre", "Fecha Corte", "Creado", "Ciudadanos", "Líderes", "Sectores", "Acciones"].map((h) => (
                   <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>{h}</th>
                 ))}
               </tr>
@@ -346,8 +346,8 @@ export default function ArchivosPage() {
               <input value={formNombre} onChange={(e) => setFormNombre(e.target.value)} placeholder="Ej: Elecciones Congreso 2026" style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 12px", color: "#f8fafc", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", marginBottom: 4, display: "block" }}>DescripciÃ³n</label>
-              <textarea value={formDescripcion} onChange={(e) => setFormDescripcion(e.target.value)} placeholder="DescripciÃ³n opcional del archivo..." rows={3} style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 12px", color: "#f8fafc", fontSize: 13, outline: "none", resize: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", marginBottom: 4, display: "block" }}>Descripción</label>
+              <textarea value={formDescripcion} onChange={(e) => setFormDescripcion(e.target.value)} placeholder="Descripción opcional del archivo..." rows={3} style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 12px", color: "#f8fafc", fontSize: 13, outline: "none", resize: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", marginBottom: 4, display: "block" }}>Fecha de Corte *</label>
@@ -387,14 +387,14 @@ export default function ArchivosPage() {
                     cursor: "pointer", textTransform: "capitalize",
                   }}
                 >
-                  {tab === "ciudadanos" ? `Ciudadanos (${showDetail.total_ciudadanos})` : tab === "sectores" ? `Sectores (${showDetail.total_sectores})` : `LÃ­deres (${showDetail.total_lideres})`}
+                  {tab === "ciudadanos" ? `Ciudadanos (${showDetail.total_ciudadanos})` : tab === "sectores" ? `Sectores (${showDetail.total_sectores})` : `Líderes (${showDetail.total_lideres})`}
                 </button>
               ))}
             </div>
 
             {detailTab === "ciudadanos" && (
               <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-                <input value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} placeholder="Buscar por cÃ©dula o nombre..." style={{ flex: 1, minWidth: 150, background: "#0f172a", border: "1px solid #334155", borderRadius: 6, padding: "6px 10px", color: "#f8fafc", fontSize: 11, outline: "none" }} />
+                <input value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} placeholder="Buscar por cédula o nombre..." style={{ flex: 1, minWidth: 150, background: "#0f172a", border: "1px solid #334155", borderRadius: 6, padding: "6px 10px", color: "#f8fafc", fontSize: 11, outline: "none" }} />
                 <input value={barrioFilter} onChange={(e) => setBarrioFilter(e.target.value)} placeholder="Barrio..." style={{ width: 120, background: "#0f172a", border: "1px solid #334155", borderRadius: 6, padding: "6px 10px", color: "#f8fafc", fontSize: 11, outline: "none" }} />
                 <select value={sexoFilter} onChange={(e) => setSexoFilter(e.target.value)} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 6, padding: "6px 10px", color: "#cbd5e1", fontSize: 11 }}>
                   <option value="">Sexo</option>
@@ -415,7 +415,7 @@ export default function ArchivosPage() {
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10, minWidth: 900 }}>
                         <thead>
                           <tr style={{ borderBottom: "1px solid #334155" }}>
-                            {["CÃ©dula", "Nombre", "TelÃ©fono", "Sexo", "Edad", "Estudios", "OcupaciÃ³n", "Barrio", "Corregimiento", "Vereda", "Zona", "ProblemÃ¡tica", "LÃ­der", "Coords"].map((h) => (
+                            {["Cédula", "Nombre", "Teléfono", "Sexo", "Edad", "Estudios", "Ocupación", "Barrio", "Corregimiento", "Vereda", "Zona", "Problemática", "Líder", "Coords"].map((h) => (
                               <th key={h} style={{ padding: "8px 8px", textAlign: "left", fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                             ))}
                           </tr>
@@ -435,7 +435,7 @@ export default function ArchivosPage() {
                               <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.vereda || "â€”"}</td>
                               <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.zona || "â€”"}</td>
                               <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.problematica_principal || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.es_lider ? "SÃ­" : "No"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.es_lider ? "Sí" : "No"}</td>
                               <td style={{ padding: "6px 8px", color: "#cbd5e1", fontFamily: "monospace", fontSize: 8 }}>{c.latitud ? `${c.latitud.toFixed(4)}, ${c.longitud?.toFixed(4)}` : "N/A"}</td>
                             </tr>
                           ))}
@@ -460,7 +460,7 @@ export default function ArchivosPage() {
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: "1px solid #334155" }}>
-                            {["Nombre", "Zona", "Meta", "Votos HistÃ³ricos", "DescripciÃ³n"].map((h) => (
+                            {["Nombre", "Zona", "Meta", "Votos Históricos", "Descripción"].map((h) => (
                               <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>{h}</th>
                             ))}
                           </tr>
@@ -484,7 +484,7 @@ export default function ArchivosPage() {
                 {detailTab === "lideres" && (
                   <div style={{ background: "#0f172a", borderRadius: 8, overflow: "auto", maxHeight: 400 }}>
                     {detailLideres.length === 0 ? (
-                      <div style={{ textAlign: "center", padding: 40, color: "#475569" }}>No hay lÃ­deres en este archivo</div>
+                      <div style={{ textAlign: "center", padding: 40, color: "#475569" }}>No hay líderes en este archivo</div>
                     ) : (
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                         <thead>
@@ -500,7 +500,7 @@ export default function ArchivosPage() {
                               <td style={{ padding: "8px 12px", color: "#f8fafc", fontWeight: 600 }}>{l.nombre}</td>
                               <td style={{ padding: "8px 12px", color: "#cbd5e1" }}>{l.email}</td>
                               <td style={{ padding: "8px 12px", color: "#cbd5e1" }}>{l.role}</td>
-                              <td style={{ padding: "8px 12px", color: l.activo ? "#10b981" : "#ef4444", fontWeight: 700 }}>{l.activo ? "SÃ­" : "No"}</td>
+                              <td style={{ padding: "8px 12px", color: l.activo ? "#10b981" : "#ef4444", fontWeight: 700 }}>{l.activo ? "Sí" : "No"}</td>
                               <td style={{ padding: "8px 12px", color: "#cbd5e1" }}>{new Date(l.created_at).toLocaleDateString("es-CO")}</td>
                             </tr>
                           ))}
@@ -558,7 +558,7 @@ export default function ArchivosPage() {
                     <div style={{ color: "#cbd5e1" }}>Solo en archivo 1: <span style={{ fontWeight: 800, color: "#6366f1" }}>{compareResult.comparacion.solo_en_archivo1}</span></div>
                     <div style={{ color: "#cbd5e1" }}>Solo en archivo 2: <span style={{ fontWeight: 800, color: "#10b981" }}>{compareResult.comparacion.solo_en_archivo2}</span></div>
                     <div style={{ color: "#cbd5e1" }}>Diferencia ciudadanos: <span style={{ fontWeight: 800, color: compareResult.comparacion.diferencia_ciudadanos >= 0 ? "#10b981" : "#ef4444" }}>{compareResult.comparacion.diferencia_ciudadanos >= 0 ? "+" : ""}{compareResult.comparacion.diferencia_ciudadanos}</span></div>
-                    <div style={{ color: "#cbd5e1" }}>Diferencia lÃ­deres: <span style={{ fontWeight: 800, color: compareResult.comparacion.diferencia_lideres >= 0 ? "#10b981" : "#ef4444" }}>{compareResult.comparacion.diferencia_lideres >= 0 ? "+" : ""}{compareResult.comparacion.diferencia_lideres}</span></div>
+                    <div style={{ color: "#cbd5e1" }}>Diferencia líderes: <span style={{ fontWeight: 800, color: compareResult.comparacion.diferencia_lideres >= 0 ? "#10b981" : "#ef4444" }}>{compareResult.comparacion.diferencia_lideres >= 0 ? "+" : ""}{compareResult.comparacion.diferencia_lideres}</span></div>
                   </div>
                 </div>
 
@@ -597,7 +597,7 @@ export default function ArchivosPage() {
               <input type="file" accept=".csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} style={{ width: "100%", fontSize: 12, color: "#cbd5e1" }} />
             </div>
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", marginBottom: 4, display: "block" }}>Modo de importaciÃ³n</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", marginBottom: 4, display: "block" }}>Modo de importación</label>
               <select value={importMode} onChange={(e) => setImportMode(e.target.value)} style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 12px", color: "#f8fafc", fontSize: 13, outline: "none" }}>
                 <option value="append">Agregar a los existentes</option>
                 <option value="replace">Reemplazar todo</option>
@@ -622,7 +622,7 @@ export default function ArchivosPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={() => setSelectedForDelete(null)}>
           <div style={{ background: "#1e293b", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#f8fafc", margin: "0 0 8px" }}>Eliminar Archivo</h3>
-            <p style={{ fontSize: 12, color: "#cbd5e1", margin: "0 0 20px" }}>Â¿EstÃ¡s seguro? Esta acciÃ³n no se puede deshacer.</p>
+            <p style={{ fontSize: 12, color: "#cbd5e1", margin: "0 0 20px" }}>¿Estás seguro? Esta acción no se puede deshacer.</p>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setSelectedForDelete(null)} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#334155", color: "#cbd5e1", border: "none", cursor: "pointer" }}>Cancelar</button>
               <button onClick={() => handleDelete(selectedForDelete)} style={{ padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#ef4444", color: "white", border: "none", cursor: "pointer" }}>Eliminar</button>

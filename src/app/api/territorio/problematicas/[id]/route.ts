@@ -25,12 +25,12 @@ export async function PUT(
       [nombre, params.id]
     );
 
-    if (rowCount === 0) return NextResponse.json({ error: "ProblemÃ¡tica no encontrada" }, { status: 404 });
+    if (rowCount === 0) return NextResponse.json({ error: "Problemática no encontrada" }, { status: 404 });
 
-    return NextResponse.json({ message: "ProblemÃ¡tica social actualizada" });
+    return NextResponse.json({ message: "Problemática social actualizada" });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error al actualizar problemÃ¡tica" }, { status: 500 });
+    return NextResponse.json({ error: "Error al actualizar problemática" }, { status: 500 });
   }
 }
 
@@ -49,11 +49,11 @@ export async function DELETE(
 
     const { rowCount } = await run("DELETE FROM problematicas_sociales WHERE id = $1", [params.id]);
 
-    if (rowCount === 0) return NextResponse.json({ error: "ProblemÃ¡tica no encontrada" }, { status: 404 });
+    if (rowCount === 0) return NextResponse.json({ error: "Problemática no encontrada" }, { status: 404 });
 
-    return NextResponse.json({ message: "ProblemÃ¡tica social eliminada" });
+    return NextResponse.json({ message: "Problemática social eliminada" });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error al eliminar problemÃ¡tica" }, { status: 500 });
+    return NextResponse.json({ error: "Error al eliminar problemática" }, { status: 500 });
   }
 }

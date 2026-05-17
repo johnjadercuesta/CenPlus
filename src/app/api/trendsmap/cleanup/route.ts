@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[cleanup] Eliminados ${result.rowCount} registros duplicados`);
 
-    // Obtener estadÃ­sticas finales
+    // Obtener estadísticas finales
     const stats = await run(`
       SELECT 
         COUNT(*) as total,

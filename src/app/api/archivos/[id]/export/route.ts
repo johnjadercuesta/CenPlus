@@ -26,10 +26,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     const headers = [
-      "ID", "CÃ©dula", "Nombre Completo", "TelÃ©fono", "Sexo", "Edad",
-      "Nivel de Estudios", "OcupaciÃ³n", "RÃ©gimen Salud", "Puesto VotaciÃ³n",
-      "ProblemÃ¡tica Principal", "Comuna", "Barrio", "Corregimiento",
-      "Vereda", "Es LÃ­der", "Latitud", "Longitud", "Fecha Registro",
+      "ID", "Cédula", "Nombre Completo", "Teléfono", "Sexo", "Edad",
+      "Nivel de Estudios", "Ocupación", "Régimen Salud", "Puesto Votación",
+      "Problemática Principal", "Comuna", "Barrio", "Corregimiento",
+      "Vereda", "Es Líder", "Latitud", "Longitud", "Fecha Registro",
     ];
 
     const csvRows = [
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           `"${row.barrio}"`,
           `"${row.corregimiento}"`,
           `"${row.vereda || ""}"`,
-          row.es_lider === 1 ? "SÃ­" : "No",
+          row.es_lider === 1 ? "Sí" : "No",
           row.latitud || "",
           row.longitud || "",
           row.created_at
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const csvContent = csvRows.join("\n");
     const bom = "\uFEFF";
-    const safeName = archivo.nombre.replace(/[^a-zA-Z0-9Ã¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ±Ã‘ ]/g, "").replace(/\s+/g, "_");
+    const safeName = archivo.nombre.replace(/[^a-zA-Z0-9áéíóúÃÉÍÓÚñÑ ]/g, "").replace(/\s+/g, "_");
 
     return new NextResponse(bom + csvContent, {
       headers: {

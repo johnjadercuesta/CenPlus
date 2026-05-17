@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
 
     const { rows: existingRows } = await run("SELECT id FROM ciudadanos WHERE id_unico = $1", [String(body.id_unico).trim()]);
     if (existingRows.length > 0) {
-      return NextResponse.json({ error: "Esta cÃ©dula ya estÃ¡ registrada" }, { status: 409 });
+      return NextResponse.json({ error: "Esta cédula ya está registrada" }, { status: 409 });
     }
 
     const liderId = (token.role === "administrador" || token.role === "estratega") && body.lider_id
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
       String(body.barrio).trim(),
       String(body.corregimiento).trim(),
       body.vereda ? String(body.vereda).trim() : null,
-      (body.es_lider === true || body.es_lider === "SÃ­" || body.es_lider === "true" || body.es_lider === 1) ? 1 : 0,
+      (body.es_lider === true || body.es_lider === "Sí" || body.es_lider === "true" || body.es_lider === 1) ? 1 : 0,
       body.nombre_lider ? String(body.nombre_lider).trim() : null,
       liderId,
       lat,

@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
-    // Verificar que la tabla existe y crear si no (pg no soporta mÃºltiples statements en una query)
+    // Verificar que la tabla existe y crear si no (pg no soporta múltiples statements en una query)
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     await run(`CREATE INDEX IF NOT EXISTS idx_trendsmap_hashtags ON trendsmap_entries USING GIN(hashtags)`);
 
     // Sincronizar datos de global_trends a trendsmap_entries
-    // Toma tendencias ÃšNICAS (sin duplicados) ordenadas por heat_index
+    // Toma tendencias ÚNICAS (sin duplicados) ordenadas por heat_index
     const globalRes = await run(`
       SELECT DISTINCT ON (topic, latitude, longitude)
         id,
@@ -69,11 +69,11 @@ export async function POST(request: NextRequest) {
     if (globalTrends.length === 0) {
       console.log("[trendsmap/seed] Sin datos en global_trends, agregando tendencias de prueba...");
       const testData = [
-        { text: "Movilidad crÃ­tica en avenida septima por protesta", hashtags: ["Bogota", "Movilidad"], lat: 4.7124, lng: -74.0055, depto: "Cundinamarca", municipio: "BogotÃ¡" },
-        { text: "Festival cultural en la candelaria - entrada libre", hashtags: ["Bogota", "Cultura", "Eventos"], lat: 4.5971, lng: -74.0766, depto: "Cundinamarca", municipio: "BogotÃ¡" },
-        { text: "Nuevas ciclovias inauguradas en el norte", hashtags: ["Bogota", "Transporte", "Sostenible"], lat: 4.8233, lng: -74.0206, depto: "Cundinamarca", municipio: "BogotÃ¡" },
-        { text: "Comercio reactiva con nueva zona retail en MedellÃ­n", hashtags: ["Medellin", "Economia", "Comercio"], lat: 6.2476, lng: -75.5658, depto: "Antioquia", municipio: "MedellÃ­n" },
-        { text: "Carnaval de Barranquilla 2026 - preparativos finales", hashtags: ["Barranquilla", "Carnaval", "Fiesta"], lat: 10.9685, lng: -74.7813, depto: "AtlÃ¡ntico", municipio: "Barranquilla" },
+        { text: "Movilidad crítica en avenida septima por protesta", hashtags: ["Bogota", "Movilidad"], lat: 4.7124, lng: -74.0055, depto: "Cundinamarca", municipio: "Bogotá" },
+        { text: "Festival cultural en la candelaria - entrada libre", hashtags: ["Bogota", "Cultura", "Eventos"], lat: 4.5971, lng: -74.0766, depto: "Cundinamarca", municipio: "Bogotá" },
+        { text: "Nuevas ciclovias inauguradas en el norte", hashtags: ["Bogota", "Transporte", "Sostenible"], lat: 4.8233, lng: -74.0206, depto: "Cundinamarca", municipio: "Bogotá" },
+        { text: "Comercio reactiva con nueva zona retail en Medellín", hashtags: ["Medellin", "Economia", "Comercio"], lat: 6.2476, lng: -75.5658, depto: "Antioquia", municipio: "Medellín" },
+        { text: "Carnaval de Barranquilla 2026 - preparativos finales", hashtags: ["Barranquilla", "Carnaval", "Fiesta"], lat: 10.9685, lng: -74.7813, depto: "Atlántico", municipio: "Barranquilla" },
         { text: "Cali reporta aumento en empleo de temporada", hashtags: ["Cali", "Economia", "Empleo"], lat: 3.4516, lng: -76.532, depto: "Valle del Cauca", municipio: "Cali" },
       ];
       
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         isTestData: true,
       });
     }
-    // Crear constraint Ãºnico para evitar duplicados (IF NOT EXISTS no es vÃ¡lido en PG para CONSTRAINT)
+    // Crear constraint único para evitar duplicados (IF NOT EXISTS no es válido en PG para CONSTRAINT)
     await run(`
       DO $$
       BEGIN

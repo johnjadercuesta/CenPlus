@@ -11,7 +11,7 @@ interface Tenant {
 
 type Tab = "setup" | "create" | "list";
 
-// Limpiar el dominio base por si el usuario incluyÃ³ https:// o barras
+// Limpiar el dominio base por si el usuario incluyó https:// o barras
 const rawDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "";
 const BASE_DOMAIN = rawDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
@@ -23,7 +23,7 @@ function tenantUrl(tenantName: string, path = "/login"): string {
   if (BASE_DOMAIN && !IS_RAILWAY_DOMAIN) {
     return `https://${tenantName}.${BASE_DOMAIN}${path}`;
   }
-  // Fallback: usar parÃ¡metro de URL
+  // Fallback: usar parámetro de URL
   return `${path}?tenant=${tenantName}`;
 }
 
@@ -31,7 +31,7 @@ function tenantDisplayUrl(tenantName: string): string {
   if (BASE_DOMAIN && !IS_RAILWAY_DOMAIN) {
     return `${tenantName}.${BASE_DOMAIN}`;
   }
-  return `(vÃ­a parÃ¡metro: ?tenant=${tenantName})`;
+  return `(vía parámetro: ?tenant=${tenantName})`;
 }
 
 export default function SetupPage() {
@@ -85,7 +85,7 @@ export default function SetupPage() {
       setSetupResult(data);
       await checkDbStatus();
     } catch {
-      setSetupResult({ error: "Error de conexiÃ³n al servidor" });
+      setSetupResult({ error: "Error de conexión al servidor" });
     } finally {
       setSetupLoading(false);
     }
@@ -110,7 +110,7 @@ export default function SetupPage() {
       setCreateResult(data);
       if (data.success) { await checkDbStatus(); }
     } catch {
-      setCreateResult({ error: "Error de conexiÃ³n al servidor" });
+      setCreateResult({ error: "Error de conexión al servidor" });
     } finally {
       setCreateLoading(false);
     }
@@ -174,7 +174,7 @@ export default function SetupPage() {
             Panel de Super Admin
           </h1>
           <p style={{ color: "#64748b", fontSize: 15, margin: 0 }}>
-            GestiÃ³n Multi-Tenant Â· CenPlus
+            Gestión Multi-Tenant Â· CenPlus
           </p>
         </div>
 
@@ -187,13 +187,13 @@ export default function SetupPage() {
               type="password"
               value={superKey}
               onChange={e => setSuperKey(e.target.value)}
-              placeholder="Deja vacÃ­o si es la primera instalaciÃ³n"
+              placeholder="Deja vacío si es la primera instalación"
               style={{ ...inp, marginBottom: 16 }}
             />
 
             <div style={{ padding: "12px 16px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, marginBottom: 20 }}>
               <p style={{ color: "#93c5fd", fontSize: 12, margin: 0, lineHeight: 1.8 }}>
-                ðŸ’¡ <strong>Primera instalaciÃ³n:</strong> Deja el campo <em>vacÃ­o</em> y haz clic en Ingresar.<br />
+                ðŸ’¡ <strong>Primera instalación:</strong> Deja el campo <em>vacío</em> y haz clic en Ingresar.<br />
                 ðŸ”’ <strong>Instalaciones posteriores:</strong> Requiere la <code>SUPER_ADMIN_KEY</code> de Railway â†’ Variables.
               </p>
             </div>
@@ -330,7 +330,7 @@ export default function SetupPage() {
                 )}
                 {setupResult.success && (
                   <p style={{ color: "#60a5fa", fontSize: 13, margin: "12px 0 0" }}>
-                    ðŸ‘‰ Ve a <strong>"âž• Crear Tenant"</strong> para crear tu primera organizaciÃ³n.
+                    ðŸ‘‰ Ve a <strong>"âž• Crear Tenant"</strong> para crear tu primera organización.
                   </p>
                 )}
               </div>
@@ -373,7 +373,7 @@ export default function SetupPage() {
                     NEXT_PUBLIC_BASE_DOMAIN = tudominio.com
                   </code>
                 </li>
-                <li>Redeploy Railway y Â¡listo! Cada tenant tendrÃ¡ su propio subdominio.</li>
+                <li>Redeploy Railway y ¡listo! Cada tenant tendrá su propio subdominio.</li>
               </ol>
             </div>
           </>
@@ -387,7 +387,7 @@ export default function SetupPage() {
             </h2>
             <p style={{ color: "#64748b", fontSize: 13, marginBottom: 24 }}>
               Cada tenant tiene su propia base de datos aislada
-              {BASE_DOMAIN ? ` y accederÃ¡ por ${"{nombre}"}.${BASE_DOMAIN}` : ""}.
+              {BASE_DOMAIN ? ` y accederá por ${"{nombre}"}.${BASE_DOMAIN}` : ""}.
             </p>
 
             {createResult && (
@@ -429,7 +429,7 @@ export default function SetupPage() {
 
                     <div style={{ color: "#86efac", fontSize: 13, lineHeight: 1.9 }}>
                       <strong>ðŸ“§ Admin:</strong> {createResult.credentials?.email}<br />
-                      <strong>ðŸ”‘ ContraseÃ±a:</strong> la que ingresaste<br />
+                      <strong>ðŸ”‘ Contraseña:</strong> la que ingresaste<br />
                       {createResult.credentials?.testUsers && (
                         <>
                           <strong>ðŸ‘¥ Usuarios de prueba (pass: admin123):</strong><br />
@@ -452,12 +452,12 @@ export default function SetupPage() {
                   key: "name", label: "ID del Tenant", type: "text",
                   placeholder: "municipio1",
                   hint: BASE_DOMAIN
-                    ? `AccederÃ¡ como: municipio1.${BASE_DOMAIN}`
-                    : "Solo letras minÃºsculas, nÃºmeros y guiÃ³n_bajo.",
+                    ? `Accederá como: municipio1.${BASE_DOMAIN}`
+                    : "Solo letras minúsculas, números y guión_bajo.",
                 },
-                { key: "fullName", label: "Nombre de la OrganizaciÃ³n (opcional)", type: "text", placeholder: "AlcaldÃ­a de Municipio X", hint: "" },
+                { key: "fullName", label: "Nombre de la Organización (opcional)", type: "text", placeholder: "Alcaldía de Municipio X", hint: "" },
                 { key: "email", label: "Email del Administrador", type: "email", placeholder: "admin@tuorganizacion.com", hint: "" },
-                { key: "password", label: "ContraseÃ±a del Admin", type: "password", placeholder: "MÃ­nimo 8 caracteres", hint: "" },
+                { key: "password", label: "Contraseña del Admin", type: "password", placeholder: "Mínimo 8 caracteres", hint: "" },
               ].map(field => (
                 <div key={field.key} style={{ marginBottom: 16 }}>
                   <label style={{ display: "block", color: "#cbd5e1", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
@@ -510,7 +510,7 @@ export default function SetupPage() {
               <div>
                 <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, margin: 0 }}>Tenants Activos</h2>
                 <p style={{ color: "#64748b", fontSize: 13, margin: "4px 0 0" }}>
-                  {tenants.length} organizaciÃ³n(es)
+                  {tenants.length} organización(es)
                   {BASE_DOMAIN ? ` Â· *.${BASE_DOMAIN}` : ""}
                 </p>
               </div>
@@ -532,7 +532,7 @@ export default function SetupPage() {
                 {listLoading ? "Cargando..." : (
                   <>
                     <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ¢</div>
-                    No hay tenants aÃºn.<br />
+                    No hay tenants aún.<br />
                     <button onClick={() => setTab("create")}
                       style={{ background: "none", border: "none", color: "#60a5fa", marginTop: 8, cursor: "pointer", fontSize: 14 }}>
                       Crear primer tenant â†’
@@ -597,7 +597,7 @@ export default function SetupPage() {
           onClick={() => { setKeyVerified(false); setSuperKey(""); }}
           style={{ background: "none", border: "none", color: "#475569", fontSize: 13, cursor: "pointer" }}
         >
-          ðŸ”’ Cerrar sesiÃ³n admin
+          ðŸ”’ Cerrar sesión admin
         </button>
       </div>
     </div>

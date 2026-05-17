@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         ]
       );
 
-      // Limpiar datos actuales despuÃ©s de archivar
+      // Limpiar datos actuales después de archivar
       await client.query("DELETE FROM ciudadanos");
       await client.query("DELETE FROM sectores");
 

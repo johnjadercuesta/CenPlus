@@ -20,7 +20,7 @@ function isAuthorized(request: NextRequest): boolean {
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json(
-      { error: 'Acceso Denegado. Se requiere SUPER_ADMIN_KEY vÃ¡lida.' },
+      { error: 'Acceso Denegado. Se requiere SUPER_ADMIN_KEY válida.' },
       { status: 401 }
     );
   }

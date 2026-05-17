@@ -5,13 +5,13 @@ import { verifyToken } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     const tenant = getTenantFromRequest(request);
-    if (!tenant) return NextResponse.json({ error: "Contexto no vÃ¡lido" }, { status: 400 });
+    if (!tenant) return NextResponse.json({ error: "Contexto no válido" }, { status: 400 });
 
     const { rows } = await queryWithTenant(tenant, "SELECT * FROM problematicas_sociales ORDER BY nombre ASC");
     return NextResponse.json({ data: rows });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error al obtener problemÃ¡ticas" }, { status: 500 });
+    return NextResponse.json({ error: "Error al obtener problemáticas" }, { status: 500 });
   }
 }
 
@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
       [nombre]
     );
 
-    return NextResponse.json({ data: rows[0], message: "ProblemÃ¡tica guardada" }, { status: 201 });
+    return NextResponse.json({ data: rows[0], message: "Problemática guardada" }, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error al guardar problemÃ¡tica" }, { status: 500 });
+    return NextResponse.json({ error: "Error al guardar problemática" }, { status: 500 });
   }
 }
 

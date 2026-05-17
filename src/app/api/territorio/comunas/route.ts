@@ -5,7 +5,7 @@ import { verifyToken } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     const tenant = getTenantFromRequest(request);
-    if (!tenant) return NextResponse.json({ error: "Contexto no vÃ¡lido" }, { status: 400 });
+    if (!tenant) return NextResponse.json({ error: "Contexto no válido" }, { status: 400 });
 
     const { searchParams } = new URL(request.url);
     const tipo = searchParams.get("tipo"); 

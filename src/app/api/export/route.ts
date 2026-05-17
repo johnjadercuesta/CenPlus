@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
     }
 
     const headers = [
-      "ID", "CÃ©dula", "Nombre Completo", "TelÃ©fono", "Sexo", "Edad",
-      "Nivel de Estudios", "OcupaciÃ³n", "RÃ©gimen Salud", "Puesto VotaciÃ³n",
-      "ProblemÃ¡tica Principal", "Comuna", "Barrio", "Corregimiento",
-      "Vereda", "Es LÃ­der", "Latitud", "Longitud", "Fecha Registro",
+      "ID", "Cédula", "Nombre Completo", "Teléfono", "Sexo", "Edad",
+      "Nivel de Estudios", "Ocupación", "Régimen Salud", "Puesto Votación",
+      "Problemática Principal", "Comuna", "Barrio", "Corregimiento",
+      "Vereda", "Es Líder", "Latitud", "Longitud", "Fecha Registro",
     ];
 
     const csvRows = [
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
           `"${row.barrio}"`,
           `"${row.corregimiento}"`,
           `"${row.vereda || ""}"`,
-          row.es_lider === 1 ? "SÃ­" : "No",
+          row.es_lider === 1 ? "Sí" : "No",
           row.latitud || "",
           row.longitud || "",
           row.created_at
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     const csvContent = csvRows.join("\n");
     const bom = "\uFEFF";
     
-    // El navegador manejarÃ¡ la descarga si retornamos los headers correctos
+    // El navegador manejará la descarga si retornamos los headers correctos
     return new NextResponse(bom + csvContent, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
@@ -61,6 +61,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error al generar exportaciÃ³n" }, { status: 500 });
+    return NextResponse.json({ error: "Error al generar exportación" }, { status: 500 });
   }
 }

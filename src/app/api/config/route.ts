@@ -31,7 +31,7 @@ export async function PUT(request: NextRequest) {
   try {
     const token = getTokenFromRequest(request);
     if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores pueden cambiar la configuraciÃ³n" }, { status: 403 });
+      return NextResponse.json({ error: "Solo administradores pueden cambiar la configuración" }, { status: 403 });
     }
     if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ message: "ConfiguraciÃ³n actualizada correctamente" });
+    return NextResponse.json({ message: "Configuración actualizada correctamente" });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });

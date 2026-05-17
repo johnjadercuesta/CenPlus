@@ -16,7 +16,7 @@ function isAuthorized(request: NextRequest): boolean {
 export async function POST(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json(
-      { error: 'Acceso Denegado. Se requiere una SUPER_ADMIN_KEY vÃ¡lida.' },
+      { error: 'Acceso Denegado. Se requiere una SUPER_ADMIN_KEY válida.' },
       { status: 401 }
     );
   }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('âœ… Tabla public.system_logs (AuditorÃ­a) verificada');
+    results.push('âœ… Tabla public.system_logs (Auditoría) verificada');
 
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email)
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_system_logs_tenant ON public.system_logs(tenant)
     `);
-    results.push('âœ… Ãndices globales verificados');
+    results.push('âœ… Índices globales verificados');
 
     return NextResponse.json({
       success: true,

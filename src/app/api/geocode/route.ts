@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { latitud: null, longitud: null, error: "Error en geocodificaciÃ³n" },
+        { latitud: null, longitud: null, error: "Error en geocodificación" },
         { status: 200 }
       );
     }

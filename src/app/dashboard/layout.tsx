@@ -41,7 +41,7 @@ export default function DashboardLayout({
           const hasAccess = checkRouteAccess(pathname, data.role);
           if (!hasAccess) {
             setAccessDenied(true);
-            // Redirigir a dashboard despuÃ©s de 2 segundos
+            // Redirigir a dashboard después de 2 segundos
             setTimeout(() => {
               router.push("/dashboard");
             }, 2000);
@@ -77,7 +77,7 @@ export default function DashboardLayout({
         <div style={{ textAlign: "center", background: "white", padding: 40, borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", maxWidth: 400 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>ðŸ”’</div>
           <h2 style={{ color: "#1e3a5f", marginBottom: 8, fontSize: 20, fontWeight: 600 }}>Acceso Denegado</h2>
-          <p style={{ color: "#64748b", marginBottom: 16, fontSize: 14 }}>No tienes permiso para acceder a este mÃ³dulo.</p>
+          <p style={{ color: "#64748b", marginBottom: 16, fontSize: 14 }}>No tienes permiso para acceder a este módulo.</p>
           <p style={{ color: "#94a3b8", fontSize: 12 }}>Redirigiendo al dashboard en 2 segundos...</p>
         </div>
       </div>

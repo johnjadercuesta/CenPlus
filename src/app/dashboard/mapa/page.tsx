@@ -34,7 +34,7 @@ export default function MapaPage() {
       <div className="main-header">
         <div>
           <h1 className="main-header-title">ðŸ‘¥ Mapa Territorial</h1>
-          <p className="main-header-subtitle">VisualizaciÃ³n de densidad y metas por zona</p>
+          <p className="main-header-subtitle">Visualización de densidad y metas por zona</p>
         </div>
         <div style={{ minWidth: 220 }}>
           <ArchivoSelector value={archivoId} onChange={setArchivoId} compact />
@@ -51,7 +51,7 @@ export default function MapaPage() {
             <div style={{ fontSize: 24, fontWeight: 800, color: "#16a34a" }}>{conCoords.length}</div>
           </div>
           <div className="metric-card" style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>LÃ­deres</div>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>Líderes</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: "#d97706" }}>{lideres.length}</div>
           </div>
           <div className="metric-card" style={{ flex: 1 }}>

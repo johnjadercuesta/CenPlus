@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       topProblematicas = Object.entries(probMap).map(([problematica, c]) => ({ problematica, c })).sort((a, b) => (b.c as number) - (a.c as number));
       porLider = [];
       // Populate rows7dias with 7 empty days for the chart
-      const days = ["Dom", "Lun", "Mar", "MiÃ©", "Jue", "Vie", "SÃ¡b"];
+      const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
       const today = new Date().getDay();
       rows7dias = [];
       for (let i = 6; i >= 0; i--) {

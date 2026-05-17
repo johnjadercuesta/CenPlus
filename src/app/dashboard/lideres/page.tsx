@@ -5,8 +5,8 @@ export default function LideresPage() {
     <div>
       <div className="main-header">
         <div>
-          <h1 className="main-header-title">GestiÃ³n de Usuarios</h1>
-          <p className="main-header-subtitle">Cree y administre cuentas de lÃ­deres y administradores</p>
+          <h1 className="main-header-title">Gestión de Usuarios</h1>
+          <p className="main-header-subtitle">Cree y administre cuentas de líderes y administradores</p>
         </div>
       </div>
       <div className="main-content">
@@ -18,7 +18,7 @@ export default function LideresPage() {
                 <span style={{ fontSize: 13, color: "#64748b" }}>Acceso total, gestiona usuarios</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span className="badge badge-blue">LÃ­der</span>
+                <span className="badge badge-blue">Líder</span>
                 <span style={{ fontSize: 13, color: "#64748b" }}>Solo ve sus propios registros</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

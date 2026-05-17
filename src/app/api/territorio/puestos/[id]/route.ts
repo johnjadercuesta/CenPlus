@@ -32,7 +32,7 @@ export async function PUT(
 
     if (rowCount === 0) return NextResponse.json({ error: "Puesto no encontrado" }, { status: 404 });
 
-    return NextResponse.json({ message: "Puesto de votaciÃ³n actualizado" });
+    return NextResponse.json({ message: "Puesto de votación actualizado" });
   } catch (err: any) {
     console.error(err);
     if (err.code === "23505") return NextResponse.json({ error: "Ya existe un puesto con ese nombre" }, { status: 400 });
@@ -57,7 +57,7 @@ export async function DELETE(
 
     if (rowCount === 0) return NextResponse.json({ error: "Puesto no encontrado" }, { status: 404 });
 
-    return NextResponse.json({ message: "Puesto de votaciÃ³n eliminado" });
+    return NextResponse.json({ message: "Puesto de votación eliminado" });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Error al eliminar puesto" }, { status: 500 });

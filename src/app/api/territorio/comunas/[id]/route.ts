@@ -30,7 +30,7 @@ export async function PUT(
     return NextResponse.json({ message: "Comuna actualizada" });
   } catch (err: any) {
     console.error(err);
-    if (err.code === "23505") return NextResponse.json({ error: "Ese nombre ya estÃ¡ en uso por otra comuna" }, { status: 400 });
+    if (err.code === "23505") return NextResponse.json({ error: "Ese nombre ya está en uso por otra comuna" }, { status: 400 });
     return NextResponse.json({ error: "Error al actualizar comuna" }, { status: 500 });
   }
 }
