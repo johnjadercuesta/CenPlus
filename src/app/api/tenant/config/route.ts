@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTenantFromRequest } from "@/lib/tenant";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const tenant = getTenantFromRequest(request);
     
     if (!tenant) {
       return NextResponse.json({ 
-        primary_color: '#3b82f6', 
+        primary_color: '#162749', 
         secondary_color: '#6366f1',
         logo_url: null 
       });
@@ -21,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (rows.length === 0) {
       return NextResponse.json({ 
-        primary_color: '#3b82f6', 
+        primary_color: '#162749', 
         secondary_color: '#6366f1',
         logo_url: null 
       });
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
         await pool.query(`
           CREATE TABLE IF NOT EXISTS public.tenants_config (
             tenant VARCHAR(63) PRIMARY KEY,
-            primary_color VARCHAR(7) DEFAULT '#3b82f6',
+            primary_color VARCHAR(7) DEFAULT '#162749',
             secondary_color VARCHAR(7) DEFAULT '#6366f1',
             logo_url TEXT,
             config JSONB DEFAULT '{}',
@@ -44,7 +47,7 @@ export async function GET(request: NextRequest) {
           )
         `);
         return NextResponse.json({ 
-          primary_color: '#3b82f6', 
+          primary_color: '#162749', 
           secondary_color: '#6366f1',
           logo_url: null 
         });

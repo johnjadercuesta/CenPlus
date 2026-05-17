@@ -30,7 +30,7 @@ export default function Sidebar() {
         .catch(() => {});
       
       // Cargar logo desde la config del tenant
-      fetch("/api/tenant/config")
+      fetch(`/api/tenant/config?t=${Date.now()}`)
         .then(r => r.json())
         .then(data => {
           if (data.logo_url) setLogo(data.logo_url);

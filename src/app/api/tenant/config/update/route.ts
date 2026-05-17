@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
          secondary_color = EXCLUDED.secondary_color,
          logo_url = EXCLUDED.logo_url,
          updated_at = NOW()`,
-      [tenant, primary_color || '#3b82f6', secondary_color || '#6366f1', logo_url || null]
+      [tenant, primary_color || '#162749', secondary_color || '#6366f1', logo_url || null]
     );
 
     return NextResponse.json({ success: true, message: "ConfiguraciÃ³n de marca actualizada." });
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         await pool.query(`
           CREATE TABLE IF NOT EXISTS public.tenants_config (
             tenant VARCHAR(63) PRIMARY KEY,
-            primary_color VARCHAR(7) DEFAULT '#3b82f6',
+            primary_color VARCHAR(7) DEFAULT '#162749',
             secondary_color VARCHAR(7) DEFAULT '#6366f1',
             logo_url TEXT,
             config JSONB DEFAULT '{}',

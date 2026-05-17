@@ -12,7 +12,7 @@ export default function ConfiguracionPage() {
   const [comunaFilterId, setComunaFilterId] = useState<string>("");
 
   // Branding states
-  const [primaryColor, setPrimaryColor] = useState("#3b82f6");
+  const [primaryColor, setPrimaryColor] = useState("#162749");
   const [logoUrl, setLogoUrl] = useState("");
   const [metaGlobal, setMetaGlobal] = useState("1000");
 
@@ -69,8 +69,8 @@ export default function ConfiguracionPage() {
   };
 
   const handleResetColor = () => {
-    setPrimaryColor("#3b82f6");
-    document.documentElement.style.setProperty('--brand-accent', "#3b82f6");
+    setPrimaryColor("#162749");
+    document.documentElement.style.setProperty('--brand-accent', "#162749");
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
