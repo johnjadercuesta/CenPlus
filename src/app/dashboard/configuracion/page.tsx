@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { authHeadersWithJson } from "@/lib/api";
 
 export default function ConfiguracionPage() {
-  const [activeTab, setActiveTab] = useState<"territorio" | "referencias" | "marca">("territorio");
+  const [activeTab, setActiveTab] = useState<"territorio" | "referencias" | "marca" | "cuenta">("territorio");
   const [comunas, setComunas] = useState<any[]>([]);
   const [barrios, setBarrios] = useState<any[]>([]);
   const [puestos, setPuestos] = useState<any[]>([]);
@@ -15,6 +15,11 @@ export default function ConfiguracionPage() {
   const [primaryColor, setPrimaryColor] = useState("#3b82f6");
   const [logoUrl, setLogoUrl] = useState("");
   const [metaGlobal, setMetaGlobal] = useState("1000");
+
+  // Password change states
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Create states
   const [newComuna, setNewComuna] = useState({ nombre: "", tipo: "urbana" });
@@ -141,6 +146,52 @@ export default function ConfiguracionPage() {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: "error", text: "Las contraseñas nuevas no coinciden" });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setMessage({ type: "error", text: "La contraseña debe tener al menos 6 caracteres" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setMessage({ type: "success", text: "Contraseña actualizada correctamente" });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        setMessage({ type: "error", text: data.error || "Error al cambiar contraseña" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Error de conexión" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const barriosFiltrados = comunaFilterId 
     ? barrios.filter(b => String(b.comuna_id) === comunaFilterId) 
     : barrios;
@@ -168,6 +219,7 @@ export default function ConfiguracionPage() {
         <button onClick={() => setActiveTab("territorio")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "territorio" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "territorio" ? 700 : 500, color: activeTab === "territorio" ? "#3b82f6" : "#64748b" }}>📍 Territorio</button>
         <button onClick={() => setActiveTab("referencias")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "referencias" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "referencias" ? 700 : 500, color: activeTab === "referencias" ? "#3b82f6" : "#64748b" }}>⚙️ Referencias</button>
         <button onClick={() => setActiveTab("marca")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "marca" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "marca" ? 700 : 500, color: activeTab === "marca" ? "#3b82f6" : "#64748b" }}>🎨 Marca y Estilo</button>
+        <button onClick={() => setActiveTab("cuenta")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "cuenta" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "cuenta" ? 700 : 500, color: activeTab === "cuenta" ? "#3b82f6" : "#64748b" }}>🔒 Mi Cuenta</button>
       </div>
 
       <div className="content">
@@ -226,6 +278,69 @@ export default function ConfiguracionPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <button type="submit" disabled={saving} style={{ background: primaryColor, color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", cursor: "pointer", fontWeight: 700 }}>{saving ? "Guardando..." : "Guardar Personalización"}</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {activeTab === "cuenta" && (
+          <div className="card" style={{ background: "white", padding: "32px", borderRadius: "12px", border: "1px solid #e2e8f0", maxWidth: "600px" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "24px" }}>Cambiar Contraseña</h3>
+            <form onSubmit={handleChangePassword}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 600, marginBottom: "6px" }}>Contraseña Actual</label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={e => setCurrentPassword(e.target.value)}
+                    required
+                    placeholder="Ingresa tu contraseña actual"
+                    style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 600, marginBottom: "6px" }}>Nueva Contraseña</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    placeholder="Mínimo 6 caracteres"
+                    style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 600, marginBottom: "6px" }}>Confirmar Nueva Contraseña</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    placeholder="Repite la nueva contraseña"
+                    style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px" }}>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    background: "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    padding: "12px 24px",
+                    borderRadius: "8px",
+                    cursor: saving ? "not-allowed" : "pointer",
+                    fontWeight: 700,
+                    opacity: saving ? 0.7 : 1,
+                  }}
+                >
+                  {saving ? "Guardando..." : "Cambiar Contraseña"}
+                </button>
               </div>
             </form>
           </div>

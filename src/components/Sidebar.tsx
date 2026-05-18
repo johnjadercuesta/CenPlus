@@ -46,7 +46,7 @@ export default function Sidebar() {
 
   const isActive = (path: string) => pathname === path;
   const isAdmin = user?.role === "administrador";
-  const isSuperAdmin = user?.id === 0 || user?.userId === 0;
+  const isSuperAdmin = user?.userId === 0;
 
   const initials = user?.nombre
     ? user.nombre

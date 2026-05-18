@@ -50,7 +50,10 @@ export async function ensureIdentificacionColumn() {
           ALTER TABLE "${schemaName}".admins 
           ADD COLUMN IF NOT EXISTS identificacion VARCHAR(50)
         `);
-      } catch (e) {}
+        console.log(`[DB-INIT] ${schemaName}.admins: identificacion column added`);
+      } catch (e: any) {
+        console.log(`[DB-INIT] ${schemaName}.admins: ${e.message}`);
+      }
       
       try {
         await pool.query(`
@@ -59,8 +62,6 @@ export async function ensureIdentificacionColumn() {
           WHERE identificacion IS NULL
         `);
       } catch (e) {}
-      
-      console.log(`[DB-INIT] ${schemaName}.admins: identificacion column ready`);
     }
 
     migrationComplete = true;

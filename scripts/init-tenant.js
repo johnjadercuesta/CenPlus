@@ -33,6 +33,7 @@ async function initTenant() {
       CREATE TABLE IF NOT EXISTS admins (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) NOT NULL UNIQUE,
+        identificacion VARCHAR(50),
         password VARCHAR(255) NOT NULL,
         nombre VARCHAR(255) NOT NULL DEFAULT '',
         role VARCHAR(50) NOT NULL CHECK (role IN ('administrador', 'estratega', 'lider')) DEFAULT 'lider',
@@ -191,22 +192,22 @@ async function initTenant() {
     const hashLider = bcrypt.hashSync("lider123", 10);
 
     await client.query(`
-      INSERT INTO admins (email, password, nombre, role) 
-      VALUES ($1, $2, $3, $4) 
+      INSERT INTO admins (email, identificacion, password, nombre, role) 
+      VALUES ($1, $2, $3, $4, $5) 
       ON CONFLICT (email) DO NOTHING
-    `, ["admin@cenplus.com", hashAdmin, "Administrador Sistema", "administrador"]);
+    `, ["admin@cenplus.com", "admin@cenplus.com", hashAdmin, "Administrador Sistema", "administrador"]);
 
     await client.query(`
-      INSERT INTO admins (email, password, nombre, role) 
-      VALUES ($1, $2, $3, $4) 
+      INSERT INTO admins (email, identificacion, password, nombre, role) 
+      VALUES ($1, $2, $3, $4, $5) 
       ON CONFLICT (email) DO NOTHING
-    `, ["estratega@cenplus.com", hashEstratega, "Analista Principal", "estratega"]);
+    `, ["estratega@cenplus.com", "estratega@cenplus.com", hashEstratega, "Analista Principal", "estratega"]);
 
     await client.query(`
-      INSERT INTO admins (email, password, nombre, role) 
-      VALUES ($1, $2, $3, $4) 
+      INSERT INTO admins (email, identificacion, password, nombre, role) 
+      VALUES ($1, $2, $3, $4, $5) 
       ON CONFLICT (email) DO NOTHING
-    `, ["lider@cenplus.com", hashLider, "Líder de Zona", "lider"]);
+    `, ["lider@cenplus.com", "lider@cenplus.com", hashLider, "Líder de Zona", "lider"]);
 
     await client.query(`
       INSERT INTO config (clave, valor) 
