@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // 2. Validar colores (formato hex)
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
     if (primary_color && !hexRegex.test(primary_color)) {
-      return NextResponse.json({ error: "Formato de color primario inválido." }, { status: 400 });
+      return NextResponse.json({ error: "Formato de color inválido." }, { status: 400 });
     }
 
     // 3. Actualizar o Insertar configuración
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         await pool.query(`
           CREATE TABLE IF NOT EXISTS public.tenants_config (
             tenant VARCHAR(63) PRIMARY KEY,
-            primary_color VARCHAR(7) DEFAULT '#162749',
+            primary_color VARCHAR(7) DEFAULT '#3b82f6',
             secondary_color VARCHAR(7) DEFAULT '#6366f1',
             logo_url TEXT,
             config JSONB DEFAULT '{}',

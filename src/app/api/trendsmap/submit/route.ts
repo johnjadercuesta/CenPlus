@@ -58,6 +58,6 @@ export async function POST(request: NextRequest) {
 }
 
 function extractHashtags(text: string): string[] {
-  const matches = text.match(/#[\wáéíóúÃÉÍÓÚñÑ]+/g);
+  const matches = text.match(/#[\wáéíóúÁÉÍÓÚñÑ]+/g);
   return matches ? matches.map(h => h.toLowerCase()) : [];
 }

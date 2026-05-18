@@ -127,7 +127,7 @@ function LoginForm() {
           </div>
           <div style={{ marginTop: 40, padding: "16px 20px", background: "rgba(255,255,255,0.05)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)" }}>
             <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 8px", fontWeight: 600 }}>Administración</p>
-            <a href="/setup" style={{ color: "#60a5fa", fontSize: 13, textDecoration: "none" }}>âš™ï¸ Configuración del Sistema â†’</a>
+            <a href="/setup" style={{ color: "#60a5fa", fontSize: 13, textDecoration: "none" }}>⚙️ Configuración del Sistema →</a>
           </div>
         </div>
       </div>
@@ -151,7 +151,7 @@ function LoginForm() {
             <div style={{
               padding: "12px 16px", background: "#fef2f2", color: "#dc2626",
               borderRadius: 10, fontSize: 13, fontWeight: 500, marginBottom: 20, border: "1px solid #fecaca",
-            }}>âš ï¸ {error}</div>
+            }}>⚠️ {error}</div>
           )}
 
           <form onSubmit={handleLogin}>
@@ -177,7 +177,7 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                placeholder="••••••••"
                 style={{
                   width: "100%", padding: "12px 16px", border: "1.5px solid #e2e8f0", borderRadius: 10,
                   fontSize: 14, background: "#f8fafc", outline: "none", boxSizing: "border-box"
@@ -189,7 +189,7 @@ function LoginForm() {
             {showTenant && (
               <div style={{ marginBottom: 24, padding: "16px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
                 <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase" }}>
-                  ðŸ”§ Organización (Modo Soporte)
+                  🔧 Organización (Modo Soporte)
                 </label>
                 <input
                   type="text"
@@ -214,7 +214,7 @@ function LoginForm() {
                 cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 10px 25px rgba(59,130,246,0.3)"
               }}
             >
-              {loading ? "Ingresando..." : "Iniciar Sesión â†’"}
+              {loading ? "Ingresando..." : "Iniciar Sesión →"}
             </button>
           </form>
         </div>

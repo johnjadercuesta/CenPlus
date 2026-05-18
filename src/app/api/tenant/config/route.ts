@@ -44,11 +44,11 @@ export async function GET(request: NextRequest) {
     // Si la tabla no existe, intentamos crearla (auto-migración)
     if (error.message.includes('relation "public.tenants_config" does not exist')) {
       try {
-        console.log("ðŸ› ï¸ Detectada falta de tabla public.tenants_config. Creándola...");
+        console.log("🛠️ Detectada falta de tabla public.tenants_config. Creándola...");
         await pool.query(`
           CREATE TABLE IF NOT EXISTS public.tenants_config (
             tenant VARCHAR(63) PRIMARY KEY,
-            primary_color VARCHAR(7) DEFAULT '#162749',
+            primary_color VARCHAR(7) DEFAULT '#3b82f6',
             secondary_color VARCHAR(7) DEFAULT '#6366f1',
             logo_url TEXT,
             config JSONB DEFAULT '{}',

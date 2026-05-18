@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores pueden cambiar la configuraciÃ³n" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));

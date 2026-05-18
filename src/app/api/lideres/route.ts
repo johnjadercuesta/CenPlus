@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const { email, password, nombre, role } = await request.json();
 

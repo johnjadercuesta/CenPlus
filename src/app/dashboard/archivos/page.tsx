@@ -297,7 +297,7 @@ export default function ArchivosPage() {
         <div style={{ textAlign: "center", padding: 60, color: "#475569" }}>Cargando...</div>
       ) : archivos.length === 0 ? (
         <div style={{ textAlign: "center", padding: 60, background: "#1e293b", borderRadius: 12 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ“</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📁</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>No hay archivos electorales</div>
           <div style={{ fontSize: 12, color: "#64748b" }}>Crea tu primer archivo para archivar una época electoral</div>
         </div>
@@ -368,7 +368,7 @@ export default function ArchivosPage() {
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 800, color: "#f8fafc", margin: 0 }}>{showDetail.nombre}</h2>
                 <p style={{ fontSize: 11, color: "#64748b", margin: "4px 0 0" }}>
-                  Corte: {new Date(showDetail.fecha_corte).toLocaleDateString("es-CO")} Â· {detailTotal} ciudadanos
+                  Corte: {new Date(showDetail.fecha_corte).toLocaleDateString("es-CO")} · {detailTotal} ciudadanos
                 </p>
               </div>
               <button onClick={() => setShowDetail(null)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 20, cursor: "pointer" }}>&times;</button>
@@ -425,16 +425,16 @@ export default function ArchivosPage() {
                             <tr key={c.id} style={{ borderBottom: "1px solid #1e293b" }}>
                               <td style={{ padding: "6px 8px", color: "#cbd5e1", fontFamily: "monospace", fontSize: 9 }}>{c.id_unico}</td>
                               <td style={{ padding: "6px 8px", color: "#f8fafc", fontWeight: 600, whiteSpace: "nowrap" }}>{c.nombre_completo}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.telefono || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.sexo || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.edad || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.nivel_estudios || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.ocupacion || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.barrio || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.corregimiento || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.vereda || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.zona || "â€”"}</td>
-                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.problematica_principal || "â€”"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.telefono || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.sexo || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.edad || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.nivel_estudios || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.ocupacion || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.barrio || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.corregimiento || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.vereda || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.zona || "—"}</td>
+                              <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.problematica_principal || "—"}</td>
                               <td style={{ padding: "6px 8px", color: "#cbd5e1", fontSize: 9 }}>{c.es_lider ? "Sí" : "No"}</td>
                               <td style={{ padding: "6px 8px", color: "#cbd5e1", fontFamily: "monospace", fontSize: 8 }}>{c.latitud ? `${c.latitud.toFixed(4)}, ${c.longitud?.toFixed(4)}` : "N/A"}</td>
                             </tr>
@@ -472,7 +472,7 @@ export default function ArchivosPage() {
                               <td style={{ padding: "8px 12px", color: "#cbd5e1" }}>{s.zona || "urbana"}</td>
                               <td style={{ padding: "8px 12px", color: "#10b981", fontWeight: 700 }}>{s.meta}</td>
                               <td style={{ padding: "8px 12px", color: "#f59e0b", fontWeight: 700 }}>{s.votos_historicos || 0}</td>
-                              <td style={{ padding: "8px 12px", color: "#cbd5e1" }}>{s.descripcion || "â€”"}</td>
+                              <td style={{ padding: "8px 12px", color: "#cbd5e1" }}>{s.descripcion || "—"}</td>
                             </tr>
                           ))}
                         </tbody>

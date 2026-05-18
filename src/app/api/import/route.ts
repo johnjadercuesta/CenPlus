@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const formData = await request.formData();
     const file = formData.get("file") as File;

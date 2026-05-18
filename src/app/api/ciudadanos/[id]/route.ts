@@ -12,7 +12,7 @@ export async function PUT(
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const id = params.id;
 
@@ -107,7 +107,7 @@ export async function DELETE(
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const id = params.id;
 

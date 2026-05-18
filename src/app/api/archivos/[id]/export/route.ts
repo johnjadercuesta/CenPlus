@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const csvContent = csvRows.join("\n");
     const bom = "\uFEFF";
-    const safeName = archivo.nombre.replace(/[^a-zA-Z0-9áéíóúÃÉÍÓÚñÑ ]/g, "").replace(/\s+/g, "_");
+    const safeName = archivo.nombre.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, "").replace(/\s+/g, "_");
 
     return new NextResponse(bom + csvContent, {
       headers: {

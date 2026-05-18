@@ -7,7 +7,7 @@ export default function InteligenciaPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="text-2xl">ðŸ§ </span>
+            <span className="text-2xl">🧠</span>
             Inteligencia Territorial
           </h1>
           <p className="text-slate-400 text-sm mt-1">

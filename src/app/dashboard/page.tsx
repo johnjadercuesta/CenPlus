@@ -102,7 +102,7 @@ export default function DashboardPage() {
                 border: `1px solid ${a.type === "critical" ? "#fecaca" : a.type === "warning" ? "#fef3c7" : "#dbeafe"}`,
                 display: "flex", alignItems: "center", gap: 10,
               }}>
-                <span style={{ fontSize: 18 }}>{a.type === "critical" ? "ðŸš¨" : a.type === "warning" ? "âš ï¸" : "â„¹ï¸"}</span>
+                <span style={{ fontSize: 18 }}>{a.type === "critical" ? "🚨" : a.type === "warning" ? "⚠️" : "ℹ️"}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: a.type === "critical" ? "#991b1b" : a.type === "warning" ? "#92400e" : "#1e40af" }}>
                   {a.msg}
                 </span>
@@ -207,7 +207,7 @@ export default function DashboardPage() {
                 display: "block", textAlign: "center", marginTop: 16, fontSize: 12, 
                 color: "#3b82f6", fontWeight: 700, textDecoration: "none" 
               }}>
-                Ver todos los sectores â†’
+                Ver todos los sectores →
               </Link>
             </div>
           </div>

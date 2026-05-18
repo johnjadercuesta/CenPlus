@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('âœ… Tabla public.user_tenants verificada');
+    results.push('✅ Tabla public.user_tenants verificada');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.tenants_config (
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('âœ… Tabla public.tenants_config (Temas) verificada');
+    results.push('✅ Tabla public.tenants_config (Temas) verificada');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.system_logs (
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    results.push('âœ… Tabla public.system_logs (Auditoría) verificada');
+    results.push('✅ Tabla public.system_logs (Auditoría) verificada');
 
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email)
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_system_logs_tenant ON public.system_logs(tenant)
     `);
-    results.push('âœ… Índices globales verificados');
+    results.push('✅ Índices globales verificados');
 
     return NextResponse.json({
       success: true,

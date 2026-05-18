@@ -13,7 +13,7 @@ export async function PUT(
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const id = params.id;
     const tenant = getTenantFromRequest(request);
@@ -82,7 +82,7 @@ export async function DELETE(
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÃ³n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
 
     const id = params.id;
     const tenant = getTenantFromRequest(request);

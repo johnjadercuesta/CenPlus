@@ -33,7 +33,7 @@ export default function MapaPage() {
     <div>
       <div className="main-header">
         <div>
-          <h1 className="main-header-title">ðŸ‘¥ Mapa Territorial</h1>
+          <h1 className="main-header-title">👥 Mapa Territorial</h1>
           <p className="main-header-subtitle">Visualización de densidad y metas por zona</p>
         </div>
         <div style={{ minWidth: 220 }}>

@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
         ['lider@cenplus.com', 'Líder Test', 'lider', testPassHash, '', 1]
       );
 
-      // Crear tabla global de mapeo usuarioâ†’tenant (si no existe)
+      // Crear tabla global de mapeo usuario→tenant (si no existe)
       await client.query(`
         CREATE TABLE IF NOT EXISTS public.user_tenants (
           id SERIAL PRIMARY KEY,

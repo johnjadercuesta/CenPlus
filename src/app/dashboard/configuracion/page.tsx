@@ -12,7 +12,7 @@ export default function ConfiguracionPage() {
   const [comunaFilterId, setComunaFilterId] = useState<string>("");
 
   // Branding states
-  const [primaryColor, setPrimaryColor] = useState("#162749");
+  const [primaryColor, setPrimaryColor] = useState("#3b82f6");
   const [logoUrl, setLogoUrl] = useState("");
   const [metaGlobal, setMetaGlobal] = useState("1000");
 
@@ -49,6 +49,10 @@ export default function ConfiguracionPage() {
     }
   };
 
+  const handleResetColor = () => {
+    setPrimaryColor('#162749');
+  };
+
   const loadThemeConfig = async () => {
     try {
       // Usamos un timestamp para evitar que el navegador nos de una versión vieja (caché)
@@ -58,19 +62,13 @@ export default function ConfiguracionPage() {
         setPrimaryColor(data.primary_color);
         document.documentElement.style.setProperty('--brand-accent', data.primary_color);
       }
-      if (data.logo_url) setLogoUrl(data.logo_url);
       
-      const statsRes = await fetch(`/api/stats?t=${Date.now()}`, { headers: authHeadersWithJson() });
+      const statsRes = await fetch("/api/stats", { headers: authHeadersWithJson() });
       const statsData = await statsRes.json();
       if (statsData.meta) setMetaGlobal(String(statsData.meta));
     } catch (error) {
-      console.error("Error cargando configuracion:", error);
+      console.error("Error cargando configuración:", error);
     }
-  };
-
-  const handleResetColor = () => {
-    setPrimaryColor("#162749");
-    document.documentElement.style.setProperty('--brand-accent', "#162749");
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,11 +94,10 @@ export default function ConfiguracionPage() {
     try {
       const res = await fetch("/api/tenant/config/update", {
         method: "POST",
-        headers: authHeadersWithJson(),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           primary_color: primaryColor,
-          secondary_color: primaryColor,
-          logo_url: logoUrl || null
+          logo_url: logoUrl,
         }),
       });
 
@@ -117,7 +114,7 @@ export default function ConfiguracionPage() {
         setMessage({ type: "error", text: data.error || "Error al guardar" });
       }
     } catch {
-      setMessage({ type: "error", text: "Error de conexion" });
+      setMessage({ type: "error", text: "Error de conexión" });
     } finally {
       setSaving(false);
     }
@@ -151,8 +148,8 @@ export default function ConfiguracionPage() {
   return (
     <div className="container" style={{ padding: "24px" }}>
       <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#1e293b", margin: 0 }}>Configuracion</h1>
-        <p style={{ fontSize: "14px", color: "#64748b" }}>Administra tu organizacion y territorio</p>
+        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#1e293b", margin: 0 }}>Configuración</h1>
+        <p style={{ fontSize: "14px", color: "#64748b" }}>Administra tu organización y territorio</p>
       </div>
 
       {message && (
@@ -168,9 +165,9 @@ export default function ConfiguracionPage() {
       )}
 
       <div style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid #e2e8f0" }}>
-        <button onClick={() => setActiveTab("territorio")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "territorio" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "territorio" ? 700 : 500, color: activeTab === "territorio" ? "#3b82f6" : "#64748b" }}>Territorio</button>
-        <button onClick={() => setActiveTab("referencias")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "referencias" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "referencias" ? 700 : 500, color: activeTab === "referencias" ? "#3b82f6" : "#64748b" }}>Referencias</button>
-        <button onClick={() => setActiveTab("marca")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "marca" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "marca" ? 700 : 500, color: activeTab === "marca" ? "#3b82f6" : "#64748b" }}>Marca y Estilo</button>
+        <button onClick={() => setActiveTab("territorio")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "territorio" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "territorio" ? 700 : 500, color: activeTab === "territorio" ? "#3b82f6" : "#64748b" }}>📍 Territorio</button>
+        <button onClick={() => setActiveTab("referencias")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "referencias" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "referencias" ? 700 : 500, color: activeTab === "referencias" ? "#3b82f6" : "#64748b" }}>⚙️ Referencias</button>
+        <button onClick={() => setActiveTab("marca")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "marca" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "marca" ? 700 : 500, color: activeTab === "marca" ? "#3b82f6" : "#64748b" }}>🎨 Marca y Estilo</button>
       </div>
 
       <div className="content">
@@ -212,7 +209,7 @@ export default function ConfiguracionPage() {
             <form onSubmit={handleSaveBranding}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", marginBottom: "32px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Color de la Aplicacion</label>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Color de la Aplicación</label>
                   <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
                     <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
                     <input type="text" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ flex: 1, padding: "8px", border: "1px solid #ccc" }} />
@@ -228,7 +225,7 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button type="submit" disabled={saving} style={{ background: primaryColor, color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", cursor: "pointer", fontWeight: 700 }}>{saving ? "Guardando..." : "Guardar Personalizacion"}</button>
+                <button type="submit" disabled={saving} style={{ background: primaryColor, color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", cursor: "pointer", fontWeight: 700 }}>{saving ? "Guardando..." : "Guardar Personalización"}</button>
               </div>
             </form>
           </div>
