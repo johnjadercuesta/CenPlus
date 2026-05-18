@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciï¿½n" }, { status: 403 });
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciï¿½n" }, { status: 403 });
 
     const { email, password, nombre, role } = await request.json();
 
@@ -57,6 +57,10 @@ export async function POST(request: NextRequest) {
       [email, hash, nombre, targetRole]
     );
 
+    const { recordLog } = await import("@/lib/audit");
+    if (tenant) {
+      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "usuarios", accion: "RegistrÃ³ nuevo usuario: " + nombre + " (" + email + ")" });
+    }
     return NextResponse.json({ data: rows[0], message: "Usuario creado exitosamente" }, { status: 201 });
   } catch (err) {
     console.error(err);

@@ -121,13 +121,37 @@ export default function SetupPage() {
     try {
       const res = await fetch("/api/admin/list-tenants", { headers: headers() });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al cargar tenants");
+      if (!res.ok) throw new Error(data.error || "Error al cargar organizaciones");
       setTenants(data.tenants || []);
     } catch (err: any) {
       setTenants([]);
       alert("⚠️ No se pudo cargar la lista: " + err.message);
     } finally {
       setListLoading(false);
+    }
+  };
+
+  const handleImpersonate = async (tenantName: string) => {
+    try {
+      const res = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: headers({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ tenant: tenantName })
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem("token", data.token);
+        // Si hay subdominio, tenemos que pasar el token en la URL o cookie compartida
+        // Como las cookies entre dominios son complejas, para impersonar en subdominio
+        // lo más fácil es redirigir a una ruta temporal que setee la cookie, o mejor:
+        // si estamos en el mismo dominio base, Next.js seteará la cookie '.dominio.com'.
+        // Pero para simplificar, redirigimos al dashboard.
+        window.location.href = tenantUrl(tenantName, "/dashboard");
+      } else {
+        alert("Error: " + (data.error || "No se pudo iniciar sesión."));
+      }
+    } catch (err) {
+      alert("Error de conexión");
     }
   };
 
@@ -174,7 +198,7 @@ export default function SetupPage() {
             Panel de Super Admin
           </h1>
           <p style={{ color: "#64748b", fontSize: 15, margin: 0 }}>
-            Gestión Multi-Tenant · CenPlus
+            Gestión Multi-Organización · CenPlus
           </p>
         </div>
 
@@ -241,8 +265,8 @@ export default function SetupPage() {
         </h1>
         <p style={{ color: "#64748b", fontSize: 13, margin: 0 }}>
           {BASE_DOMAIN
-            ? `Dominio: *.${BASE_DOMAIN} · ${dbStatus?.tenantsCount ?? "?"} tenant(s)`
-            : `${dbStatus?.tenantsCount ?? "?"} tenant(s) activo(s)`}
+            ? `Dominio: *.${BASE_DOMAIN} · ${dbStatus?.tenantsCount ?? "?"} organización(es)`
+            : `${dbStatus?.tenantsCount ?? "?"} organización(es) activa(s)`}
         </p>
       </div>
 
@@ -287,8 +311,8 @@ export default function SetupPage() {
       }}>
         {[
           { key: "setup", label: "🛠️ Inicializar DB" },
-          { key: "create", label: "➕ Crear Tenant" },
-          { key: "list", label: "📋 Ver Tenants" },
+          { key: "create", label: "➕ Crear Organización" },
+          { key: "list", label: "📋 Ver Organizaciones" },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key as Tab)} style={{
             padding: "10px 22px", borderRadius: 10, border: "none",
@@ -330,7 +354,7 @@ export default function SetupPage() {
                 )}
                 {setupResult.success && (
                   <p style={{ color: "#60a5fa", fontSize: 13, margin: "12px 0 0" }}>
-                    👉 Ve a <strong>"➕ Crear Tenant"</strong> para crear tu primera organización.
+                    👉 Ve a <strong>"➕ Crear Organización"</strong> para crear tu primera organización.
                   </p>
                 )}
               </div>
@@ -383,11 +407,11 @@ export default function SetupPage() {
         {tab === "create" && (
           <>
             <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, marginTop: 0, marginBottom: 6 }}>
-              Crear Nuevo Tenant
+              Crear Nueva Organización
             </h2>
             <p style={{ color: "#64748b", fontSize: 13, marginBottom: 24 }}>
-              Cada tenant tiene su propia base de datos aislada
-              {BASE_DOMAIN ? ` y accederá por ${"{nombre}"}.${BASE_DOMAIN}` : ""}.
+              Cada organización tiene su propia base de datos aislada
+              {BASE_DOMAIN ? ` y accederá por ${"{id}"}.${BASE_DOMAIN}` : ""}.
             </p>
 
             {createResult && (
@@ -399,7 +423,7 @@ export default function SetupPage() {
                 {createResult.success ? (
                   <>
                     <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 15, marginBottom: 12 }}>
-                      ✅ Tenant "{createResult.tenant}" creado exitosamente
+                      ✅ Organización "{createResult.tenant}" creada exitosamente
                     </div>
 
                     {/* URL del tenant */}
@@ -449,7 +473,7 @@ export default function SetupPage() {
             <form onSubmit={handleCreateTenant}>
               {[
                 {
-                  key: "name", label: "ID del Tenant", type: "text",
+                  key: "name", label: "ID de la Organización", type: "text",
                   placeholder: "municipio1",
                   hint: BASE_DOMAIN
                     ? `Accederá como: municipio1.${BASE_DOMAIN}`
@@ -497,7 +521,7 @@ export default function SetupPage() {
                   boxShadow: "0 10px 30px rgba(59,130,246,0.35)",
                 }}
               >
-                {createLoading ? "⏳ Creando..." : "🚀 Crear Tenant"}
+                {createLoading ? "⏳ Creando..." : "🚀 Crear Organización"}
               </button>
             </form>
           </>
@@ -508,7 +532,7 @@ export default function SetupPage() {
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div>
-                <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, margin: 0 }}>Tenants Activos</h2>
+                <h2 style={{ color: "white", fontSize: 19, fontWeight: 700, margin: 0 }}>Organizaciones Activas</h2>
                 <p style={{ color: "#64748b", fontSize: 13, margin: "4px 0 0" }}>
                   {tenants.length} organización(es)
                   {BASE_DOMAIN ? ` · *.${BASE_DOMAIN}` : ""}
@@ -532,10 +556,10 @@ export default function SetupPage() {
                 {listLoading ? "Cargando..." : (
                   <>
                     <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
-                    No hay tenants aún.<br />
+                    No hay organizaciones aún.<br />
                     <button onClick={() => setTab("create")}
                       style={{ background: "none", border: "none", color: "#60a5fa", marginTop: 8, cursor: "pointer", fontSize: 14 }}>
-                      Crear primer tenant →
+                      Crear primera organización →
                     </button>
                   </>
                 )}
@@ -568,20 +592,34 @@ export default function SetupPage() {
                           </div>
                         )}
                       </div>
-                      <a
-                        href={tenantUrl(t.name)}
-                        target={BASE_DOMAIN ? "_blank" : "_self"}
-                        rel="noreferrer"
-                        style={{
-                          padding: "8px 16px", flexShrink: 0,
-                          background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
-                          border: "1px solid rgba(59,130,246,0.4)",
-                          borderRadius: 8, color: "#60a5fa",
-                          textDecoration: "none", fontSize: 13, fontWeight: 600,
-                        }}
-                      >
-                        Login →
-                      </a>
+                      <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                        <button
+                          onClick={() => handleImpersonate(t.name)}
+                          style={{
+                            padding: "8px 16px",
+                            background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(52,211,153,0.3))",
+                            border: "1px solid rgba(16,185,129,0.4)",
+                            borderRadius: 8, color: "#34d399",
+                            cursor: "pointer", fontSize: 13, fontWeight: 600,
+                          }}
+                        >
+                          Entrar a Administrar →
+                        </button>
+                        <a
+                          href={tenantUrl(t.name)}
+                          target={BASE_DOMAIN ? "_blank" : "_self"}
+                          rel="noreferrer"
+                          style={{
+                            padding: "8px 16px", display: "flex", alignItems: "center",
+                            background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
+                            border: "1px solid rgba(59,130,246,0.4)",
+                            borderRadius: 8, color: "#60a5fa",
+                            textDecoration: "none", fontSize: 13, fontWeight: 600,
+                          }}
+                        >
+                          Login Normal →
+                        </a>
+                      </div>
                     </div>
                   </div>
                 ))}

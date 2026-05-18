@@ -95,6 +95,10 @@ export async function POST(request: NextRequest) {
     const data = rows[0];
     if (data.poligono) data.poligono = JSON.parse(data.poligono as string);
 
+    const { recordLog } = await import("@/lib/audit");
+    if (tenant) {
+      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "sectores", accion: "Creó sector/meta: " + data.nombre });
+    }
     return NextResponse.json({ data, message: "Sector creado" }, { status: 201 });
   } catch (err) {
     console.error(err);

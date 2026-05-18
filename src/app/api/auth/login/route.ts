@@ -111,6 +111,18 @@ export async function POST(request: NextRequest) {
       role: user.role,
     });
     
+    // Registrar el inicio de sesión si hay un tenant
+    if (tenant) {
+      const { recordLog } = await import("@/lib/audit");
+      await recordLog({
+        tenant,
+        email: user.email,
+        nombre: user.nombre,
+        modulo: "autenticación",
+        accion: "Inició sesión en el sistema",
+      });
+    }
+    
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

@@ -7,13 +7,10 @@ import { useEffect, useState } from "react";
 interface UserData {
   nombre: string;
   email: string;
-  role: string;
-}
-
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<UserData | null>(null);
+  const [user, setUser] = useState<{ id?: number; userId?: number; nombre?: string; role?: string; email?: string } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logo, setLogo] = useState<string | null>(null);
 
@@ -24,7 +21,7 @@ export default function Sidebar() {
         .then((r) => r.json())
         .then((data) => {
           if (data.authenticated) {
-            setUser({ nombre: data.nombre, email: data.email, role: data.role });
+            setUser({ userId: data.userId, nombre: data.nombre, email: data.email, role: data.role });
           }
         })
         .catch(() => {});
@@ -47,9 +44,7 @@ export default function Sidebar() {
 
   const isActive = (path: string) => pathname === path;
   const isAdmin = user?.role === "administrador";
-  const isAnalista = user?.role === "analista";
-  // Roles que ven la sección de inteligencia: todos
-  // Roles que ven administración: solo administrador
+  const isSuperAdmin = user?.id === 0 || user?.userId === 0;
 
   const initials = user?.nombre
     ? user.nombre
@@ -279,14 +274,37 @@ export default function Sidebar() {
 
         <div className="sidebar-footer">
           {user && (
-            <div className="sidebar-user">
-              <div className="sidebar-avatar">{initials}</div>
-              <div className="sidebar-user-info">
-                <div className="sidebar-user-name">{user.nombre}</div>
-                <div className="sidebar-user-role">{user.role}</div>
+            <>
+              {isSuperAdmin && (
+                <div style={{ padding: "0 20px", marginBottom: "20px" }}>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("token");
+                      window.location.href = "/setup";
+                    }}
+                    style={{
+                      width: "100%", padding: "10px", borderRadius: "8px",
+                      background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                      border: "none", color: "white", fontWeight: 700,
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                      boxShadow: "0 4px 15px rgba(59,130,246,0.3)"
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 14 4 9l5-5" />
+                      <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+                    </svg>
+                    Volver al Panel Global
+                  </button>
+                </div>
+              )}
+              <div className="sidebar-user" onClick={handleLogout}>
+                <div className="sidebar-avatar">{initials}</div>
+                <div className="sidebar-user-info">
+                  <div className="sidebar-user-name">{user.nombre}</div>
+                  <div className="sidebar-user-role">{user.role}</div>
+                </div>
               </div>
-            </div>
-          )}
           <button
             onClick={handleLogout}
             style={{

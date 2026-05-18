@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciï¿½n" }, { status: 403 });
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciï¿½n" }, { status: 403 });
 
     const body = await request.json();
 
@@ -239,9 +239,19 @@ export async function POST(request: NextRequest) {
     const data = rows[0];
     data.es_lider = data.es_lider === 1;
 
+    const { recordLog } = await import('@/lib/audit');
+    if (tenant) {
+      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: 'ciudadanos', accion: 'Registrï¿½ ciudadano: ' + data.nombre_completo + ' (' + data.id_unico + ')' });
+    }
+
+    const { recordLog } = await import("@/lib/audit");
+    if (tenant) {
+      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "ciudadanos", accion: "RegistrÃ³ al ciudadano: " + data.nombre_completo });
+    }
     return NextResponse.json({ data, message: "Registro exitoso" }, { status: 201 });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
+

@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   }
   return NextResponse.json({
     authenticated: true,
+    userId: payload.userId,
     email: payload.email,
     nombre: payload.nombre,
     role: payload.role,
