@@ -10,18 +10,13 @@ export async function POST(request: NextRequest) {
 
     if (!identificacion || !password) {
       return NextResponse.json(
-        { error: "Identificación y contraseña son obligatorios" },
+        { error: "Identificacion y contrasena son obligatorios" },
         { status: 400 }
       );
     }
 
-    // Prioridad de detección de tenant:
-    // 1. Parámetro explícito en el body (útil para el selector manual en /login)
-    // 2. Header x-tenant (puesto por el middleware al detectar subdominio)
-    // 3. Cookie 'tenant'
     let tenant = sanitizeTenantValue(tenantParam) || getTenantFromRequest(request);
 
-    // Si no hay tenant en request, buscar en tabla global de usuarios
     if (!tenant) {
       try {
         const { rows: tenantRows } = await pool.query(
@@ -32,11 +27,9 @@ export async function POST(request: NextRequest) {
           tenant = tenantRows[0].tenant;
         }
       } catch (e) {
-        // Tabla no existe, ignorar
       }
     }
 
-    // Último recurso: buscar el usuario recorriendo todos los esquemas (incluyendo public)
     if (!tenant) {
       try {
         const { rows: schemas } = await pool.query(`
@@ -58,17 +51,15 @@ export async function POST(request: NextRequest) {
               break;
             }
           } catch {
-            // Schema no tiene tabla admins, continuar
           }
         }
       } catch (e) {
-        // Error enumerando schemas, ignorar
       }
     }
 
     if (!tenant) {
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
+        { error: "Credenciales invalidas" },
         { status: 401 }
       );
     }
@@ -83,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
+        { error: "Credenciales invalidas" },
         { status: 401 }
       );
     }
@@ -91,7 +82,7 @@ export async function POST(request: NextRequest) {
     const valid = bcrypt.compareSync(password, user.password);
     if (!valid) {
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
+        { error: "Credenciales invalidas" },
         { status: 401 }
       );
     }
@@ -111,15 +102,14 @@ export async function POST(request: NextRequest) {
       role: user.role,
     });
     
-    // Registrar el inicio de sesión si hay un tenant
     if (tenant) {
       const { recordLog } = await import("@/lib/audit");
       await recordLog({
         tenant,
         email: user.email,
         nombre: user.nombre,
-        modulo: "autenticación",
-        accion: "Inició sesión en el sistema",
+        modulo: "autenticacion",
+        accion: "Inicio sesion en el sistema",
       });
     }
     
@@ -132,8 +122,8 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  } catch (err: any) {
+    console.error("[login] Error:", err.message);
+    return NextResponse.json({ error: "Error interno: " + (err?.message || "Desconocido") }, { status: 500 });
   }
 }

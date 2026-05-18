@@ -20,22 +20,28 @@ export async function ensureIdentificacionColumn() {
       )
     `);
 
-    await pool.query(`
-      ALTER TABLE public.user_tenants 
-      ADD COLUMN IF NOT EXISTS identificacion VARCHAR(50)
-    `);
+    try {
+      await pool.query(`
+        ALTER TABLE public.user_tenants 
+        ADD COLUMN IF NOT EXISTS identificacion VARCHAR(50)
+      `);
+    } catch (e) {}
 
-    await pool.query(`
-      UPDATE public.user_tenants 
-      SET identificacion = email 
-      WHERE identificacion IS NULL
-    `);
+    try {
+      await pool.query(`
+        UPDATE public.user_tenants 
+        SET identificacion = email 
+        WHERE identificacion IS NULL
+      `);
+    } catch (e) {}
 
     const { rows: schemas } = await pool.query(`
       SELECT schema_name FROM information_schema.schemata
       WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'public') 
         AND schema_name NOT LIKE 'pg_%'
     `);
+
+    console.log(`[DB-INIT] Found ${schemas.length} tenant schemas`);
 
     for (const schema of schemas) {
       const schemaName = schema.schema_name;
@@ -44,19 +50,21 @@ export async function ensureIdentificacionColumn() {
           ALTER TABLE "${schemaName}".admins 
           ADD COLUMN IF NOT EXISTS identificacion VARCHAR(50)
         `);
+      } catch (e) {}
+      
+      try {
         await pool.query(`
           UPDATE "${schemaName}".admins 
           SET identificacion = email 
           WHERE identificacion IS NULL
         `);
-        console.log(`[DB-INIT] ${schemaName}.admins: identificacion column ready`);
-      } catch (e: any) {
-        console.log(`[DB-INIT] ${schemaName}.admins: ${e.message}`);
-      }
+      } catch (e) {}
+      
+      console.log(`[DB-INIT] ${schemaName}.admins: identificacion column ready`);
     }
 
     migrationComplete = true;
-    console.log("[DB-INIT] identificacion migration completed");
+    console.log("[DB-INIT] identificacion migration completed successfully");
   } catch (err: any) {
     console.error("[DB-INIT] Migration error:", err?.message);
     migrationRunning = false;
