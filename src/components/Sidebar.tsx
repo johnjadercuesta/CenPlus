@@ -324,6 +324,8 @@ export default function Sidebar() {
           >
             Cerrar Sesión
           </button>
+            </>
+          )}
         </div>
       </aside>
     </>
