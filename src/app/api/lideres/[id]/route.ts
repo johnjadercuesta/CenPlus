@@ -13,7 +13,7 @@ export async function PUT(
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÛn" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
     const id = params.id;
     const tenant = getTenantFromRequest(request);
@@ -82,14 +82,14 @@ export async function DELETE(
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaciÛn" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
     const id = params.id;
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
     if (parseInt(id) === token.userId) {
-      return NextResponse.json({ error: "No puede eliminarse a s√≠ mismo" }, { status: 400 });
+      return NextResponse.json({ error: "No puede eliminarse a si mismo" }, { status: 400 });
     }
 
     const { rowCount } = await run("DELETE FROM admins WHERE id = $1", [id]);

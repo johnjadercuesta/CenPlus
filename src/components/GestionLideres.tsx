@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 interface Lider {
   id: number;
   email: string;
+  identificacion: string;
   nombre: string;
   role: string;
   activo: number;
@@ -20,6 +21,7 @@ export default function GestionLideres() {
   const [form, setForm] = useState({
     nombre: "",
     email: "",
+    identificacion: "",
     password: "",
     role: "lider",
   });
@@ -47,7 +49,7 @@ export default function GestionLideres() {
   }, [fetchData]);
 
   const resetForm = () => {
-    setForm({ nombre: "", email: "", password: "", role: "lider" });
+    setForm({ nombre: "", email: "", identificacion: "", password: "", role: "lider" });
     setShowForm(false);
     setEditingId(null);
   };
@@ -83,6 +85,7 @@ export default function GestionLideres() {
       const body: Record<string, unknown> = {
         nombre: form.nombre,
         email: form.email,
+        identificacion: form.identificacion,
         role: form.role,
       };
       if (form.password) body.password = form.password;
@@ -145,9 +148,45 @@ export default function GestionLideres() {
     }
   };
 
+  const handleResetPassword = async (id: number, nombre: string) => {
+    if (!confirm(`¿Restablecer la contraseña de ${nombre}?`)) return;
+
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const tempPass = `Cen${Math.floor(1000 + Math.random() * 9000)}${chars[Math.floor(Math.random() * chars.length)]}!`;
+
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/lideres/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password: tempPass }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMessage({ type: "error", text: json.error || "Error al restablecer" });
+        return;
+      }
+      setMessage({
+        type: "success",
+        text: `Contraseña de ${nombre} restablecida. Temporal: ${tempPass}`,
+      });
+    } catch {
+      setMessage({ type: "error", text: "Error al restablecer contraseña" });
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setMessage({ type: "success", text: "Contraseña copiada al portapapeles" });
+    });
+  };
+
   const startEdit = (l: Lider) => {
     setEditingId(l.id);
-    setForm({ nombre: l.nombre, email: l.email, password: "", role: l.role });
+    setForm({ nombre: l.nombre, email: l.email, identificacion: l.identificacion || "", password: "", role: l.role });
     setShowForm(true);
   };
 
@@ -165,13 +204,24 @@ export default function GestionLideres() {
           }`}
         >
           {message.text}
+          {message.type === "success" && message.text.includes("Temporal:") && (
+            <button
+              onClick={() => {
+                const pass = message.text.split("Temporal: ")[1];
+                if (pass) copyToClipboard(pass);
+              }}
+              className="ml-2 px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+            >
+              Copiar
+            </button>
+          )}
           <button onClick={() => setMessage(null)} className="ml-2 font-bold">X</button>
         </div>
       )}
 
       {!showForm && (
         <button
-          onClick={() => { setShowForm(true); setEditingId(null); setForm({ nombre: "", email: "", password: "", role: "lider" }); }}
+          onClick={() => { setShowForm(true); setEditingId(null); setForm({ nombre: "", email: "", identificacion: "", password: "", role: "lider" }); }}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
         >
           + Nuevo Usuario
@@ -199,7 +249,18 @@ export default function GestionLideres() {
               />
             </div>
             <div>
-              <label className={labelClass}>Email</label>
+              <label className={labelClass}>Número de Identificación</label>
+              <input
+                type="text"
+                value={form.identificacion}
+                onChange={(e) => setForm({ ...form, identificacion: e.target.value })}
+                required
+                placeholder="Cédula o ID"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Email (Para recuperación)</label>
               <input
                 type="email"
                 value={form.email}
@@ -260,6 +321,7 @@ export default function GestionLideres() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 py-3 text-left font-semibold text-gray-700">Nombre</th>
+                <th className="px-3 py-3 text-left font-semibold text-gray-700">Identificación</th>
                 <th className="px-3 py-3 text-left font-semibold text-gray-700">Email</th>
                 <th className="px-3 py-3 text-left font-semibold text-gray-700">Rol</th>
                 <th className="px-3 py-3 text-left font-semibold text-gray-700">Estado</th>
@@ -271,6 +333,7 @@ export default function GestionLideres() {
               {data.map((l) => (
                 <tr key={l.id} className="hover:bg-gray-50">
                   <td className="px-3 py-2 whitespace-nowrap font-medium">{l.nombre}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-xs">{l.identificacion}</td>
                   <td className="px-3 py-2 whitespace-nowrap text-xs">{l.email}</td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <span
@@ -312,6 +375,12 @@ export default function GestionLideres() {
                         }`}
                       >
                         {l.activo ? "Desactivar" : "Activar"}
+                      </button>
+                      <button
+                        onClick={() => handleResetPassword(l.id, l.nombre)}
+                        className="px-2 py-1 bg-amber-500 text-white rounded text-xs hover:bg-amber-600"
+                      >
+                        🔑 Reset
                       </button>
                       <button
                         onClick={() => handleDelete(l.id)}

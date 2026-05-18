@@ -9,45 +9,45 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const mode = formData.get("mode") as string || "append";
 
     if (!file) {
-      return NextResponse.json({ error: "No se proporcionó archivo" }, { status: 400 });
+      return NextResponse.json({ error: "No se proporciono archivo" }, { status: 400 });
     }
 
     const text = await file.text();
     const lines = text.split("\n").filter((l) => l.trim());
 
     if (lines.length < 2) {
-      return NextResponse.json({ error: "El archivo está vacío o no tiene datos" }, { status: 400 });
+      return NextResponse.json({ error: "El archivo esta vacio o no tiene datos" }, { status: 400 });
     }
 
     const headers = lines[0].split(",").map((h) => h.replace(/"/g, "").trim());
 
-    const idUnicoIdx = headers.findIndex((h) => h.toLowerCase().includes("cédula") || h.toLowerCase() === "id_unico" || h.toLowerCase() === "id unico");
+    const idUnicoIdx = headers.findIndex((h) => h.toLowerCase().includes("cedula") || h.toLowerCase() === "id_unico" || h.toLowerCase() === "id unico");
     const nombreIdx = headers.findIndex((h) => h.toLowerCase().includes("nombre"));
-    const telefonoIdx = headers.findIndex((h) => h.toLowerCase().includes("teléfono") || h.toLowerCase() === "telefono");
+    const telefonoIdx = headers.findIndex((h) => h.toLowerCase().includes("telefono") || h.toLowerCase() === "telefono");
     const sexoIdx = headers.findIndex((h) => h.toLowerCase() === "sexo");
     const edadIdx = headers.findIndex((h) => h.toLowerCase() === "edad");
     const nivelIdx = headers.findIndex((h) => h.toLowerCase().includes("nivel") || h.toLowerCase().includes("estudios"));
-    const ocupacionIdx = headers.findIndex((h) => h.toLowerCase().includes("ocupación") || h.toLowerCase() === "ocupacion");
-    const regimenIdx = headers.findIndex((h) => h.toLowerCase().includes("régimen") || h.toLowerCase().includes("regimen") || h.toLowerCase().includes("salud"));
+    const ocupacionIdx = headers.findIndex((h) => h.toLowerCase().includes("ocupacion") || h.toLowerCase() === "ocupacion");
+    const regimenIdx = headers.findIndex((h) => h.toLowerCase().includes("regimen") || h.toLowerCase().includes("regimen") || h.toLowerCase().includes("salud"));
     const puestoIdx = headers.findIndex((h) => h.toLowerCase().includes("puesto"));
-    const problematicaIdx = headers.findIndex((h) => h.toLowerCase().includes("problemática") || h.toLowerCase().includes("problematica"));
+    const problematicaIdx = headers.findIndex((h) => h.toLowerCase().includes("problematica") || h.toLowerCase().includes("problematica"));
     const comunaIdx = headers.findIndex((h) => h.toLowerCase().includes("comuna"));
     const barrioIdx = headers.findIndex((h) => h.toLowerCase() === "barrio");
     const corregimientoIdx = headers.findIndex((h) => h.toLowerCase() === "corregimiento");
     const veredaIdx = headers.findIndex((h) => h.toLowerCase() === "vereda");
-    const esLiderIdx = headers.findIndex((h) => h.toLowerCase().includes("líder") || h.toLowerCase().includes("es lider") || h.toLowerCase() === "es_lider");
+    const esLiderIdx = headers.findIndex((h) => h.toLowerCase().includes("lider") || h.toLowerCase().includes("es lider") || h.toLowerCase() === "es_lider");
     const latIdx = headers.findIndex((h) => h.toLowerCase().includes("latitud") || h.toLowerCase() === "lat");
     const lngIdx = headers.findIndex((h) => h.toLowerCase().includes("longitud") || h.toLowerCase() === "lng" || h.toLowerCase() === "lon");
 
     if (idUnicoIdx === -1 || nombreIdx === -1) {
-      return NextResponse.json({ error: "El CSV debe tener al menos las columnas Cédula y Nombre" }, { status: 400 });
+      return NextResponse.json({ error: "El CSV debe tener al menos las columnas Cedula y Nombre" }, { status: 400 });
     }
 
     const liderId = token.role === "administrador" ? token.userId : token.userId;
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         const corregimiento = corregimientoIdx >= 0 ? values[corregimientoIdx]?.replace(/"/g, "").trim() : "";
         const vereda = veredaIdx >= 0 ? values[veredaIdx]?.replace(/"/g, "").trim() : null;
         const esLiderVal = esLiderIdx >= 0 ? values[esLiderIdx]?.replace(/"/g, "").trim() : "No";
-        const esLider = esLiderVal === "Sí" || esLiderVal === "Sí" || esLiderVal === "true" || esLiderVal === "1" ? 1 : 0;
+        const esLider = esLiderVal === "Si" || esLiderVal === "Si" || esLiderVal === "true" || esLiderVal === "1" ? 1 : 0;
         const telefono = telefonoIdx >= 0 ? values[telefonoIdx]?.replace(/"/g, "").trim() : null;
         const lat = latIdx >= 0 ? parseFloat(values[latIdx]) || null : null;
         const lng = lngIdx >= 0 ? parseFloat(values[lngIdx]) || null : null;

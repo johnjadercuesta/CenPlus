@@ -6,11 +6,11 @@ import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, tenant: tenantParam } = await request.json();
+    const { identificacion, password, tenant: tenantParam } = await request.json();
 
-    if (!email || !password) {
+    if (!identificacion || !password) {
       return NextResponse.json(
-        { error: "Email y contraseña son obligatorios" },
+        { error: "Identificación y contraseña son obligatorios" },
         { status: 400 }
       );
     }
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
     if (!tenant) {
       try {
         const { rows: tenantRows } = await pool.query(
-          "SELECT tenant FROM public.user_tenants WHERE email = $1 LIMIT 1",
-          [email]
+          "SELECT tenant FROM public.user_tenants WHERE identificacion = $1 LIMIT 1",
+          [identificacion]
         );
         if (tenantRows.length > 0) {
           tenant = tenantRows[0].tenant;
@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
           const schemaName = s.schema_name;
           try {
             const { rows: users } = await pool.query(
-              `SELECT id FROM "${schemaName}".admins WHERE email = $1 AND activo = 1 LIMIT 1`,
-              [email]
+              `SELECT id FROM "${schemaName}".admins WHERE identificacion = $1 AND activo = 1 LIMIT 1`,
+              [identificacion]
             );
             if (users.length > 0) {
               tenant = schemaName;
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
     const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     const { rows } = await run(
-      "SELECT * FROM admins WHERE email = $1 AND activo = 1",
-      [email]
+      "SELECT * FROM admins WHERE identificacion = $1 AND activo = 1",
+      [identificacion]
     );
     const user = rows[0] as { id: number; email: string; password: string; nombre: string; role: string } | undefined;
 

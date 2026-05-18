@@ -239,11 +239,6 @@ export async function POST(request: NextRequest) {
     const data = rows[0];
     data.es_lider = data.es_lider === 1;
 
-    const { recordLog } = await import('@/lib/audit');
-    if (tenant) {
-      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: 'ciudadanos', accion: 'Registr� ciudadano: ' + data.nombre_completo + ' (' + data.id_unico + ')' });
-    }
-
     const { recordLog } = await import("@/lib/audit");
     if (tenant) {
       await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "ciudadanos", accion: "Registró al ciudadano: " + data.nombre_completo });

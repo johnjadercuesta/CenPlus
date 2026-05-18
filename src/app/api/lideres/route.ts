@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
     const { rows: data } = await run(
-      "SELECT id, email, nombre, role, activo, created_at FROM admins ORDER BY created_at DESC"
+      "SELECT id, email, identificacion, nombre, role, activo, created_at FROM admins ORDER BY created_at DESC"
     );
 
     return NextResponse.json({ data });
@@ -34,18 +34,18 @@ export async function POST(request: NextRequest) {
     }
     if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
 
-    const { email, password, nombre, role } = await request.json();
+    const { email, identificacion, password, nombre, role } = await request.json();
 
-    if (!email || !password || !nombre) {
-      return NextResponse.json({ error: "Email, contraseña y nombre son obligatorios" }, { status: 400 });
+    if (!email || !identificacion || !password || !nombre) {
+      return NextResponse.json({ error: "Email, identificación, contraseña y nombre son obligatorios" }, { status: 400 });
     }
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
-    const { rows: existingRows } = await run("SELECT id FROM admins WHERE email = $1", [email]);
+    const { rows: existingRows } = await run("SELECT id FROM admins WHERE email = $1 OR identificacion = $2", [email, identificacion]);
     if (existingRows.length > 0) {
-      return NextResponse.json({ error: "Este email ya está registrado" }, { status: 409 });
+      return NextResponse.json({ error: "Este email o identificación ya está registrado" }, { status: 409 });
     }
 
     const hash = bcrypt.hashSync(password, 10);
@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
     const targetRole = validRoles.includes(role) ? role : "lider";
 
     const { rows } = await run(
-      "INSERT INTO admins (email, password, nombre, role) VALUES ($1, $2, $3, $4) RETURNING id, email, nombre, role, activo, created_at",
-      [email, hash, nombre, targetRole]
+      "INSERT INTO admins (email, identificacion, password, nombre, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, identificacion, nombre, role, activo, created_at",
+      [email, identificacion, hash, nombre, targetRole]
     );
 
     const { recordLog } = await import("@/lib/audit");

@@ -12,7 +12,7 @@ export async function PUT(
     if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
     const { nombre, tipo } = await request.json();
     if (!nombre) return NextResponse.json({ error: "Nombre obligatorio" }, { status: 400 });
@@ -30,7 +30,7 @@ export async function PUT(
     return NextResponse.json({ message: "Comuna actualizada" });
   } catch (err: any) {
     console.error(err);
-    if (err.code === "23505") return NextResponse.json({ error: "Ese nombre ya estÃ¡ en uso por otra comuna" }, { status: 400 });
+    if (err.code === "23505") return NextResponse.json({ error: "Ese nombre ya esta en uso por otra comuna" }, { status: 400 });
     return NextResponse.json({ error: "Error al actualizar comuna" }, { status: 500 });
   }
 }

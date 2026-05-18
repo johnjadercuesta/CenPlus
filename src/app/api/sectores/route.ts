@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
     if (data.poligono) data.poligono = JSON.parse(data.poligono as string);
 
     const { recordLog } = await import("@/lib/audit");
+    const tenant = token.tenant || null;
     if (tenant) {
       await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "sectores", accion: "Creó sector/meta: " + data.nombre });
     }

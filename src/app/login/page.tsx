@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [identificacion, setIdentificacion] = useState("");
   const [password, setPassword] = useState("");
   const [tenant, setTenant] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +53,7 @@ function LoginForm() {
     setError("");
 
     try {
-      const body: Record<string, string> = { email, password };
+      const body: Record<string, string> = { identificacion, password };
       if (tenant.trim()) {
         body.tenant = tenant.trim().toLowerCase();
       }
@@ -156,13 +156,13 @@ function LoginForm() {
 
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Email</label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Número de Identificación</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                value={identificacion}
+                onChange={(e) => setIdentificacion(e.target.value)}
                 required
-                placeholder="usuario@cenplus.com"
+                placeholder="Ingresa tu identificación"
                 style={{
                   width: "100%", padding: "12px 16px", border: "1.5px solid #e2e8f0", borderRadius: 10,
                   fontSize: 14, background: "#f8fafc", outline: "none", boxSizing: "border-box"

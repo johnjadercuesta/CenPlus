@@ -12,14 +12,13 @@ export async function PUT(
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
     const id = params.id;
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
-    // Control de Acceso: Líder solo puede editar sus propios registros
     if (token.role === "lider") {
       const { rows } = await run("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
       const record = rows[0] as { lider_id: number } | undefined;
@@ -49,7 +48,7 @@ export async function PUT(
       barrio: (v) => String(v).trim(),
       corregimiento: (v) => String(v).trim(),
       vereda: (v) => (v ? String(v).trim() : null),
-      es_lider: (v) => (v === true || v === "Sí" || v === "true" || v === 1 ? 1 : 0),
+      es_lider: (v) => (v === true || v === "Si" || v === "true" || v === 1 ? 1 : 0),
       nombre_lider: (v) => (v ? String(v).trim() : null),
       latitud: (v) => (v ? parseFloat(String(v)) : null),
       longitud: (v) => (v ? parseFloat(String(v)) : null),
@@ -66,18 +65,6 @@ export async function PUT(
       return NextResponse.json({ error: "Sin cambios" }, { status: 400 });
     }
 
-    // PostGIS omitido localmente
-    // if (body.latitud !== undefined || body.longitud !== undefined) {
-    //   const lat = body.latitud !== undefined ? setters.latitud(body.latitud) : null;
-    //   const lng = body.longitud !== undefined ? setters.longitud(body.longitud) : null;
-    //   
-    //   if (lat !== null && lng !== null) {
-    //     fields.push(`ubicacion_geom = ST_SetSRID(ST_MakePoint($${placeholderCount++}, $${placeholderCount++}), 4326)`);
-    //     values.push(lng); // PostGIS usa (Longitud, Latitud)
-    //     values.push(lat);
-    //   }
-    // }
-
     fields.push(`updated_at = NOW()`);
     values.push(id);
 
@@ -91,7 +78,7 @@ export async function PUT(
 
     data.es_lider = data.es_lider === 1;
 
-    return NextResponse.json({ data, message: "Actualización exitosa" });
+    return NextResponse.json({ data, message: "Actualizacion exitosa" });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
@@ -107,14 +94,13 @@ export async function DELETE(
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
     const id = params.id;
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
-    // Control de Acceso: Líder solo puede eliminar sus propios registros
     if (token.role === "lider") {
       const { rows } = await run("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
       const record = rows[0] as { lider_id: number } | undefined;

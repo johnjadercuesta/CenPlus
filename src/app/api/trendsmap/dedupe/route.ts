@@ -8,15 +8,13 @@ export async function POST(request: NextRequest) {
     console.log("[API] POST /api/trendsmap/dedupe called");
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
-    // Crear extensión para búsqueda fuzzy (si no existe)
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
 
     await run(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
 
-    // Paso 1: Encontrar entradas similares (> 80% similitud)
     const { rows: similarGroups } = await run(`
       SELECT 
         a.id as id1,
@@ -36,10 +34,8 @@ export async function POST(request: NextRequest) {
 
     let merged = 0;
 
-    // Paso 2: Para cada grupo de similares, mantener el más reciente y eliminar los otros
     for (const group of similarGroups) {
       try {
-        // Mantener el más reciente, eliminar el más viejo
         const idToDelete = group.id1;
         const idToKeep = group.id2;
 
@@ -53,11 +49,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Paso 3: Normalizar textos - remover variaciones comunes
     const normalizationRules = [
-      { pattern: / - (Turbo|Caucasia|Medellín|Bogotá)$/i, replacement: '' },
+      { pattern: / - (Turbo|Caucasia|Medellin|Bogota)$/i, replacement: '' },
       { pattern: / \(Parte \d+\)$/i, replacement: '' },
-      { pattern: / - .*\d{4}$/i, replacement: '' }, // Remover año al final
+      { pattern: / - .*\d{4}$/i, replacement: '' },
     ];
 
     let normalized = 0;
@@ -71,7 +66,6 @@ export async function POST(request: NextRequest) {
       normalized += result.rowCount || 0;
     }
 
-    // Obtener estadísticas finales
     const stats = await run(`
       SELECT 
         COUNT(*) as total,
