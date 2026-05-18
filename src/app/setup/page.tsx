@@ -55,6 +55,21 @@ export default function SetupPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [listLoading, setListLoading] = useState(false);
 
+  useEffect(() => {
+    const k = localStorage.getItem("superKey");
+    if (k) {
+      setSuperKey(k);
+      // Verificar automáticamente si la clave guardada es válida
+      fetch("/api/admin/setup-db", { headers: { "x-super-key": k } })
+        .then(res => res.json())
+        .then(data => {
+          setDbStatus(data);
+          setKeyVerified(true);
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   const headers = (extra: Record<string, string> = {}) => ({
     "x-super-key": superKey,
     ...extra,
@@ -74,6 +89,7 @@ export default function SetupPage() {
     e.preventDefault();
     await checkDbStatus();
     setKeyVerified(true);
+    localStorage.setItem("superKey", superKey);
   };
 
   const handleSetupDb = async () => {
