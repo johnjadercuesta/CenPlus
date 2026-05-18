@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
     const tenant = getTenantFromRequest(request);
     const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (err) {
-    console.error(err);
+    console.error("[lideres GET] Error:", err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
@@ -32,12 +32,12 @@ export async function POST(request: NextRequest) {
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
     const { email, identificacion, password, nombre, role } = await request.json();
 
     if (!email || !identificacion || !password || !nombre) {
-      return NextResponse.json({ error: "Email, identificación, contraseña y nombre son obligatorios" }, { status: 400 });
+      return NextResponse.json({ error: "Email, identificacion, contrasena y nombre son obligatorios" }, { status: 400 });
     }
 
     const tenant = getTenantFromRequest(request);
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     const { rows: existingRows } = await run("SELECT id FROM admins WHERE email = $1 OR identificacion = $2", [email, identificacion]);
     if (existingRows.length > 0) {
-      return NextResponse.json({ error: "Este email o identificación ya está registrado" }, { status: 409 });
+      return NextResponse.json({ error: "Este email o identificacion ya esta registrado" }, { status: 409 });
     }
 
     const hash = bcrypt.hashSync(password, 10);
@@ -59,11 +59,13 @@ export async function POST(request: NextRequest) {
 
     const { recordLog } = await import("@/lib/audit");
     if (tenant) {
-      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "usuarios", accion: "Registró nuevo usuario: " + nombre + " (" + email + ")" });
+      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "usuarios", accion: "Registro nuevo usuario: " + nombre + " (" + email + ")" });
     }
     return NextResponse.json({ data: rows[0], message: "Usuario creado exitosamente" }, { status: 201 });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+  } catch (err: any) {
+    console.error("[lideres POST] Error:", err);
+    console.error("[lideres POST] Error code:", err?.code);
+    console.error("[lideres POST] Error detail:", err?.detail);
+    return NextResponse.json({ error: "Error interno del servidor: " + (err?.message || "Desconocido") }, { status: 500 });
   }
 }
