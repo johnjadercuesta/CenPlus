@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 interface UserData {
   nombre: string;
   email: string;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
