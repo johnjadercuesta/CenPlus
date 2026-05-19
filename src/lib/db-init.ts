@@ -14,7 +14,6 @@ export async function ensureIdentificacionColumn() {
   try {
     console.log("[DB-INIT] Starting identificacion column migration...");
 
-    // 1. Create public.user_tenants table
     try {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS public.user_tenants (
@@ -28,10 +27,8 @@ export async function ensureIdentificacionColumn() {
       console.log("[DB-INIT] public.user_tenants table ready");
     } catch (e: any) {
       console.error("[DB-INIT] Error creating user_tenants:", e.message);
-      lastError = "user_tenants: " + e.message;
     }
 
-    // 2. Add identificacion column to public.user_tenants
     try {
       await pool.query(`
         ALTER TABLE public.user_tenants 
@@ -45,10 +42,8 @@ export async function ensureIdentificacionColumn() {
       console.log("[DB-INIT] public.user_tenants.identificacion ready");
     } catch (e: any) {
       console.error("[DB-INIT] Error adding identificacion to user_tenants:", e.message);
-      lastError = "user_tenants identificacion: " + e.message;
     }
 
-    // 3. Get all tenant schemas
     const { rows: schemas } = await pool.query(`
       SELECT schema_name FROM information_schema.schemata
       WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'public') 
@@ -60,7 +55,6 @@ export async function ensureIdentificacionColumn() {
     for (const schema of schemas) {
       const schemaName = schema.schema_name;
       
-      // Check if admins table exists in this schema
       const { rows: tableExists } = await pool.query(`
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
@@ -73,7 +67,6 @@ export async function ensureIdentificacionColumn() {
         continue;
       }
 
-      // Add identificacion column
       try {
         await pool.query(`
           ALTER TABLE "${schemaName}".admins 
@@ -85,7 +78,6 @@ export async function ensureIdentificacionColumn() {
         lastError = `${schemaName}.admins: ${e.message}`;
       }
       
-      // Populate identificacion with email values
       try {
         await pool.query(`
           UPDATE "${schemaName}".admins 
