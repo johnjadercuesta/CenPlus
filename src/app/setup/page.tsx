@@ -5,8 +5,11 @@ import { useState, useEffect } from "react";
 interface Tenant {
   name: string;
   email: string;
+  adminName: string;
   created: string;
   ciudadanos: number;
+  testUsers: { email: string; nombre: string; role: string }[];
+  error?: string;
 }
 
 type Tab = "setup" | "create" | "list";
@@ -579,6 +582,137 @@ export default function SetupPage() {
                     </button>
                   </>
                 )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {tenants.map(t => (
+                  <div key={t.name} style={{
+                    padding: "20px",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 14,
+                  }}>
+                    {/* Header de la organización */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                      <div>
+                        <div style={{ color: "white", fontWeight: 700, fontSize: 18 }}>🏢 {t.name}</div>
+                        <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
+                          {t.ciudadanos} ciudadano(s) · Creada: {t.created ? new Date(t.created).toLocaleDateString("es-CO") : "N/A"}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                        <button
+                          onClick={() => handleImpersonate(t.name)}
+                          style={{
+                            padding: "8px 16px",
+                            background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(52,211,153,0.3))",
+                            border: "1px solid rgba(16,185,129,0.4)",
+                            borderRadius: 8, color: "#34d399",
+                            cursor: "pointer", fontSize: 13, fontWeight: 600,
+                          }}
+                        >
+                          Entrar a Administrar →
+                        </button>
+                        <a
+                          href={tenantUrl(t.name)}
+                          target={BASE_DOMAIN ? "_blank" : "_self"}
+                          rel="noreferrer"
+                          style={{
+                            padding: "8px 16px", display: "flex", alignItems: "center",
+                            background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
+                            border: "1px solid rgba(59,130,246,0.4)",
+                            borderRadius: 8, color: "#60a5fa",
+                            textDecoration: "none", fontSize: 13, fontWeight: 600,
+                          }}
+                        >
+                          Login Normal →
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* URL de acceso */}
+                    <div style={{
+                      padding: "12px 16px", background: "rgba(0,0,0,0.3)",
+                      borderRadius: 10, marginBottom: 12,
+                    }}>
+                      <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4, fontWeight: 600 }}>🌐 URL DE ACCESO:</div>
+                      {BASE_DOMAIN ? (
+                        <a
+                          href={`https://${t.name}.${BASE_DOMAIN}/login`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: "#60a5fa", fontSize: 14, fontWeight: 700, textDecoration: "none" }}
+                        >
+                          https://{t.name}.{BASE_DOMAIN}/login
+                        </a>
+                      ) : (
+                        <a
+                          href={tenantUrl(t.name)}
+                          style={{ color: "#60a5fa", fontSize: 14, fontWeight: 700 }}
+                        >
+                          {typeof window !== "undefined" ? window.location.origin : ""}/login?tenant={t.name}
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Admin */}
+                    <div style={{
+                      padding: "12px 16px", background: "rgba(59,130,246,0.1)",
+                      border: "1px solid rgba(59,130,246,0.2)",
+                      borderRadius: 10, marginBottom: 12,
+                    }}>
+                      <div style={{ color: "#93c5fd", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>👤 ADMINISTRADOR:</div>
+                      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                        <div>
+                          <span style={{ color: "#64748b", fontSize: 12 }}>Email:</span><br />
+                          <span style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 600 }}>{t.email}</span>
+                        </div>
+                        <div>
+                          <span style={{ color: "#64748b", fontSize: 12 }}>Nombre:</span><br />
+                          <span style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 600 }}>{t.adminName}</span>
+                        </div>
+                        <div>
+                          <span style={{ color: "#64748b", fontSize: 12 }}>Contraseña:</span><br />
+                          <span style={{ color: "#fbbf24", fontSize: 14, fontWeight: 700 }}>La que configuraste al crear</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Usuarios de prueba */}
+                    {t.testUsers && t.testUsers.length > 0 && (
+                      <div style={{
+                        padding: "12px 16px", background: "rgba(139,92,246,0.1)",
+                        border: "1px solid rgba(139,92,246,0.2)",
+                        borderRadius: 10,
+                      }}>
+                        <div style={{ color: "#c4b5fd", fontSize: 11, fontWeight: 600, marginBottom: 8 }}>👥 USUARIOS DE PRUEBA (contraseña: admin123):</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {t.testUsers.map((u, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <span style={{
+                                padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
+                                background: u.role === "estratega" ? "rgba(59,130,246,0.2)" : "rgba(16,185,129,0.2)",
+                                color: u.role === "estratega" ? "#60a5fa" : "#34d399",
+                              }}>
+                                {u.role === "estratega" ? "Estratega" : "Líder"}
+                              </span>
+                              <span style={{ color: "#e2e8f0", fontSize: 13 }}>{u.email}</span>
+                              <span style={{ color: "#64748b", fontSize: 12 }}>({u.nombre})</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {t.error && (
+                      <div style={{ marginTop: 12, padding: "8px 12px", background: "rgba(239,68,68,0.1)", borderRadius: 8 }}>
+                        <span style={{ color: "#f87171", fontSize: 12 }}>⚠️ {t.error}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
