@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       const schemaName = s.schema_name;
       try {
         const { rows: admins } = await pool.query(
-          `SELECT email, nombre, role, activo, created_at FROM "${schemaName}".admins ORDER BY role, created_at`
+          `SELECT email, identificacion, nombre, role, activo, created_at FROM "${schemaName}".admins ORDER BY role, created_at`
         );
         
         let ciudadanosCount = 0;
@@ -49,11 +49,13 @@ export async function GET(request: NextRequest) {
         tenants.push({
           name: schemaName,
           email: adminUser?.email || 'N/A',
+          identificacion: adminUser?.identificacion || adminUser?.email || 'N/A',
           adminName: adminUser?.nombre || 'N/A',
           created: adminUser?.created_at || null,
           ciudadanos: ciudadanosCount,
           testUsers: testUsers.map(u => ({
             email: u.email,
+            identificacion: u.identificacion || u.email,
             nombre: u.nombre,
             role: u.role,
           })),

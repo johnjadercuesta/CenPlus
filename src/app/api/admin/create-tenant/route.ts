@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
         CREATE TABLE IF NOT EXISTS admins (
           id SERIAL PRIMARY KEY,
           email VARCHAR(255) UNIQUE NOT NULL,
+          identificacion VARCHAR(50),
           nombre VARCHAR(255) NOT NULL,
           role VARCHAR(50) DEFAULT 'administrador',
           password VARCHAR(255) NOT NULL,
@@ -203,22 +204,22 @@ export async function POST(request: NextRequest) {
       // Crear admin principal
       const adminPassHash = await bcrypt.hash(password, 10);
       await client.query(
-        `INSERT INTO admins (email, nombre, role, password, telefono, activo)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [email, fullName || 'Admin User', 'administrador', adminPassHash, '', 1]
+        `INSERT INTO admins (email, identificacion, nombre, role, password, telefono, activo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [email, email, fullName || 'Admin User', 'administrador', adminPassHash, '', 1]
       );
 
       // Crear 2 admins adicionales de test (opcional)
       const testPassHash = await bcrypt.hash('admin123', 10);
       await client.query(
-        `INSERT INTO admins (email, nombre, role, password, telefono, activo)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        ['estratega@cenplus.com', 'Estratega Test', 'estratega', testPassHash, '', 1]
+        `INSERT INTO admins (email, identificacion, nombre, role, password, telefono, activo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        ['estratega@cenplus.com', 'estratega@cenplus.com', 'Estratega Test', 'estratega', testPassHash, '', 1]
       );
       await client.query(
-        `INSERT INTO admins (email, nombre, role, password, telefono, activo)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        ['lider@cenplus.com', 'Líder Test', 'lider', testPassHash, '', 1]
+        `INSERT INTO admins (email, identificacion, nombre, role, password, telefono, activo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        ['lider@cenplus.com', 'lider@cenplus.com', 'Líder Test', 'lider', testPassHash, '', 1]
       );
 
       // Crear tabla global de mapeo usuario→tenant (si no existe)
@@ -272,17 +273,18 @@ export async function POST(request: NextRequest) {
         message: `Tenant '${sanitizedName}' creado exitosamente`,
         credentials: {
           email: email,
+          identificacion: email,
           role: 'administrador',
           password: '[masked]',
           testUsers: [
-            { email: 'estratega@cenplus.com', password: 'admin123' },
-            { email: 'lider@cenplus.com', password: 'admin123' }
+            { email: 'estratega@cenplus.com', identificacion: 'estratega@cenplus.com', password: 'admin123' },
+            { email: 'lider@cenplus.com', identificacion: 'lider@cenplus.com', password: 'admin123' }
           ]
         },
         nextSteps: [
           `1. Accede con: POST /api/auth/login`,
-          `2. Body: { "email": "${email}", "password": "[tu password]", "tenant": "${sanitizedName}" }`,
-          `3. Recibirás JWT token`
+          `2. Body: { "identificacion": "${email}", "password": "[tu password]", "tenant": "${sanitizedName}" }`,
+          `3. Recibiras JWT token`
         ]
       }, { status: 201 });
 

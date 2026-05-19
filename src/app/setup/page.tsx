@@ -5,10 +5,11 @@ import { useState, useEffect } from "react";
 interface Tenant {
   name: string;
   email: string;
+  identificacion: string;
   adminName: string;
   created: string;
   ciudadanos: number;
-  testUsers: { email: string; nombre: string; role: string }[];
+  testUsers: { email: string; identificacion: string; nombre: string; role: string }[];
   error?: string;
 }
 
@@ -471,13 +472,14 @@ export default function SetupPage() {
                     </div>
 
                     <div style={{ color: "#86efac", fontSize: 13, lineHeight: 1.9 }}>
-                      <strong>📧 Admin:</strong> {createResult.credentials?.email}<br />
-                      <strong>🔑 Contraseña:</strong> la que ingresaste<br />
+                      <strong>🔑 Identificación (para login):</strong> {createResult.credentials?.identificacion || createResult.credentials?.email}<br />
+                      <strong>📧 Email:</strong> {createResult.credentials?.email}<br />
+                      <strong>🔒 Contraseña:</strong> la que ingresaste<br />
                       {createResult.credentials?.testUsers && (
                         <>
                           <strong>👥 Usuarios de prueba (pass: admin123):</strong><br />
                           {createResult.credentials.testUsers.map((u: any) => (
-                            <span key={u.email}>&nbsp;&nbsp;• {u.email}<br /></span>
+                            <span key={u.email}>&nbsp;&nbsp;• {u.identificacion || u.email} ({u.email})<br /></span>
                           ))}
                         </>
                       )}
@@ -664,12 +666,16 @@ export default function SetupPage() {
                       <div style={{ color: "#93c5fd", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>👤 ADMINISTRADOR:</div>
                       <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
                         <div>
+                          <span style={{ color: "#64748b", fontSize: 12 }}>Identificación (para login):</span><br />
+                          <span style={{ color: "#fbbf24", fontSize: 14, fontWeight: 700 }}>{t.identificacion}</span>
+                        </div>
+                        <div>
                           <span style={{ color: "#64748b", fontSize: 12 }}>Email:</span><br />
-                          <span style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 600 }}>{t.email}</span>
+                          <span style={{ color: "#e2e8f0", fontSize: 14 }}>{t.email}</span>
                         </div>
                         <div>
                           <span style={{ color: "#64748b", fontSize: 12 }}>Nombre:</span><br />
-                          <span style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 600 }}>{t.adminName}</span>
+                          <span style={{ color: "#e2e8f0", fontSize: 14 }}>{t.adminName}</span>
                         </div>
                         <div>
                           <span style={{ color: "#64748b", fontSize: 12 }}>Contraseña:</span><br />
@@ -696,8 +702,8 @@ export default function SetupPage() {
                               }}>
                                 {u.role === "estratega" ? "Estratega" : "Líder"}
                               </span>
-                              <span style={{ color: "#e2e8f0", fontSize: 13 }}>{u.email}</span>
-                              <span style={{ color: "#64748b", fontSize: 12 }}>({u.nombre})</span>
+                              <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 600 }}>{u.identificacion}</span>
+                              <span style={{ color: "#64748b", fontSize: 12 }}>({u.nombre} · {u.email})</span>
                             </div>
                           ))}
                         </div>
