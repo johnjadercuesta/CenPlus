@@ -3,6 +3,7 @@ import { pool } from "@/lib/db";
 import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
 import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
+import { logRecordCreate, logRecordUpdate, logRecordDelete, logPermissionChange } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,13 +70,33 @@ export async function POST(request: NextRequest) {
       [email, identificacion, hash, nombre, targetRole]
     );
 
-    const { recordLog } = await import("@/lib/audit");
-    await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "usuarios", accion: "Registro nuevo usuario: " + nombre + " (" + email + ")" });
+    await logRecordCreate({
+      tenant,
+      userId: token.userId,
+      userEmail: token.email,
+      userName: token.nombre,
+      userRole: token.role,
+      module: "usuarios",
+      resourceType: "admin",
+      resourceId: String(rows[0].id),
+      newValue: { email, nombre, role: targetRole },
+    });
+
+    if (targetRole !== "lider") {
+      await logPermissionChange({
+        tenant,
+        userId: token.userId,
+        userEmail: token.email,
+        userName: token.nombre,
+        resourceType: "admin",
+        resourceId: String(rows[0].id),
+        newValue: { role: targetRole },
+      });
+    }
+
     return NextResponse.json({ data: rows[0], message: "Usuario creado exitosamente" }, { status: 201 });
   } catch (err: any) {
     console.error("[lideres POST] Error:", err.message);
-    console.error("[lideres POST] Error code:", err?.code);
-    console.error("[lideres POST] Error detail:", err?.detail);
     return NextResponse.json({ error: "Error interno del servidor: " + (err?.message || "Desconocido") }, { status: 500 });
   }
 }

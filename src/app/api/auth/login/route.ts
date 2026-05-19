@@ -3,12 +3,48 @@ import { pool } from "@/lib/db";
 import { signToken } from "@/lib/auth";
 import { getTenantFromRequest, queryWithTenant, sanitizeTenantValue } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
+import { logLogin, recordFailedLogin, recordSystemEvent } from "@/lib/audit";
+
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+  return request.headers.get("x-real-ip") || "unknown";
+}
+
+function parseUserAgent(ua: string | null): { browser: string; os: string; device: string } {
+  if (!ua) return { browser: "Unknown", os: "Unknown", device: "Unknown" };
+  
+  let browser = "Unknown";
+  if (ua.includes("Chrome")) browser = "Chrome";
+  else if (ua.includes("Firefox")) browser = "Firefox";
+  else if (ua.includes("Safari")) browser = "Safari";
+  else if (ua.includes("Edge")) browser = "Edge";
+  
+  let os = "Unknown";
+  if (ua.includes("Windows")) os = "Windows";
+  else if (ua.includes("Mac")) os = "macOS";
+  else if (ua.includes("Linux")) os = "Linux";
+  else if (ua.includes("Android")) os = "Android";
+  else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+  
+  const device = ua.includes("Mobile") || ua.includes("Android") || ua.includes("iPhone") ? "Mobile" : "Desktop";
+  
+  return { browser, os, device };
+}
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const ipAddress = getClientIP(request);
+  const userAgent = request.headers.get("user-agent") || "";
+  const { browser, os, device } = parseUserAgent(userAgent);
+
   try {
     const { identificacion, password, tenant: tenantParam } = await request.json();
 
     if (!identificacion || !password) {
+      await recordFailedLogin({ identificacion: identificacion || "unknown", ipAddress, userAgent, reason: "missing_fields" });
       return NextResponse.json(
         { error: "Identificacion y contrasena son obligatorios" },
         { status: 400 }
@@ -58,6 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!tenant) {
+      await recordFailedLogin({ identificacion, ipAddress, userAgent, reason: "tenant_not_found" });
       return NextResponse.json(
         { error: "Credenciales invalidas" },
         { status: 401 }
@@ -73,6 +110,7 @@ export async function POST(request: NextRequest) {
     const user = rows[0] as { id: number; email: string; password: string; nombre: string; role: string } | undefined;
 
     if (!user) {
+      await recordFailedLogin({ tenant, identificacion, ipAddress, userAgent, reason: "user_not_found" });
       return NextResponse.json(
         { error: "Credenciales invalidas" },
         { status: 401 }
@@ -81,6 +119,7 @@ export async function POST(request: NextRequest) {
 
     const valid = bcrypt.compareSync(password, user.password);
     if (!valid) {
+      await recordFailedLogin({ tenant, identificacion, ipAddress, userAgent, reason: "invalid_password" });
       return NextResponse.json(
         { error: "Credenciales invalidas" },
         { status: 401 }
@@ -102,16 +141,24 @@ export async function POST(request: NextRequest) {
       role: user.role,
     });
     
-    if (tenant) {
-      const { recordLog } = await import("@/lib/audit");
-      await recordLog({
-        tenant,
-        email: user.email,
-        nombre: user.nombre,
-        modulo: "autenticacion",
-        accion: "Inicio sesion en el sistema",
-      });
-    }
+    await logLogin({
+      tenant,
+      userId: user.id,
+      userEmail: user.email,
+      userName: user.nombre,
+      userRole: user.role,
+      ipAddress,
+      userAgent,
+      browser,
+      os,
+    });
+
+    await recordSystemEvent({
+      eventType: "login_success",
+      source: "auth",
+      message: `Usuario ${user.email} inicio sesion desde ${ipAddress}`,
+      durationMs: Date.now() - startTime,
+    });
     
     response.cookies.set("token", token, {
       httpOnly: true,
@@ -124,6 +171,13 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err: any) {
     console.error("[login] Error:", err.message);
+    await recordSystemEvent({
+      eventType: "login_error",
+      source: "auth",
+      message: err.message,
+      severity: "error",
+      durationMs: Date.now() - startTime,
+    });
     return NextResponse.json({ error: "Error interno: " + (err?.message || "Desconocido") }, { status: 500 });
   }
 }
