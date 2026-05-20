@@ -56,6 +56,57 @@ async function run() {
       )
     `);
 
+    // Add missing columns if they don't exist (for existing tables)
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='user_id') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN user_id INTEGER;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='resource_type') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN resource_type VARCHAR(100);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='resource_id') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN resource_id VARCHAR(255);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='old_value') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN old_value JSONB;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='new_value') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN new_value JSONB;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='ip_address') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN ip_address VARCHAR(45);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='user_agent') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN user_agent TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='device_info') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN device_info VARCHAR(255);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='browser') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN browser VARCHAR(100);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='os') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN os VARCHAR(100);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='status') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN status VARCHAR(20) DEFAULT 'success';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='error_message') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN error_message TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='duration_ms') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN duration_ms INTEGER;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='severity') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN severity VARCHAR(20) DEFAULT 'info';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='audit_logs' AND column_name='metadata') THEN
+          ALTER TABLE public.audit_logs ADD COLUMN metadata JSONB;
+        END IF;
+      END $$;
+    `);
+
     await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_tenant ON public.audit_logs(tenant)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_user ON public.audit_logs(user_email)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_action ON public.audit_logs(action)`);

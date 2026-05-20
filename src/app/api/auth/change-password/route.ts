@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTokenFromRequest } from "@/lib/auth";
 import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
-import { logPasswordChange, getClientIP } from "@/lib/audit";
+import { logPasswordChange } from "@/lib/audit";
 
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");

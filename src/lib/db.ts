@@ -22,5 +22,5 @@ pool.query = async function (...args: any[]) {
       console.error("[DB] Migration trigger failed:", err?.message);
     }
   }
-  return originalQuery(...args);
+  return (originalQuery as any)(...args);
 } as any;

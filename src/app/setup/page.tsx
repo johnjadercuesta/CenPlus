@@ -719,68 +719,6 @@ export default function SetupPage() {
                 ))}
               </div>
             )}
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {tenants.map(t => (
-                  <div key={t.name} style={{
-                    padding: "16px 20px",
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 14,
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <div style={{ color: "white", fontWeight: 700, fontSize: 16 }}>🏢 {t.name}</div>
-                        <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
-                          {t.email} · {t.ciudadanos} ciudadano(s)
-                        </div>
-                        {BASE_DOMAIN && (
-                          <div style={{ marginTop: 6 }}>
-                            <a
-                              href={`https://${t.name}.${BASE_DOMAIN}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{ color: "#a78bfa", fontSize: 12, textDecoration: "none" }}
-                            >
-                              🌐 {t.name}.{BASE_DOMAIN}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-                        <button
-                          onClick={() => handleImpersonate(t.name)}
-                          style={{
-                            padding: "8px 16px",
-                            background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(52,211,153,0.3))",
-                            border: "1px solid rgba(16,185,129,0.4)",
-                            borderRadius: 8, color: "#34d399",
-                            cursor: "pointer", fontSize: 13, fontWeight: 600,
-                          }}
-                        >
-                          Entrar a Administrar →
-                        </button>
-                        <a
-                          href={tenantUrl(t.name)}
-                          target={BASE_DOMAIN ? "_blank" : "_self"}
-                          rel="noreferrer"
-                          style={{
-                            padding: "8px 16px", display: "flex", alignItems: "center",
-                            background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
-                            border: "1px solid rgba(59,130,246,0.4)",
-                            borderRadius: 8, color: "#60a5fa",
-                            textDecoration: "none", fontSize: 13, fontWeight: 600,
-                          }}
-                        >
-                          Login Normal →
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </>
         )}
       </div>
