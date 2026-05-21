@@ -256,6 +256,45 @@ export default function ConfiguracionPage() {
           </div>
         )}
 
+        {activeTab === "referencias" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+            <div className="card" style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+              <h3 style={{ marginTop: 0 }}>Puestos de Votación</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                <input className="input" placeholder="Nombre del puesto" value={newPuesto.nombre} onChange={e => setNewPuesto({...newPuesto, nombre: e.target.value})} style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
+                <select value={newPuesto.comunaId} onChange={e => setNewPuesto({...newPuesto, comunaId: e.target.value})} style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}>
+                  <option value="">Sin comuna</option>
+                  {comunas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+                <input className="input" type="number" placeholder="Votos históricos" value={newPuesto.votosHistoricos} onChange={e => setNewPuesto({...newPuesto, votosHistoricos: e.target.value})} style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }} />
+                <button onClick={() => handleAddTerritorio("/api/territorio/puestos", newPuesto, () => setNewPuesto({ nombre: "", comunaId: "", votosHistoricos: "0" }))} className="btn btn-primary" style={{ background: "#3b82f6", color: "white", border: "none", padding: "8px 16px", borderRadius: "4px" }}>+ Agregar Puesto</button>
+              </div>
+              <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                {puestos.length === 0 && <p style={{ color: "#94a3b8", fontSize: "13px" }}>No hay puestos registrados</p>}
+                {puestos.map(p => (
+                  <div key={p.id} style={{ padding: "8px", borderBottom: "1px solid #f1f5f9", fontSize: "13px" }}>
+                    <strong>{p.nombre}</strong>
+                    {p.comuna_id && <span style={{ color: "#64748b", marginLeft: "8px" }}>— Comuna ID: {p.comuna_id}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card" style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+              <h3 style={{ marginTop: 0 }}>Problemáticas Sociales</h3>
+              <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                <input className="input" placeholder="Nombre de la problemática" value={newProblematica} onChange={e => setNewProblematica(e.target.value)} style={{ padding: "8px", border: "1px solid #ccc", borderRadius: "4px", flex: 1 }} />
+                <button onClick={() => handleAddTerritorio("/api/territorio/problematicas", { nombre: newProblematica }, () => setNewProblematica(""))} className="btn btn-primary" style={{ background: "#3b82f6", color: "white", border: "none", padding: "8px 16px", borderRadius: "4px" }}>+</button>
+              </div>
+              <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                {problematicas.length === 0 && <p style={{ color: "#94a3b8", fontSize: "13px" }}>No hay problemáticas registradas</p>}
+                {problematicas.map(p => (
+                  <div key={p.id} style={{ padding: "8px", borderBottom: "1px solid #f1f5f9" }}>{p.nombre}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === "marca" && (
           <div className="card" style={{ background: "white", padding: "32px", borderRadius: "12px", border: "1px solid #e2e8f0", maxWidth: "800px" }}>
             <form onSubmit={handleSaveBranding}>
