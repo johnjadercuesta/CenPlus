@@ -20,7 +20,7 @@ const GraficoTendencias = dynamic(() => import('./GraficoTendencias'), {
   )
 });
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_TRENDS_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = '/api/inteligencia';
 
 interface ApiConfig {
   twitter_bearer_token?: string;
