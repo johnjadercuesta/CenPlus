@@ -28,6 +28,9 @@ export async function PUT(
 
     const body = await request.json();
 
+    // Fetch current admin values for sync
+    const { rows: adminRows } = await queryWithTenant(tenant, "SELECT email, identificacion FROM admins WHERE id = $1", [id]);
+    const oldAdmin = adminRows[0] || {};
     const fields: string[] = [];
     const values: any[] = [];
     let pCount = 1;
@@ -41,6 +44,7 @@ export async function PUT(
       newValue.nombre = body.nombre;
     }
     if (body.email !== undefined) {
+      // Email uniqueness check
       const { rows: existingRows } = await queryWithTenant(tenant,
         "SELECT id FROM admins WHERE email = $1 AND id != $2",
         [body.email, id]
@@ -71,6 +75,13 @@ export async function PUT(
       newValue.activo = body.activo;
     }
 
+    // Handle identificacion update
+    if (body.identificacion !== undefined) {
+      fields.push(`identificacion = $${pCount++}`);
+      values.push(body.identificacion);
+      newValue.identificacion = body.identificacion;
+    }
+
     if (fields.length === 0) {
       return NextResponse.json({ error: "Sin cambios" }, { status: 400 });
     }
@@ -92,9 +103,22 @@ export async function PUT(
       module: "usuarios",
       resourceType: "admin",
       resourceId: id,
+      // Include identification change in audit if present
+      // (newValue already contains it)
+
       oldValue: Object.keys(oldValue).length > 0 ? oldValue : undefined,
       newValue: Object.keys(newValue).length > 0 ? newValue : undefined,
     });
+
+    // Sync global user_tenants if email or identificacion changed
+    if (newValue.email || newValue.identificacion) {
+      const newEmail = newValue.email || oldAdmin.email;
+      const newIdent = newValue.identificacion || oldAdmin.identificacion;
+      await pool.query(`
+        INSERT INTO public.user_tenants (email, tenant, identificacion) VALUES ($1, $2, $3)
+        ON CONFLICT (email) DO UPDATE SET tenant = $2, identificacion = $3`
+        , [newEmail, tenant, newIdent]);
+    }
 
     if (newValue.role) {
       await logPermissionChange({
@@ -145,6 +169,12 @@ export async function DELETE(
     const user = userRows[0];
 
     const { rowCount } = await queryWithTenant(tenant, "DELETE FROM admins WHERE id = $1", [id]);
+    if (rowCount === 0) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+    // Remove from global mapping using the email we fetched earlier
+    const deletedEmail = user.email;
+    await pool.query(`DELETE FROM public.user_tenants WHERE email = $1`, [deletedEmail]);
     if (rowCount === 0) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }

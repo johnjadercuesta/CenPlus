@@ -25,19 +25,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'DATABASE_URL no configurada' }, { status: 500 });
   }
 
-  const client = await pool.connect();
-  const results: string[] = [];
-
   try {
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.user_tenants (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         tenant VARCHAR(63) NOT NULL,
+        identificacion VARCHAR(50),
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
     results.push('✅ Tabla public.user_tenants verificada');
+
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='user_tenants' AND column_name='identificacion') THEN
+          ALTER TABLE public.user_tenants ADD COLUMN identificacion VARCHAR(50);
+        END IF;
+      END $$;
+    `);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS public.tenants_config (

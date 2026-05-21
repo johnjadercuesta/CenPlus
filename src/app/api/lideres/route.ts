@@ -70,6 +70,16 @@ export async function POST(request: NextRequest) {
       [email, identificacion, hash, nombre, targetRole]
     );
 
+    const client = await pool.connect();
+    try {
+      await client.query(`
+        INSERT INTO public.user_tenants (email, tenant, identificacion) VALUES ($1, $2, $3)
+        ON CONFLICT (email) DO UPDATE SET tenant = $2, identificacion = $3
+      `, [email, tenant, identificacion]);
+    } finally {
+      client.release();
+    }
+
     await logRecordCreate({
       tenant,
       userId: token.userId,

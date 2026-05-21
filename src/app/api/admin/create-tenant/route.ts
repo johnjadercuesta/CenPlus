@@ -228,19 +228,23 @@ export async function POST(request: NextRequest) {
           id SERIAL PRIMARY KEY,
           email VARCHAR(255) UNIQUE NOT NULL,
           tenant VARCHAR(63) NOT NULL,
+          identificacion VARCHAR(50),
           created_at TIMESTAMP DEFAULT NOW()
         )
       `);
       await client.query(`
         CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email)
       `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_user_tenants_identificacion ON public.user_tenants(identificacion)
+      `);
 
       // Registrar los usuarios en la tabla global
       // Registrar admin principal
       await client.query(
-        `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2)
-         ON CONFLICT (email) DO UPDATE SET tenant = $2`,
-        [email, sanitizedName]
+        `INSERT INTO public.user_tenants (email, tenant, identificacion) VALUES ($1, $2, $3)
+         ON CONFLICT (email) DO UPDATE SET tenant = $2, identificacion = $3`,
+        [email, sanitizedName, email]
       );
 
       // Registrar configuración inicial del tenant (colores, logo)
@@ -253,16 +257,16 @@ export async function POST(request: NextRequest) {
       
       // Registrar usuario estratega
       await client.query(
-        `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2)
-         ON CONFLICT (email) DO UPDATE SET tenant = $2`,
-        ['estratega@cenplus.com', sanitizedName]
+        `INSERT INTO public.user_tenants (email, tenant, identificacion) VALUES ($1, $2, $3)
+         ON CONFLICT (email) DO UPDATE SET tenant = $2, identificacion = $3`,
+        ['estratega@cenplus.com', sanitizedName, 'estratega@cenplus.com']
       );
       
       // Registrar usuario líder
       await client.query(
-        `INSERT INTO public.user_tenants (email, tenant) VALUES ($1, $2)
-         ON CONFLICT (email) DO UPDATE SET tenant = $2`,
-        ['lider@cenplus.com', sanitizedName]
+        `INSERT INTO public.user_tenants (email, tenant, identificacion) VALUES ($1, $2, $3)
+         ON CONFLICT (email) DO UPDATE SET tenant = $2, identificacion = $3`,
+        ['lider@cenplus.com', sanitizedName, 'lider@cenplus.com']
       );
 
       client.release();

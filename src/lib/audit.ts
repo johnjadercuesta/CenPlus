@@ -66,6 +66,36 @@ export async function recordAudit(params: AuditParams) {
   }
 }
 
+export async function recordFailedAction(params: {
+  tenant?: string;
+  userId?: number;
+  userEmail?: string;
+  userName?: string;
+  action: string;
+  module?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  reason?: string;
+}) {
+  try {
+    await recordAudit({
+      tenant: params.tenant,
+      userId: params.userId,
+      userEmail: params.userEmail,
+      userName: params.userName,
+      action: params.action,
+      module: params.module || "security",
+      status: "error",
+      errorMessage: params.reason,
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent,
+      severity: "warning",
+    });
+  } catch (error) {
+    console.error("[AUDIT] Error recording failed action:", error);
+  }
+}
+
 export async function recordFailedLogin(params: {
   tenant?: string;
   identificacion: string;
