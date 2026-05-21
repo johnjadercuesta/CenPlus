@@ -3,12 +3,8 @@ import { pool } from '@/lib/db';
 
 const SUPER_KEY = process.env.SUPER_ADMIN_KEY || '';
 
-/**
- * Robust Authorization:
- * ONLY allows access if SUPER_ADMIN_KEY is set in environment AND matches the header.
- */
 function isAuthorized(request: NextRequest): boolean {
-  if (!SUPER_KEY) return false; // Block everything if no key is configured in env
+  if (!SUPER_KEY) return false;
   const key = request.headers.get('x-super-key') || '';
   return key === SUPER_KEY;
 }
@@ -25,8 +21,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'DATABASE_URL no configurada' }, { status: 500 });
   }
 
+  const results: string[] = [];
+
   try {
-    await client.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS public.user_tenants (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -37,7 +35,7 @@ export async function POST(request: NextRequest) {
     `);
     results.push('✅ Tabla public.user_tenants verificada');
 
-    await client.query(`
+    await pool.query(`
       DO $$ BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='user_tenants' AND column_name='identificacion') THEN
           ALTER TABLE public.user_tenants ADD COLUMN identificacion VARCHAR(50);
@@ -45,7 +43,7 @@ export async function POST(request: NextRequest) {
       END $$;
     `);
 
-    await client.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS public.tenants_config (
         tenant VARCHAR(63) PRIMARY KEY,
         primary_color VARCHAR(7) DEFAULT '#3b82f6',
@@ -57,7 +55,7 @@ export async function POST(request: NextRequest) {
     `);
     results.push('✅ Tabla public.tenants_config (Temas) verificada');
 
-    await client.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS public.system_logs (
         id SERIAL PRIMARY KEY,
         tenant VARCHAR(63) NOT NULL,
@@ -70,10 +68,10 @@ export async function POST(request: NextRequest) {
     `);
     results.push('✅ Tabla public.system_logs (Auditoría) verificada');
 
-    await client.query(`
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_user_tenants_email ON public.user_tenants(email)
     `);
-    await client.query(`
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_system_logs_tenant ON public.system_logs(tenant)
     `);
     results.push('✅ Índices globales verificados');
@@ -85,8 +83,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json({ error: `Error: ${(error as any).message}` }, { status: 500 });
-  } finally {
-    client.release();
   }
 }
 
