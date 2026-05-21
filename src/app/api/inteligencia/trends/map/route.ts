@@ -3,6 +3,43 @@ import { pool } from "@/lib/db";
 
 export async function GET() {
   try {
+    // Try fresh scraped data first
+    const { rows: fresh } = await pool.query(`
+      SELECT DISTINCT ON (location_city)
+        location_city AS city,
+        location_lat AS latitude,
+        location_lng AS longitude,
+        keywords[1] AS keyword,
+        heat_index AS intensity,
+        sentiment_score AS sentiment,
+        scraped_at
+      FROM trends_scraped
+      WHERE location_lat IS NOT NULL
+        AND location_lng IS NOT NULL
+        AND location_city IS NOT NULL
+      ORDER BY location_city, heat_index DESC
+      LIMIT 50
+    `);
+
+    if (fresh.length > 0) {
+      const features = fresh.map((r: any) => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [parseFloat(r.longitude), parseFloat(r.latitude)],
+        },
+        properties: {
+          keyword: r.keyword || "Tendencia",
+          intensity: Math.round(r.intensity) || 50,
+          sentiment: parseFloat(r.sentiment) || 0,
+          city: r.city || "Colombia",
+        },
+      }));
+
+      return NextResponse.json({ features });
+    }
+
+    // Fallback to global_trends historical data
     const { rows } = await pool.query(`
       SELECT 
         topic AS keyword,
