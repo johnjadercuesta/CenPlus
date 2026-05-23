@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
     const token = getTokenFromRequest(request);
     if (!token || token.role !== "administrador") {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const tenant = token.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -18,6 +24,7 @@ export async function POST(request: NextRequest) {
 
     const client = await pool.connect();
     try {
+      await client.query(`SET search_path TO "${tenant}", public`);
       await client.query('BEGIN');
 
       const ciudadanosRes = await client.query("SELECT * FROM ciudadanos ORDER BY created_at DESC");
@@ -99,7 +106,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { rows } = await pool.query(
+    const tenant = token.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
+    const { rows } = await queryWithTenant(tenant,
       `SELECT a.*, ad.nombre as creado_por_nombre
        FROM archivos_electorales a
        LEFT JOIN admins ad ON a.creado_por = ad.id

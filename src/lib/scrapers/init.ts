@@ -27,6 +27,7 @@ export async function initTrendsScrapedTable() {
         keywords TEXT[] DEFAULT '{}',
         heat_index DOUBLE PRECISION DEFAULT 0,
         scraped_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        tenant VARCHAR(63),
         expires_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() + INTERVAL '7 days'
       )
     `);
@@ -42,6 +43,9 @@ export async function initTrendsScrapedTable() {
     `);
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_trends_scraped_platform_id ON trends_scraped(platform_id)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_trends_scraped_tenant ON trends_scraped(tenant)
     `);
 
     return { success: true };

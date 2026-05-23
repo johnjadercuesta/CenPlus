@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest } from "@/lib/tenant";
 import { getEntriesByRadius } from "@/lib/trendsmap";
 
 export async function GET(request: NextRequest) {
@@ -7,19 +8,19 @@ export async function GET(request: NextRequest) {
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
+    const tenant = token.tenant || getTenantFromRequest(request);
+
     const { searchParams } = new URL(request.url);
     const lat = parseFloat(searchParams.get("lat") || "0");
     const lng = parseFloat(searchParams.get("lng") || "0");
     const radiusKm = Math.min(parseInt(searchParams.get("radius") || "50"), 200);
     const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500);
 
-    console.log("[API] GET /api/trendsmap/query:", { lat, lng, radiusKm, limit });
-
     if (isNaN(lat) || isNaN(lng)) {
       return NextResponse.json({ error: "Coordenadas requeridas" }, { status: 400 });
     }
 
-    const entries = await getEntriesByRadius(lat, lng, radiusKm, limit);
+    const entries = await getEntriesByRadius(lat, lng, radiusKm, limit, tenant);
     console.log("[API] Query returned:", entries.length, "entries");
 
     return NextResponse.json({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,16 +10,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const tenant = token.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(request.url);
     const archivoId = searchParams.get("archivo_id");
 
-    const { rows: configRows } = await pool.query("SELECT valor FROM config WHERE clave = 'meta_global'");
+    const { rows: configRows } = await queryWithTenant(tenant, "SELECT valor FROM config WHERE clave = 'meta_global'");
     const metaGlobal = configRows.length > 0 ? parseInt(configRows[0].valor) : 1000;
 
     let sectorStats: any[];
 
     if (archivoId) {
-      const archivoRes = await pool.query(
+      const archivoRes = await queryWithTenant(tenant,
         "SELECT snapshot FROM archivos_electorales WHERE id = $1",
         [archivoId]
       );
@@ -54,7 +60,7 @@ export async function GET(request: NextRequest) {
         };
       });
     } else {
-      const { rows: sectores } = await pool.query(`
+      const { rows: sectores } = await queryWithTenant(tenant, `
         SELECT 
           s.*,
           (SELECT COUNT(*) FROM ciudadanos c WHERE (s.barrio_id IS NOT NULL AND c.id_barrio = s.barrio_id) OR c.barrio ILIKE '%' || s.nombre || '%') as registros

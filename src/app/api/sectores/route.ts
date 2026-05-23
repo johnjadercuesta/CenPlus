@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,8 +10,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { rows } = await pool.query("SELECT * FROM sectores ORDER BY nombre");
-    const mapped = rows.map((s) => ({
+    const tenant = token.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
+    const { rows } = await queryWithTenant(tenant, "SELECT * FROM sectores ORDER BY nombre");
+    const mapped = rows.map((s: any) => ({
       ...s,
       poligono: s.poligono ? JSON.parse(s.poligono as string) : null,
     }));
@@ -29,6 +35,11 @@ export async function POST(request: NextRequest) {
     const token = getTokenFromRequest(request);
     if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
       return NextResponse.json({ error: "No autorizado para crear sectores" }, { status: 403 });
+    }
+
+    const tenant = token.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
     }
 
     const { 
@@ -50,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar si ya existe un sector con este nombre (case-insensitive en Postgres)
-    const { rows: existingRows } = await pool.query("SELECT id FROM sectores WHERE nombre ILIKE $1", [nombre]);
+    const { rows: existingRows } = await queryWithTenant(tenant, "SELECT id FROM sectores WHERE nombre ILIKE $1", [nombre]);
     if (existingRows.length > 0) {
       return NextResponse.json({ error: "Ya existe un sector con este nombre" }, { status: 400 });
     }
@@ -61,7 +72,6 @@ export async function POST(request: NextRequest) {
 
     if (poligono && Array.isArray(poligono) && poligono.length >= 3) {
       polyStr = JSON.stringify(poligono);
-      // Calcular centroide simple si no hay coordenadas manuales
       if (!lat || !lng) {
         lat = poligono.reduce((sum: number, p: number[]) => sum + p[0], 0) / poligono.length;
         lng = poligono.reduce((sum: number, p: number[]) => sum + p[1], 0) / poligono.length;
@@ -91,12 +101,11 @@ export async function POST(request: NextRequest) {
       zona || 'urbana'
     ];
     
-    const { rows } = await pool.query(sql, values);
+    const { rows } = await queryWithTenant(tenant, sql, values);
     const data = rows[0];
     if (data.poligono) data.poligono = JSON.parse(data.poligono as string);
 
     const { recordLog } = await import("@/lib/audit");
-    const tenant = token.tenant || null;
     if (tenant) {
       await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "sectores", accion: "Creó sector/meta: " + data.nombre });
     }

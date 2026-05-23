@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
     const token = getTokenFromRequest(request);
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const tenant = token.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -17,8 +22,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Se requieren dos IDs para comparar" }, { status: 400 });
     }
 
-    const res1 = await pool.query("SELECT * FROM archivos_electorales WHERE id = $1", [id1]);
-    const res2 = await pool.query("SELECT * FROM archivos_electorales WHERE id = $1", [id2]);
+    const res1 = await queryWithTenant(tenant, "SELECT * FROM archivos_electorales WHERE id = $1", [id1]);
+    const res2 = await queryWithTenant(tenant, "SELECT * FROM archivos_electorales WHERE id = $1", [id2]);
 
     if (res1.rows.length === 0 || res2.rows.length === 0) {
       return NextResponse.json({ error: "Uno o ambos archivos no existen" }, { status: 404 });

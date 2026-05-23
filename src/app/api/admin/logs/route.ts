@@ -35,6 +35,9 @@ export async function GET(request: NextRequest) {
     const values: any[] = [];
     let paramCount = 1;
 
+    conditions.push(`tenant = $${paramCount++}`);
+    values.push(tenant);
+
     if (module) {
       conditions.push(`module = $${paramCount++}`);
       values.push(module);

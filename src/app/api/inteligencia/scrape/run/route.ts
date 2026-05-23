@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
+import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest } from "@/lib/tenant";
 import { scrapers } from "@/lib/scrapers";
 import { saveScrapedPosts, getStoredApiConfig, cleanupExpiredTrends } from "@/lib/scrapers/base";
 import { initTrendsScrapedTable } from "@/lib/scrapers/init";
@@ -15,6 +16,12 @@ const PLATFORM_MAP: Record<string, keyof typeof scrapers> = {
 
 export async function POST(request: NextRequest) {
   try {
+    const token = getTokenFromRequest(request);
+    const tenant = token?.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     await initTrendsScrapedTable();
 
     const body = await request.json().catch(() => ({}));
@@ -24,7 +31,7 @@ export async function POST(request: NextRequest) {
     const query = body.query || "Colombia";
     const maxResults = body.max_results || 15;
 
-    const apiConfig = await getStoredApiConfig();
+    const apiConfig = await getStoredApiConfig(tenant);
     const results: { platform: string; status: string; count: number; error?: string }[] = [];
 
     for (const platform of platforms) {
@@ -60,7 +67,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (posts.length > 0) {
-          const saved = await saveScrapedPosts(posts.slice(0, maxResults));
+          const saved = await saveScrapedPosts(posts.slice(0, maxResults), tenant);
           results.push({ platform, status: "ok", count: saved });
         } else {
           results.push({ platform, status: "ok", count: 0 });
@@ -70,7 +77,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await cleanupExpiredTrends();
+    await cleanupExpiredTrends(tenant);
 
     const totalSaved = results.reduce((sum, r) => sum + r.count, 0);
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest } from "@/lib/tenant";
 import { insertEntry } from "@/lib/trendsmap";
 import { reverseGeocode } from "@/lib/reverseGeocode";
 import { extractPlaceAndMentions } from "@/lib/placeExtractor";
@@ -8,6 +9,8 @@ export async function POST(request: NextRequest) {
   try {
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+    const tenant = token.tenant || getTenantFromRequest(request);
 
     const body = await request.json();
     const { text, hashtags, latitude, longitude } = body;
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
       comuna: place.comuna || null,
       mentioned_profiles: place.mentioned_profiles || [],
       mentioned_sites: place.mentioned_sites || [],
-    });
+    }, tenant);
 
     return NextResponse.json({
       success: true,

@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { getTenantFromRequest } from "@/lib/tenant";
 import { getFreshTrends } from "@/lib/scrapers/base";
 
 export async function GET(request: NextRequest) {
   try {
+    const tenant = getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(request.url);
     const platform = searchParams.get("platform") || "";
     const limit = parseInt(searchParams.get("limit") || "15");
@@ -14,7 +20,7 @@ export async function GET(request: NextRequest) {
     else if (timeRange === "7d") hours = 168;
 
     // First try to get fresh scraped data
-    const freshData = await getFreshTrends(platform, limit, hours);
+    const freshData = await getFreshTrends(platform, limit, hours, tenant);
 
     if (freshData.length > 0) {
       const data = freshData.map((r: any) => ({
@@ -34,15 +40,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Fallback to global_trends historical data
-    let whereClause = "WHERE 1=1";
-    const params: any[] = [];
+    let whereClause = "WHERE (tenant = $1 OR tenant IS NULL)";
+    const params: any[] = [tenant];
 
     if (platform) {
-      whereClause += ` AND platform ILIKE $1`;
+      whereClause += ` AND platform ILIKE $${params.length + 1}`;
       params.push(`%${platform}%`);
     }
-
-    const paramIdx = params.length + 1;
 
     const { rows } = await pool.query(`
       SELECT 
@@ -58,7 +62,7 @@ export async function GET(request: NextRequest) {
       FROM global_trends
       ${whereClause}
       ORDER BY heat_index DESC NULLS LAST
-      LIMIT $${paramIdx}
+      LIMIT $${params.length + 1}
     `, [...params, limit]);
 
     const data = (rows || []).map((r: any) => ({

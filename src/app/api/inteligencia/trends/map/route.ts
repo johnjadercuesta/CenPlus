@@ -1,8 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { getTenantFromRequest } from "@/lib/tenant";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const tenant = getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     // Try fresh scraped data first
     const { rows: fresh } = await pool.query(`
       SELECT DISTINCT ON (location_city)
@@ -17,9 +23,10 @@ export async function GET() {
       WHERE location_lat IS NOT NULL
         AND location_lng IS NOT NULL
         AND location_city IS NOT NULL
+        AND tenant = $1
       ORDER BY location_city, heat_index DESC
       LIMIT 50
-    `);
+    `, [tenant]);
 
     if (fresh.length > 0) {
       const features = fresh.map((r: any) => ({
@@ -51,9 +58,10 @@ export async function GET() {
       FROM global_trends
       WHERE latitude IS NOT NULL AND longitude IS NOT NULL
         AND ciudad IS NOT NULL
+        AND (tenant = $1 OR tenant IS NULL)
       ORDER BY heat_index DESC NULLS LAST
       LIMIT 50
-    `);
+    `, [tenant]);
 
     const features = rows.map((r: any) => ({
       type: "Feature",

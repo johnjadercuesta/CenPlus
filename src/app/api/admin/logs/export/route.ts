@@ -9,6 +9,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
 
+    const tenant = token.tenant;
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(request.url);
     const module = searchParams.get("module") || "";
     const action = searchParams.get("action") || "";
@@ -21,6 +26,9 @@ export async function GET(request: NextRequest) {
     const conditions: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
+
+    conditions.push(`tenant = $${paramCount++}`);
+    values.push(tenant);
 
     if (module) {
       conditions.push(`module = $${paramCount++}`);

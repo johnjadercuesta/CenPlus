@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const token = getTokenFromRequest(request);
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const tenant = token.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -17,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const barrio = searchParams.get("barrio") || "";
     const sexo = searchParams.get("sexo") || "";
 
-    const archivoRes = await pool.query(
+    const archivoRes = await queryWithTenant(tenant,
       "SELECT snapshot FROM archivos_electorales WHERE id = $1",
       [params.id]
     );

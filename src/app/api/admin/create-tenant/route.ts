@@ -113,38 +113,52 @@ export async function POST(request: NextRequest) {
         CREATE TABLE IF NOT EXISTS admins (
           id SERIAL PRIMARY KEY,
           email VARCHAR(255) UNIQUE NOT NULL,
-          identificacion VARCHAR(50),
-          nombre VARCHAR(255) NOT NULL,
-          role VARCHAR(50) DEFAULT 'administrador',
+          identificacion VARCHAR(50) UNIQUE,
+          nombre VARCHAR(255) NOT NULL DEFAULT '',
+          role VARCHAR(50) NOT NULL DEFAULT 'lider',
           password VARCHAR(255) NOT NULL,
           telefono VARCHAR(20),
-          activo INT DEFAULT 1,
-          created_at TIMESTAMP DEFAULT NOW(),
-          updated_at TIMESTAMP DEFAULT NOW()
+          activo INT NOT NULL DEFAULT 1,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT admins_role_check CHECK (role IN ('administrador', 'estratega', 'lider'))
         )
       `);
 
-      // Crear tabla de ciudadanos
+      // Crear tabla de ciudadanos (igual a public)
       await client.query(`
         CREATE TABLE IF NOT EXISTS ciudadanos (
-          id_unico VARCHAR(50) PRIMARY KEY,
-          nombre_completo VARCHAR(255),
-          telefono VARCHAR(20),
-          sexo CHAR(1),
+          id SERIAL,
+          id_unico VARCHAR(50) NOT NULL,
+          nombre_completo VARCHAR(255) NOT NULL,
+          telefono VARCHAR(50),
+          sexo VARCHAR(20),
           edad INT,
           nivel_estudios VARCHAR(100),
           ocupacion VARCHAR(255),
           regimen_salud VARCHAR(100),
           puesto_votacion VARCHAR(255),
-          zona VARCHAR(50),
+          problematica_principal VARCHAR(255),
           id_comuna INT,
           id_barrio INT,
+          barrio VARCHAR(255) NOT NULL,
+          corregimiento VARCHAR(255) NOT NULL,
+          vereda VARCHAR(255),
           es_lider INT DEFAULT 0,
+          nombre_lider VARCHAR(255),
           lider_id INT,
-          latitud FLOAT,
-          longitud FLOAT,
-          created_at TIMESTAMP DEFAULT NOW(),
-          updated_at TIMESTAMP DEFAULT NOW()
+          latitud DOUBLE PRECISION,
+          longitud DOUBLE PRECISION,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          zona VARCHAR(50) DEFAULT 'urbana',
+          PRIMARY KEY (id),
+          CONSTRAINT ciudadanos_id_unico_key UNIQUE (id_unico),
+          CONSTRAINT ciudadanos_edad_check CHECK (edad > 0 AND edad < 150),
+          CONSTRAINT ciudadanos_nivel_estudios_check CHECK (nivel_estudios IN ('Ninguno', 'Primaria', 'Secundaria', 'Técnico', 'Universitario', 'Posgrado')),
+          CONSTRAINT ciudadanos_regimen_salud_check CHECK (regimen_salud IN ('Subsidiado', 'Contributivo', 'Ninguno', 'Otro')),
+          CONSTRAINT ciudadanos_sexo_check CHECK (sexo IN ('Masculino', 'Femenino', 'Otro')),
+          CONSTRAINT ciudadanos_zona_check CHECK (zona IN ('urbana', 'rural'))
         )
       `);
 
@@ -152,10 +166,9 @@ export async function POST(request: NextRequest) {
       await client.query(`
         CREATE TABLE IF NOT EXISTS comunas (
           id SERIAL PRIMARY KEY,
-          nombre VARCHAR(255) NOT NULL,
-          numero INT,
-          activo INT DEFAULT 1,
-          created_at TIMESTAMP DEFAULT NOW()
+          nombre VARCHAR(255) NOT NULL UNIQUE,
+          tipo VARCHAR(50) DEFAULT 'urbana',
+          CONSTRAINT comunas_tipo_check CHECK (tipo IN ('urbana', 'rural'))
         )
       `);
 
@@ -164,9 +177,10 @@ export async function POST(request: NextRequest) {
         CREATE TABLE IF NOT EXISTS barrios (
           id SERIAL PRIMARY KEY,
           nombre VARCHAR(255) NOT NULL,
-          id_comuna INT REFERENCES comunas(id),
-          activo INT DEFAULT 1,
-          created_at TIMESTAMP DEFAULT NOW()
+          comuna_id INT NOT NULL REFERENCES comunas(id) ON DELETE CASCADE,
+          tipo VARCHAR(50) DEFAULT 'barrio',
+          CONSTRAINT barrios_tipo_check CHECK (tipo IN ('barrio', 'vereda')),
+          CONSTRAINT barrios_nombre_comuna_id_key UNIQUE (nombre, comuna_id)
         )
       `);
 
@@ -175,12 +189,8 @@ export async function POST(request: NextRequest) {
         CREATE TABLE IF NOT EXISTS puestos_votacion (
           id SERIAL PRIMARY KEY,
           nombre VARCHAR(255) NOT NULL,
-          id_comuna INT REFERENCES comunas(id),
-          direccion TEXT,
-          latitud FLOAT,
-          longitud FLOAT,
-          activo INT DEFAULT 1,
-          created_at TIMESTAMP DEFAULT NOW()
+          comuna_id INT,
+          votos_historicos INT DEFAULT 0
         )
       `);
 
@@ -188,18 +198,114 @@ export async function POST(request: NextRequest) {
       await client.query(`
         CREATE TABLE IF NOT EXISTS problematicas_sociales (
           id SERIAL PRIMARY KEY,
-          nombre VARCHAR(255) NOT NULL,
-          descripcion TEXT,
-          activo INT DEFAULT 1,
-          created_at TIMESTAMP DEFAULT NOW()
+          nombre VARCHAR(255) NOT NULL UNIQUE
         )
       `);
 
-      // Crear índices
+      // Crear tabla de sectores
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS sectores (
+          id SERIAL PRIMARY KEY,
+          nombre VARCHAR(255) NOT NULL,
+          votos_historicos INT DEFAULT 0,
+          meta INT NOT NULL DEFAULT 100,
+          latitud DOUBLE PRECISION NOT NULL,
+          longitud DOUBLE PRECISION NOT NULL,
+          radio DOUBLE PRECISION NOT NULL DEFAULT 2000,
+          poligono TEXT,
+          color VARCHAR(50) NOT NULL DEFAULT '#3b82f6',
+          activo INT NOT NULL DEFAULT 1,
+          descripcion TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          zona VARCHAR(50) DEFAULT 'urbana',
+          comuna_id INT REFERENCES comunas(id) ON DELETE SET NULL,
+          barrio_id INT REFERENCES barrios(id) ON DELETE SET NULL,
+          CONSTRAINT sectores_zona_check CHECK (zona IN ('urbana', 'rural'))
+        )
+      `);
+
+      // Crear tabla de archivos electorales
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS archivos_electorales (
+          id SERIAL PRIMARY KEY,
+          nombre VARCHAR(255) NOT NULL,
+          descripcion TEXT,
+          fecha_corte DATE NOT NULL,
+          fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          total_ciudadanos INT DEFAULT 0,
+          total_lideres INT DEFAULT 0,
+          total_sectores INT DEFAULT 0,
+          snapshot JSONB NOT NULL,
+          creado_por INT REFERENCES admins(id)
+        )
+      `);
+
+      // Crear tabla de config
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS config (
+          clave VARCHAR(100) PRIMARY KEY,
+          valor TEXT NOT NULL
+        )
+      `);
+
+      // Crear tabla de trendsmap_entries
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS trendsmap_entries (
+          id SERIAL PRIMARY KEY,
+          text TEXT NOT NULL,
+          hashtags TEXT[] DEFAULT '{}',
+          latitude DOUBLE PRECISION NOT NULL,
+          longitude DOUBLE PRECISION NOT NULL,
+          pais VARCHAR(100) DEFAULT 'Colombia',
+          departamento VARCHAR(100),
+          municipio VARCHAR(100),
+          verificado BOOLEAN DEFAULT false,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          expires_at TIMESTAMP WITH TIME ZONE,
+          barrio VARCHAR(200),
+          comuna VARCHAR(100),
+          mentioned_profiles TEXT[] DEFAULT '{}',
+          mentioned_sites TEXT[] DEFAULT '{}'
+        )
+      `);
+
+      // FK para ciudadanos (despues de crear admins)
+      await client.query(`
+        ALTER TABLE ciudadanos ADD CONSTRAINT ciudadanos_lider_id_fkey
+        FOREIGN KEY (lider_id) REFERENCES admins(id)
+      `);
+
+
+
+      // Índices ciudadanos
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_barrio ON ciudadanos(barrio)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_ced ON ciudadanos(id_unico)`);
       await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_lider ON ciudadanos(lider_id)`);
       await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_zona ON ciudadanos(zona)`);
       await client.query(`CREATE INDEX IF NOT EXISTS idx_ciudadanos_comuna ON ciudadanos(id_comuna)`);
+
+      // Índices admins
       await client.query(`CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email)`);
+
+      // Índices archivos
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_archivos_creado_por ON archivos_electorales(creado_por)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_archivos_fecha ON archivos_electorales(fecha_corte DESC)`);
+
+      // Índices trendsmap
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_created ON trendsmap_entries(created_at DESC)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_depto ON trendsmap_entries(departamento)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_expires ON trendsmap_entries(expires_at)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_hashtags ON trendsmap_entries USING GIN(hashtags)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_lat_lng ON trendsmap_entries(latitude, longitude)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_mentioned_profiles ON trendsmap_entries USING GIN(mentioned_profiles)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_mentioned_sites ON trendsmap_entries USING GIN(mentioned_sites)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_municipio ON trendsmap_entries(municipio)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_trendsmap_text_tsv ON trendsmap_entries USING GIN(to_tsvector('spanish', COALESCE(text, '')))`);
+      await client.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS trendsmap_unique_entry
+        ON trendsmap_entries(text, latitude, longitude)
+      `);
 
       // Crear admin principal
       const adminPassHash = await bcrypt.hash(password, 10);

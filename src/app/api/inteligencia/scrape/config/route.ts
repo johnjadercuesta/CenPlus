@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
+import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
+    const token = getTokenFromRequest(request);
+    if (!token) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const tenant = token.tenant || getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     const config = await request.json();
 
-    await pool.query(`
+    await queryWithTenant(tenant, `
       INSERT INTO config (clave, valor) 
       VALUES ('inteligencia_api_config', $1)
       ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor

@@ -116,11 +116,11 @@ export async function recordFailedLogin(params: {
       ]
     );
 
-    // Check for brute force (5+ failures in 15 minutes from same IP)
+    // Check for brute force (5+ failures in 15 minutes from same IP + tenant)
     const { rows } = await pool.query(
       `SELECT COUNT(*) as count FROM public.failed_logins 
-       WHERE ip_address = $1 AND created_at > NOW() - INTERVAL '15 minutes'`,
-      [params.ipAddress]
+       WHERE ip_address = $1 AND tenant = $2 AND created_at > NOW() - INTERVAL '15 minutes'`,
+      [params.ipAddress, params.tenant]
     );
 
     if (parseInt(rows[0].count) >= 5) {
@@ -178,11 +178,12 @@ export async function recordSystemEvent(params: {
   severity?: AuditSeverity;
   metadata?: Record<string, any>;
   durationMs?: number;
+  tenant?: string;
 }) {
   try {
     await pool.query(
-      `INSERT INTO public.system_events (event_type, source, message, severity, metadata, duration_ms)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO public.system_events (event_type, source, message, severity, metadata, duration_ms, tenant)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         params.eventType,
         params.source || null,
@@ -190,6 +191,7 @@ export async function recordSystemEvent(params: {
         params.severity || "info",
         params.metadata ? JSON.stringify(params.metadata) : null,
         params.durationMs || null,
+        params.tenant || null,
       ]
     );
   } catch (error) {

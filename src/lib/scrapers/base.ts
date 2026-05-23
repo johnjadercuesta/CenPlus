@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { queryWithTenant } from "@/lib/tenant";
 import { analyzeSpanishSentiment, extractKeywords, calculateHeatIndex } from "./nlp";
 
 export interface ScrapedPost {
@@ -21,7 +22,7 @@ export interface ScrapedPost {
   views?: number;
 }
 
-export async function saveScrapedPosts(posts: ScrapedPost[]): Promise<number> {
+export async function saveScrapedPosts(posts: ScrapedPost[], tenant?: string): Promise<number> {
   if (posts.length === 0) return 0;
 
   let saved = 0;
@@ -43,14 +44,14 @@ export async function saveScrapedPosts(posts: ScrapedPost[]): Promise<number> {
           location_city, location_lat, location_lng,
           hashtags, likes, shares, replies, views,
           sentiment_score, sentiment_label, keywords,
-          heat_index
+          heat_index, tenant
         ) VALUES (
           $1, $2, $3, $4, $5,
           $6, $7, $8, $9,
           $10, $11, $12,
           $13, $14, $15, $16, $17,
           $18, $19, $20,
-          $21
+          $21, $22
         ) ON CONFLICT DO NOTHING
       `, [
         post.platform,
@@ -74,6 +75,7 @@ export async function saveScrapedPosts(posts: ScrapedPost[]): Promise<number> {
         sentiment.label,
         keywords,
         heatIndex,
+        tenant || null,
       ]);
       saved++;
     } catch (err) {
@@ -84,11 +86,12 @@ export async function saveScrapedPosts(posts: ScrapedPost[]): Promise<number> {
   return saved;
 }
 
-export async function getStoredConfig(key: string): Promise<string | null> {
+export async function getStoredConfig(key: string, tenant?: string): Promise<string | null> {
   try {
-    const { rows } = await pool.query(
+    const db = tenant ? queryWithTenant : ((sql: string, params?: any[]) => pool.query(sql, params));
+    const { rows } = await (db as any)(
       "SELECT valor FROM config WHERE clave = $1",
-      [key]
+      tenant ? [key] : [key]
     );
     return rows[0]?.valor || null;
   } catch {
@@ -96,9 +99,9 @@ export async function getStoredConfig(key: string): Promise<string | null> {
   }
 }
 
-export async function getStoredApiConfig(): Promise<Record<string, string>> {
+export async function getStoredApiConfig(tenant?: string): Promise<Record<string, string>> {
   try {
-    const raw = await getStoredConfig("inteligencia_api_config");
+    const raw = await getStoredConfig("inteligencia_api_config", tenant);
     if (raw) return JSON.parse(raw);
   } catch {}
   return {};
@@ -107,14 +110,20 @@ export async function getStoredApiConfig(): Promise<Record<string, string>> {
 export async function getFreshTrends(
   platform?: string,
   limit: number = 15,
-  hours: number = 24
+  hours: number = 24,
+  tenant?: string
 ) {
   let whereClause = `WHERE scraped_at > NOW() - ($1 || ' hours')::interval`;
   const params: any[] = [hours];
 
   if (platform) {
-    whereClause += ` AND platform ILIKE $2`;
+    whereClause += ` AND platform ILIKE $${params.length + 1}`;
     params.push(`%${platform}%`);
+  }
+
+  if (tenant) {
+    whereClause += ` AND tenant = $${params.length + 1}`;
+    params.push(tenant);
   }
 
   const { rows } = await pool.query(`
@@ -145,9 +154,11 @@ export async function getFreshTrends(
   return rows;
 }
 
-export async function cleanupExpiredTrends(): Promise<number> {
-  const { rowCount } = await pool.query(
-    "DELETE FROM trends_scraped WHERE expires_at < NOW()"
-  );
+export async function cleanupExpiredTrends(tenant?: string): Promise<number> {
+  const sql = tenant
+    ? "DELETE FROM trends_scraped WHERE expires_at < NOW() AND tenant = $1"
+    : "DELETE FROM trends_scraped WHERE expires_at < NOW()";
+  const params = tenant ? [tenant] : [];
+  const { rowCount } = await pool.query(sql, params);
   return rowCount || 0;
 }

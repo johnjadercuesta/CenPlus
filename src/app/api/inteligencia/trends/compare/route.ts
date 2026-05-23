@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { getTenantFromRequest } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
+    const tenant = getTenantFromRequest(request);
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(request.url);
     const keywords = searchParams.get("keywords") || "";
     const keywordList = keywords.split(",").filter(Boolean);
@@ -12,6 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Try fresh scraped data first
+    const tenantParamIdx = keywordList.length + 1;
     const likeClauses = keywordList.map((_, i) => `(text ILIKE '%' || $${i + 1} || '%' OR title ILIKE '%' || $${i + 1} || '%' OR EXISTS(SELECT 1 FROM unnest(keywords) k WHERE k ILIKE '%' || $${i + 1} || '%'))`);
     const { rows: fresh } = await pool.query(`
       SELECT DISTINCT ON (keywords[1])
@@ -25,9 +32,10 @@ export async function GET(request: NextRequest) {
         scraped_at AS timestamp
       FROM trends_scraped
       WHERE (${likeClauses.join(" OR ")})
+        AND tenant = $${tenantParamIdx}
       ORDER BY keywords[1], heat_index DESC NULLS LAST
       LIMIT 50
-    `, keywordList);
+    `, [...keywordList, tenant]);
 
     if (fresh.length > 0) {
       const data = fresh.map((r: any) => ({
@@ -48,6 +56,7 @@ export async function GET(request: NextRequest) {
 
     // Fallback to global_trends historical data
     const placeholders = keywordList.map((_, i) => `$${i + 1}`);
+    const gtTenantIdx = keywordList.length + 1;
     const { rows } = await pool.query(`
       SELECT 
         topic AS keyword,
@@ -61,9 +70,10 @@ export async function GET(request: NextRequest) {
         timestamp
       FROM global_trends
       WHERE topic ILIKE ANY(ARRAY[${placeholders.map(p => `'%' || ${p} || '%'`).join(",")}])
+        AND (tenant = $${gtTenantIdx} OR tenant IS NULL)
       ORDER BY heat_index DESC NULLS LAST
       LIMIT 50
-    `, keywordList);
+    `, [...keywordList, tenant]);
 
     const data = rows.map((r: any) => ({
       keyword: r.keyword,

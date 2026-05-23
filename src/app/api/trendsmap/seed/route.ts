@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     await run(`CREATE INDEX IF NOT EXISTS idx_trendsmap_created ON trendsmap_entries(created_at DESC)`);
     await run(`CREATE INDEX IF NOT EXISTS idx_trendsmap_hashtags ON trendsmap_entries USING GIN(hashtags)`);
 
-    const globalRes = await run(`
+    const globalRes = await pool.query(`
       SELECT DISTINCT ON (topic, latitude, longitude)
         id,
         topic,
@@ -54,9 +54,10 @@ export async function POST(request: NextRequest) {
         AND latitude IS NOT NULL 
         AND longitude IS NOT NULL
         AND ciudad IS NOT NULL
+        AND (tenant = $1 OR tenant IS NULL)
       ORDER BY topic, latitude, longitude, heat_index DESC, timestamp DESC
       LIMIT 500
-    `);
+    `, [tenant]);
     const globalTrends = globalRes.rows;
     console.log(`[trendsmap/seed] Encontradas ${globalTrends.length} tendencias para sincronizar`);
 

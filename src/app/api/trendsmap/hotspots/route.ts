@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest } from "@/lib/tenant";
 import { getHotspots } from "@/lib/trendsmap";
 
 export async function GET(request: NextRequest) {
@@ -7,11 +8,13 @@ export async function GET(request: NextRequest) {
     const token = getTokenFromRequest(request);
     if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
+    const tenant = token.tenant || getTenantFromRequest(request);
+
     const { searchParams } = new URL(request.url);
     const hours = Math.min(parseInt(searchParams.get("hours") || "24"), 168);
     const minEntries = Math.min(parseInt(searchParams.get("min") || "2"), 50);
 
-    const hotspots = await getHotspots(hours, minEntries);
+    const hotspots = await getHotspots(hours, minEntries, tenant);
 
     return NextResponse.json({
       success: true,

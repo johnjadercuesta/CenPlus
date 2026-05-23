@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+
+const sanitize = (t: string | null | undefined) => {
+  if (!t) return null;
+  const s = String(t).trim().toLowerCase();
+  if (!/^[a-z0-9_]+$/.test(s) || s.length === 0 || s.length > 63) return null;
+  return s;
+};
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -9,7 +17,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const archivoRes = await pool.query(
+    const tenant = sanitize(token.tenant || getTenantFromRequest(request));
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
+    const archivoRes = await queryWithTenant(tenant,
       "SELECT snapshot FROM archivos_electorales WHERE id = $1",
       [params.id]
     );
@@ -27,6 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const client = await pool.connect();
     try {
+      await client.query(`SET search_path TO "${tenant}", public`);
       await client.query('BEGIN');
 
       // Eliminar datos actuales

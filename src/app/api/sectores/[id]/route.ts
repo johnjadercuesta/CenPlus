@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+
+const sanitize = (t: string | null | undefined) => {
+  if (!t) return null;
+  const s = String(t).trim().toLowerCase();
+  if (!/^[a-z0-9_]+$/.test(s) || s.length === 0 || s.length > 63) return null;
+  return s;
+};
 
 export async function PUT(
   request: NextRequest,
@@ -13,10 +21,16 @@ export async function PUT(
       return NextResponse.json({ error: "No autorizado para editar sectores" }, { status: 403 });
     }
 
+    const tenant = sanitize(token.tenant || getTenantFromRequest(request));
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
+    await client.query(`SET search_path TO "${tenant}", public`);
+
     const id = params.id;
     const body = await request.json();
 
-    // 1. Obtener el nombre actual del sector
     const { rows: oldRows } = await client.query("SELECT nombre FROM sectores WHERE id = $1", [id]);
     const oldSector = oldRows[0] as { nombre: string } | undefined;
     if (!oldSector) {
@@ -96,7 +110,6 @@ export async function PUT(
     const { rows: updateRows } = await client.query(sql, values);
     
     if (isChangingName) {
-      // Actualizar también el nombre del barrio en todos los ciudadanos asociados
       await client.query("UPDATE ciudadanos SET barrio = $1 WHERE barrio ILIKE $2", [newNombre, oldNombre]);
     }
 
@@ -125,7 +138,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Solo administradores pueden eliminar sectores" }, { status: 403 });
     }
 
-    const { rowCount } = await pool.query("DELETE FROM sectores WHERE id = $1", [params.id]);
+    const tenant = sanitize(token.tenant || getTenantFromRequest(request));
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
+    const { rowCount } = await queryWithTenant(tenant, "DELETE FROM sectores WHERE id = $1", [params.id]);
     if (rowCount === 0) {
       return NextResponse.json({ error: "Sector no encontrado" }, { status: 404 });
     }

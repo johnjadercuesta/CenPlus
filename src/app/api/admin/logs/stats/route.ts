@@ -9,49 +9,60 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
 
+    const tenant = token.tenant;
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get("days") || "30");
 
     // Total logs
     const { rows: totalRows } = await pool.query(
-      `SELECT COUNT(*) as total FROM public.audit_logs WHERE created_at > NOW() - INTERVAL '${days} days'`
+      `SELECT COUNT(*) as total FROM public.audit_logs WHERE tenant = $1 AND created_at > NOW() - INTERVAL '${days} days'`,
+      [tenant]
     );
 
     // Logs by severity
     const { rows: severityRows } = await pool.query(
       `SELECT severity, COUNT(*) as count 
        FROM public.audit_logs 
-       WHERE created_at > NOW() - INTERVAL '${days} days'
-       GROUP BY severity ORDER BY count DESC`
+       WHERE tenant = $1 AND created_at > NOW() - INTERVAL '${days} days'
+       GROUP BY severity ORDER BY count DESC`,
+      [tenant]
     );
 
     // Logs by module
     const { rows: moduleRows } = await pool.query(
       `SELECT module, COUNT(*) as count 
        FROM public.audit_logs 
-       WHERE created_at > NOW() - INTERVAL '${days} days' AND module IS NOT NULL
-       GROUP BY module ORDER BY count DESC LIMIT 10`
+       WHERE tenant = $1 AND created_at > NOW() - INTERVAL '${days} days' AND module IS NOT NULL
+       GROUP BY module ORDER BY count DESC LIMIT 10`,
+      [tenant]
     );
 
     // Logs by action
     const { rows: actionRows } = await pool.query(
       `SELECT action, COUNT(*) as count 
        FROM public.audit_logs 
-       WHERE created_at > NOW() - INTERVAL '${days} days'
-       GROUP BY action ORDER BY count DESC LIMIT 10`
+       WHERE tenant = $1 AND created_at > NOW() - INTERVAL '${days} days'
+       GROUP BY action ORDER BY count DESC LIMIT 10`,
+      [tenant]
     );
 
     // Top users
     const { rows: userRows } = await pool.query(
       `SELECT user_email, user_name, COUNT(*) as count 
        FROM public.audit_logs 
-       WHERE created_at > NOW() - INTERVAL '${days} days' AND user_email IS NOT NULL
-       GROUP BY user_email, user_name ORDER BY count DESC LIMIT 10`
+       WHERE tenant = $1 AND created_at > NOW() - INTERVAL '${days} days' AND user_email IS NOT NULL
+       GROUP BY user_email, user_name ORDER BY count DESC LIMIT 10`,
+      [tenant]
     );
 
     // Failed logins count
     const { rows: failedLoginRows } = await pool.query(
-      `SELECT COUNT(*) as total FROM public.failed_logins WHERE created_at > NOW() - INTERVAL '${days} days'`
+      `SELECT COUNT(*) as total FROM public.failed_logins WHERE tenant = $1 AND created_at > NOW() - INTERVAL '${days} days'`,
+      [tenant]
     );
 
     // Security alerts
@@ -59,22 +70,25 @@ export async function GET(request: NextRequest) {
       `SELECT severity, COUNT(*) as count, 
               SUM(CASE WHEN is_resolved THEN 0 ELSE 1 END) as unresolved
        FROM public.security_alerts 
-       WHERE created_at > NOW() - INTERVAL '${days} days'
-       GROUP BY severity ORDER BY count DESC`
+       WHERE tenant = $1 AND created_at > NOW() - INTERVAL '${days} days'
+       GROUP BY severity ORDER BY count DESC`,
+      [tenant]
     );
 
     // Daily activity
     const { rows: dailyRows } = await pool.query(
       `SELECT DATE(created_at) as date, COUNT(*) as count 
        FROM public.audit_logs 
-       WHERE created_at > NOW() - INTERVAL '${days} days'
-       GROUP BY DATE(created_at) ORDER BY date`
+       WHERE tenant = $1 AND created_at > NOW() - INTERVAL '${days} days'
+       GROUP BY DATE(created_at) ORDER BY date`,
+      [tenant]
     );
 
     // Error logs
     const { rows: errorRows } = await pool.query(
       `SELECT COUNT(*) as total FROM public.audit_logs 
-       WHERE status = 'error' AND created_at > NOW() - INTERVAL '${days} days'`
+       WHERE tenant = $1 AND status = 'error' AND created_at > NOW() - INTERVAL '${days} days'`,
+      [tenant]
     );
 
     return NextResponse.json({

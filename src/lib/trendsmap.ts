@@ -249,10 +249,10 @@ export async function syncFromGlobalTrends(tenant?: string | null) {
         AND latitude IS NOT NULL 
         AND longitude IS NOT NULL
         AND ciudad IS NOT NULL
+        AND (tenant = $1 OR tenant IS NULL)
       ORDER BY timestamp DESC
       LIMIT 1000`,
-      [],
-      tenant
+      [tenant]
     );
 
     const globalTrends = globalRes.rows;

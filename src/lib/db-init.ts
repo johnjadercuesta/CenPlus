@@ -218,6 +218,7 @@ export async function ensureIdentificacionColumn() {
           severity VARCHAR(20) DEFAULT 'info',
           metadata JSONB,
           duration_ms INTEGER,
+          tenant VARCHAR(63),
           created_at TIMESTAMP DEFAULT NOW()
         )
       `);

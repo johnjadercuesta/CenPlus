@@ -9,6 +9,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
 
+    const tenant = token.tenant;
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     const { searchParams } = new URL(request.url);
     const resolved = searchParams.get("resolved");
     const severity = searchParams.get("severity");
@@ -16,6 +21,9 @@ export async function GET(request: NextRequest) {
     const conditions: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
+
+    conditions.push(`tenant = $${paramCount++}`);
+    values.push(tenant);
 
     if (resolved !== null) {
       conditions.push(`is_resolved = $${paramCount++}`);
@@ -50,13 +58,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
     }
 
+    const tenant = token.tenant;
+    if (!tenant) {
+      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+    }
+
     const { alertId } = await request.json();
 
     const { rows } = await pool.query(
       `UPDATE public.security_alerts 
        SET is_resolved = TRUE, resolved_at = NOW(), resolved_by = $1 
-       WHERE id = $2 RETURNING *`,
-      [token.email, alertId]
+       WHERE id = $2 AND tenant = $3 RETURNING *`,
+      [token.email, alertId, tenant]
     );
 
     if (rows.length === 0) {
