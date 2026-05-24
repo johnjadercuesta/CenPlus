@@ -7,6 +7,7 @@ import { checkRouteAccess } from "@/lib/routeGuard";
 
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 const WARNING_TIMEOUT_MS = 10 * 60 * 1000;
+const CHECK_INTERVAL_MS = 2000;
 
 export default function DashboardLayout({
   children,
@@ -22,56 +23,67 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef(Date.now());
+  const warningStartRef = useRef<number | null>(null);
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const showWarningRef = useRef(false);
-  const resetActivityRef = useRef<() => void>(() => {});
-
-  const clearTimers = useCallback(() => {
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current);
-      inactivityTimerRef.current = null;
-    }
-    if (countdownTimerRef.current) {
-      clearInterval(countdownTimerRef.current);
-      countdownTimerRef.current = null;
-    }
-  }, []);
 
   const forceLogout = useCallback(() => {
-    clearTimers();
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current);
+      checkIntervalRef.current = null;
+    }
     fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem("token");
     router.push("/login");
-  }, [clearTimers, router]);
+  }, [router]);
 
   const resetActivity = useCallback(() => {
-    const wasWarning = showWarningRef.current;
+    lastActivityRef.current = Date.now();
+    warningStartRef.current = null;
     showWarningRef.current = false;
-    if (wasWarning) setShowWarning(false);
-
-    clearTimers();
-
-    inactivityTimerRef.current = setTimeout(() => {
-      showWarningRef.current = true;
-      setShowWarning(true);
-      setCountdownSec(Math.floor(WARNING_TIMEOUT_MS / 1000));
-
-      countdownTimerRef.current = setInterval(() => {
-        setCountdownSec((prev) => {
-          if (prev <= 1) {
-            forceLogout();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }, INACTIVITY_TIMEOUT_MS);
-  }, [clearTimers, forceLogout]);
+    setShowWarning(false);
+    setCountdownSec(0);
+  }, []);
 
   useEffect(() => {
-    resetActivityRef.current = resetActivity;
-  }, [resetActivity]);
+    if (!authenticated) return;
+
+    resetActivity();
+
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    const handler = () => { resetActivity(); };
+    events.forEach((e) => window.addEventListener(e, handler));
+
+    checkIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - lastActivityRef.current;
+
+      if (!showWarningRef.current) {
+        if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+          showWarningRef.current = true;
+          warningStartRef.current = now;
+          setShowWarning(true);
+          setCountdownSec(Math.floor(WARNING_TIMEOUT_MS / 1000));
+        }
+      } else {
+        const warningElapsed = now - (warningStartRef.current ?? now);
+        const remaining = Math.max(0, WARNING_TIMEOUT_MS - warningElapsed);
+        setCountdownSec(Math.ceil(remaining / 1000));
+        if (remaining <= 0) {
+          forceLogout();
+        }
+      }
+    }, CHECK_INTERVAL_MS);
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, handler));
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+        checkIntervalRef.current = null;
+      }
+    };
+  }, [authenticated, resetActivity, forceLogout]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -112,21 +124,6 @@ export default function DashboardLayout({
 
     checkAuth();
   }, [router, pathname]);
-
-  useEffect(() => {
-    if (!authenticated) return;
-
-    resetActivityRef.current();
-
-    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
-    const handler = () => resetActivityRef.current();
-    events.forEach((e) => window.addEventListener(e, handler));
-
-    return () => {
-      events.forEach((e) => window.removeEventListener(e, handler));
-      clearTimers();
-    };
-  }, [authenticated, clearTimers]);
 
   if (loading) {
     return (
@@ -175,7 +172,10 @@ export default function DashboardLayout({
                 {Math.floor(countdownSec / 60)}:{(countdownSec % 60).toString().padStart(2, "0")}
               </div>
               <button
-                onClick={resetActivity}
+                onClick={() => {
+                  resetActivity();
+                  lastActivityRef.current = Date.now();
+                }}
                 className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold text-white transition-all"
               >
                 Continuar sesión

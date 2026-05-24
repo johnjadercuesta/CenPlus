@@ -300,7 +300,7 @@ export default function Sidebar() {
                   </button>
                 </div>
               )}
-              <div className="sidebar-user" onClick={handleLogout}>
+              <div className="sidebar-user">
                 <div className="sidebar-avatar">{initials}</div>
                 <div className="sidebar-user-info">
                   <div className="sidebar-user-name">{user.nombre}</div>
