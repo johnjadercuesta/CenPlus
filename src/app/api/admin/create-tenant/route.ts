@@ -353,10 +353,10 @@ export async function POST(request: NextRequest) {
         [email, sanitizedName, email]
       );
 
-      // Registrar configuración inicial del tenant (colores, logo)
+      // Registrar configuración inicial del tenant (colores, logo, activo)
       await client.query(
-        `INSERT INTO public.tenants_config (tenant, primary_color, secondary_color)
-         VALUES ($1, $2, $3)
+        `INSERT INTO public.tenants_config (tenant, primary_color, secondary_color, activo, session_version)
+         VALUES ($1, $2, $3, true, 0)
          ON CONFLICT (tenant) DO NOTHING`,
         [sanitizedName, '#3b82f6', '#6366f1']
       );

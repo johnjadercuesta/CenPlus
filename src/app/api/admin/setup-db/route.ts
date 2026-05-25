@@ -49,11 +49,25 @@ export async function POST(request: NextRequest) {
         primary_color VARCHAR(7) DEFAULT '#3b82f6',
         secondary_color VARCHAR(7) DEFAULT '#6366f1',
         logo_url TEXT,
+        activo BOOLEAN DEFAULT true,
+        session_version INTEGER DEFAULT 0,
         config JSONB DEFAULT '{}',
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
     results.push('✅ Tabla public.tenants_config (Temas) verificada');
+
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='tenants_config' AND column_name='activo') THEN
+          ALTER TABLE public.tenants_config ADD COLUMN activo BOOLEAN DEFAULT true;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='tenants_config' AND column_name='session_version') THEN
+          ALTER TABLE public.tenants_config ADD COLUMN session_version INTEGER DEFAULT 0;
+        END IF;
+      END $$;
+    `);
+    results.push('✅ Columnas activo/session_version agregadas a tenants_config');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS public.system_logs (

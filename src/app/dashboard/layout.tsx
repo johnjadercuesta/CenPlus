@@ -18,6 +18,8 @@ export default function DashboardLayout({
   const [authenticated, setAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<string | undefined>(undefined);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [orgDisabled, setOrgDisabled] = useState(false);
+  const [orgDisabledMessage, setOrgDisabledMessage] = useState("");
   const [showWarning, setShowWarning] = useState(false);
   const [countdownSec, setCountdownSec] = useState(0);
   const router = useRouter();
@@ -98,13 +100,21 @@ export default function DashboardLayout({
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        const data = await res.json();
+
+        if (data.disabled) {
+          setOrgDisabled(true);
+          setOrgDisabledMessage(data.message || "Organización deshabilitada. Contacte al administrador.");
+          setLoading(false);
+          return;
+        }
+
         if (!res.ok) {
           localStorage.removeItem("token");
           router.push("/login");
           return;
         }
 
-        const data = await res.json();
         setUserRole(data.role);
 
         const hasAccess = checkRouteAccess(pathname, data.role);
@@ -133,6 +143,36 @@ export default function DashboardLayout({
           <p style={{ color: "#64748b", fontSize: 14 }}>Verificando acceso...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (orgDisabled) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a" }}>
+        <div style={{ textAlign: "center", background: "#1e293b", padding: 48, borderRadius: 12, border: "1px solid #334155", maxWidth: 420, margin: "0 16px" }}>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>🚫</div>
+          <h2 style={{ color: "#f8fafc", marginBottom: 12, fontSize: 22, fontWeight: 700 }}>Organización Deshabilitada</h2>
+          <p style={{ color: "#94a3b8", marginBottom: 24, fontSize: 14, lineHeight: 1.5 }}>{orgDisabledMessage}</p>
+          <button
+            onClick={() => {
+              localStorage.removeItem("token");
+              router.push("/login");
+            }}
+            style={{
+              padding: "10px 32px",
+              background: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Ir a Login
+          </button>
+        </div>
       </div>
     );
   }

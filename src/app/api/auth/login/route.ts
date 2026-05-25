@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { signToken } from "@/lib/auth";
+import { signTokenWithVersion } from "@/lib/auth";
 import { getTenantFromRequest, queryWithTenant, sanitizeTenantValue } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
 import { logLogin, recordFailedLogin, recordSystemEvent } from "@/lib/audit";
@@ -101,6 +101,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verificar si la organizacion esta activa
+    try {
+      const { rows: tc } = await pool.query(
+        'SELECT activo FROM public.tenants_config WHERE tenant = $1',
+        [tenant]
+      );
+      if (tc.length > 0 && tc[0].activo === false) {
+        await recordFailedLogin({ tenant, identificacion, ipAddress, userAgent, reason: "tenant_disabled" });
+        return NextResponse.json(
+          { error: "Organización deshabilitada. Contacte al administrador." },
+          { status: 403 }
+        );
+      }
+    } catch { /* table may not exist */ }
+
+    let sessionVersion = 0;
+    try {
+      const { rows: sv } = await pool.query(
+        'SELECT session_version FROM public.tenants_config WHERE tenant = $1',
+        [tenant]
+      );
+      if (sv.length > 0) sessionVersion = sv[0].session_version ?? 0;
+    } catch { /* table may not exist */ }
+
     const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     const { rows } = await run(
@@ -126,13 +150,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const token = signToken({
+    const token = signTokenWithVersion({
       userId: user.id,
       email: user.email,
       nombre: user.nombre,
       role: user.role as "administrador" | "estratega" | "lider",
       tenant: tenant || null,
-    });
+    }, sessionVersion);
 
     const response = NextResponse.json({
       token,

@@ -46,8 +46,18 @@ export async function GET(request: NextRequest) {
         const adminUser = admins.find(a => a.role === 'administrador');
         const testUsers = admins.filter(a => a.role !== 'administrador');
 
+        let activo = true;
+        try {
+          const { rows: tc } = await pool.query(
+            'SELECT activo FROM public.tenants_config WHERE tenant = $1',
+            [schemaName]
+          );
+          if (tc.length > 0) activo = tc[0].activo !== false;
+        } catch { /* table may not exist */ }
+
         tenants.push({
           name: schemaName,
+          activo,
           email: adminUser?.email || 'N/A',
           identificacion: adminUser?.identificacion || adminUser?.email || 'N/A',
           adminName: adminUser?.nombre || 'N/A',
@@ -62,7 +72,8 @@ export async function GET(request: NextRequest) {
         });
       } catch (e: any) {
         tenants.push({ 
-          name: schemaName, 
+          name: schemaName,
+          activo: true,
           email: 'Error al leer', 
           adminName: 'N/A',
           created: null, 
