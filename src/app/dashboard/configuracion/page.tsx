@@ -37,6 +37,19 @@ export default function ConfiguracionPage() {
     loadThemeConfig();
   }, []);
 
+  // Precargar la fuente seleccionada para la vista previa
+  useEffect(() => {
+    if (fontFamily === 'Inter') return;
+    const fontName = fontFamily.replace(/ /g, '+');
+    const href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@300;400;500;600;700;800&display=swap`;
+    if (!document.querySelector(`link[href="${href}"]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      document.head.appendChild(link);
+    }
+  }, [fontFamily]);
+
   const fetchData = async () => {
     try {
       const h = authHeadersWithJson();
@@ -332,22 +345,40 @@ export default function ConfiguracionPage() {
                   style={{
                     width: "100%", padding: "10px 14px", border: "1px solid #d1d5db",
                     borderRadius: "8px", fontSize: "14px", background: "white", cursor: "pointer",
-                    fontFamily: fontFamily === 'Inter' ? "'Inter', sans-serif" : `'${fontFamily}', sans-serif`,
                   }}
                 >
-                  <option value="Inter" style={{ fontFamily: "'Inter', sans-serif" }}>Inter — ¿El rápido fox brinca?</option>
-                  <option value="Roboto" style={{ fontFamily: "'Roboto', sans-serif" }}>Roboto — ¿El rápido fox brinca?</option>
-                  <option value="Open Sans" style={{ fontFamily: "'Open Sans', sans-serif" }}>Open Sans — ¿El rápido fox brinca?</option>
-                  <option value="Lato" style={{ fontFamily: "'Lato', sans-serif" }}>Lato — ¿El rápido fox brinca?</option>
-                  <option value="Montserrat" style={{ fontFamily: "'Montserrat', sans-serif" }}>Montserrat — ¿El rápido fox brinca?</option>
-                  <option value="Poppins" style={{ fontFamily: "'Poppins', sans-serif" }}>Poppins — ¿El rápido fox brinca?</option>
-                  <option value="Nunito" style={{ fontFamily: "'Nunito', sans-serif" }}>Nunito — ¿El rápido fox brinca?</option>
-                  <option value="Work Sans" style={{ fontFamily: "'Work Sans', sans-serif" }}>Work Sans — ¿El rápido fox brinca?</option>
-                  <option value="DM Sans" style={{ fontFamily: "'DM Sans', sans-serif" }}>DM Sans — ¿El rápido fox brinca?</option>
-                  <option value="Plus Jakarta Sans" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Plus Jakarta Sans — ¿El rápido fox brinca?</option>
+                  <option value="Inter">Inter</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Open Sans">Open Sans</option>
+                  <option value="Lato">Lato</option>
+                  <option value="Montserrat">Montserrat</option>
+                  <option value="Poppins">Poppins</option>
+                  <option value="Nunito">Nunito</option>
+                  <option value="Work Sans">Work Sans</option>
+                  <option value="DM Sans">DM Sans</option>
+                  <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
                 </select>
+
+                {/* Vista previa en vivo */}
+                <div style={{
+                  marginTop: 16, padding: 20, borderRadius: 10,
+                  background: "#f8fafc", border: "1px solid #e2e8f0",
+                  fontFamily: fontFamily === 'Inter' ? "'Inter', sans-serif" : `'${fontFamily}', sans-serif`,
+                  fontSize: 18, lineHeight: 1.8, color: "#0f172a",
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 4 }}>
+                    {fontFamily}
+                  </div>
+                  <div style={{ color: "#475569", fontSize: 15 }}>
+                    El veloz murciélago hindú comía feliz cardillo y kiwi. La cigüeña tocaba el saxofón detrás del palenque de paja.
+                  </div>
+                  <div style={{ color: "#64748b", fontSize: 13, marginTop: 12, borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                    ABCDEFGHIJKLMNOPQRSTUVWXYZ · abcdefghijklmnopqrstuvwxyz · 0123456789
+                  </div>
+                </div>
+
                 <p style={{ color: "#94a3b8", fontSize: "12px", marginTop: 6 }}>
-                  Cada opción se muestra con su propia apariencia. Al guardar, el cambio se aplica en toda la aplicación.
+                  Al guardar, el cambio se aplica en toda la aplicación.
                 </p>
               </div>
 
