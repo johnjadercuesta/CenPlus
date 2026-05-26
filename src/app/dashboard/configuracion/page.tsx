@@ -335,19 +335,19 @@ export default function ConfiguracionPage() {
                     fontFamily: fontFamily === 'Inter' ? "'Inter', sans-serif" : `'${fontFamily}', sans-serif`,
                   }}
                 >
-                  <option value="Inter">Inter</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="Open Sans">Open Sans</option>
-                  <option value="Lato">Lato</option>
-                  <option value="Montserrat">Montserrat</option>
-                  <option value="Poppins">Poppins</option>
-                  <option value="Nunito">Nunito</option>
-                  <option value="Work Sans">Work Sans</option>
-                  <option value="DM Sans">DM Sans</option>
-                  <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                  <option value="Inter" style={{ fontFamily: "'Inter', sans-serif" }}>Inter — ¿El rápido fox brinca?</option>
+                  <option value="Roboto" style={{ fontFamily: "'Roboto', sans-serif" }}>Roboto — ¿El rápido fox brinca?</option>
+                  <option value="Open Sans" style={{ fontFamily: "'Open Sans', sans-serif" }}>Open Sans — ¿El rápido fox brinca?</option>
+                  <option value="Lato" style={{ fontFamily: "'Lato', sans-serif" }}>Lato — ¿El rápido fox brinca?</option>
+                  <option value="Montserrat" style={{ fontFamily: "'Montserrat', sans-serif" }}>Montserrat — ¿El rápido fox brinca?</option>
+                  <option value="Poppins" style={{ fontFamily: "'Poppins', sans-serif" }}>Poppins — ¿El rápido fox brinca?</option>
+                  <option value="Nunito" style={{ fontFamily: "'Nunito', sans-serif" }}>Nunito — ¿El rápido fox brinca?</option>
+                  <option value="Work Sans" style={{ fontFamily: "'Work Sans', sans-serif" }}>Work Sans — ¿El rápido fox brinca?</option>
+                  <option value="DM Sans" style={{ fontFamily: "'DM Sans', sans-serif" }}>DM Sans — ¿El rápido fox brinca?</option>
+                  <option value="Plus Jakarta Sans" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Plus Jakarta Sans — ¿El rápido fox brinca?</option>
                 </select>
                 <p style={{ color: "#94a3b8", fontSize: "12px", marginTop: 6 }}>
-                  Se aplicará a toda la aplicación. Recarga la página para ver el cambio completo.
+                  Cada opción se muestra con su propia apariencia. Al guardar, el cambio se aplica en toda la aplicación.
                 </p>
               </div>
 
