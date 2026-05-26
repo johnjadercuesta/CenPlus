@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo identificar la organización para aplicar la marca." }, { status: 403 });
     }
 
-    const { primary_color, secondary_color, logo_url } = await request.json();
+    const { primary_color, secondary_color, logo_url, font_family } = await request.json();
 
     // 2. Validar colores (formato hex)
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
@@ -32,16 +32,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Formato de color inválido." }, { status: 400 });
     }
 
-    // 3. Actualizar o Insertar configuración
+    // 3. Validar tipo de fuente (lista blanca)
+    const ALLOWED_FONTS = [
+      'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat',
+      'Poppins', 'Nunito', 'Work Sans', 'DM Sans', 'Plus Jakarta Sans'
+    ];
+    const finalFont = font_family || 'Inter';
+    if (!ALLOWED_FONTS.includes(finalFont)) {
+      return NextResponse.json({ error: `Tipo de fuente no válido. Opciones: ${ALLOWED_FONTS.join(', ')}` }, { status: 400 });
+    }
+
+    // 4. Actualizar o Insertar configuración
     await pool.query(
-      `INSERT INTO public.tenants_config (tenant, primary_color, secondary_color, logo_url, updated_at)
-       VALUES ($1, $2, $3, $4, NOW())
+      `INSERT INTO public.tenants_config (tenant, primary_color, secondary_color, logo_url, font_family, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
        ON CONFLICT (tenant) DO UPDATE SET 
          primary_color = EXCLUDED.primary_color,
          secondary_color = EXCLUDED.secondary_color,
          logo_url = EXCLUDED.logo_url,
+         font_family = EXCLUDED.font_family,
          updated_at = NOW()`,
-      [tenant, primary_color || '#162749', secondary_color || '#6366f1', logo_url || null]
+      [tenant, primary_color || '#162749', secondary_color || '#6366f1', logo_url || null, finalFont]
     );
 
     return NextResponse.json({ success: true, message: "Configuración de marca actualizada." });
@@ -54,6 +65,7 @@ export async function POST(request: NextRequest) {
             primary_color VARCHAR(7) DEFAULT '#3b82f6',
             secondary_color VARCHAR(7) DEFAULT '#6366f1',
             logo_url TEXT,
+            font_family VARCHAR(255) DEFAULT 'Inter',
             config JSONB DEFAULT '{}',
             updated_at TIMESTAMP DEFAULT NOW()
           )

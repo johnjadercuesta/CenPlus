@@ -22,12 +22,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ 
         primary_color: '#162749', 
         secondary_color: '#6366f1',
-        logo_url: null 
+        logo_url: null,
+        font_family: 'Inter'
       });
     }
 
     const { rows } = await pool.query(
-      "SELECT primary_color, secondary_color, logo_url, config FROM public.tenants_config WHERE tenant = $1",
+      "SELECT primary_color, secondary_color, logo_url, font_family, config FROM public.tenants_config WHERE tenant = $1",
       [tenant]
     );
 
@@ -35,7 +36,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ 
         primary_color: '#162749', 
         secondary_color: '#6366f1',
-        logo_url: null 
+        logo_url: null,
+        font_family: 'Inter'
       });
     }
 
@@ -51,6 +53,7 @@ export async function GET(request: NextRequest) {
             primary_color VARCHAR(7) DEFAULT '#3b82f6',
             secondary_color VARCHAR(7) DEFAULT '#6366f1',
             logo_url TEXT,
+            font_family VARCHAR(255) DEFAULT 'Inter',
             config JSONB DEFAULT '{}',
             updated_at TIMESTAMP DEFAULT NOW()
           )
@@ -58,7 +61,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ 
           primary_color: '#162749', 
           secondary_color: '#6366f1',
-          logo_url: null 
+          logo_url: null,
+          font_family: 'Inter'
         });
       } catch (innerError) {
         return NextResponse.json({ error: "Error creando tabla de config: " + (innerError as any).message }, { status: 500 });

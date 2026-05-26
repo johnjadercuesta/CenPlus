@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         logo_url TEXT,
         activo BOOLEAN DEFAULT true,
         session_version INTEGER DEFAULT 0,
+        font_family VARCHAR(255) DEFAULT 'Inter',
         config JSONB DEFAULT '{}',
         updated_at TIMESTAMP DEFAULT NOW()
       )
@@ -65,9 +66,12 @@ export async function POST(request: NextRequest) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='tenants_config' AND column_name='session_version') THEN
           ALTER TABLE public.tenants_config ADD COLUMN session_version INTEGER DEFAULT 0;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='tenants_config' AND column_name='font_family') THEN
+          ALTER TABLE public.tenants_config ADD COLUMN font_family VARCHAR(255) DEFAULT 'Inter';
+        END IF;
       END $$;
     `);
-    results.push('✅ Columnas activo/session_version agregadas a tenants_config');
+    results.push('✅ Columnas activo/session_version/font_family agregadas a tenants_config');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS public.system_logs (

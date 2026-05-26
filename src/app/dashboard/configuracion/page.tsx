@@ -14,6 +14,7 @@ export default function ConfiguracionPage() {
   // Branding states
   const [primaryColor, setPrimaryColor] = useState("#3b82f6");
   const [logoUrl, setLogoUrl] = useState("");
+  const [fontFamily, setFontFamily] = useState("Inter");
   const [metaGlobal, setMetaGlobal] = useState("1000");
 
   // Password change states
@@ -67,6 +68,12 @@ export default function ConfiguracionPage() {
         setPrimaryColor(data.primary_color);
         document.documentElement.style.setProperty('--brand-accent', data.primary_color);
       }
+      if (data.font_family) {
+        setFontFamily(data.font_family);
+      }
+      if (data.logo_url) {
+        setLogoUrl(data.logo_url);
+      }
       
       const statsRes = await fetch("/api/stats", { headers: authHeadersWithJson() });
       const statsData = await statsRes.json();
@@ -103,6 +110,7 @@ export default function ConfiguracionPage() {
         body: JSON.stringify({
           primary_color: primaryColor,
           logo_url: logoUrl,
+          font_family: fontFamily,
         }),
       });
 
@@ -315,6 +323,34 @@ export default function ConfiguracionPage() {
                   </div>
                 </div>
               </div>
+
+              <div style={{ marginBottom: "32px" }}>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Tipo de Letra</label>
+                <select
+                  value={fontFamily}
+                  onChange={e => setFontFamily(e.target.value)}
+                  style={{
+                    width: "100%", padding: "10px 14px", border: "1px solid #d1d5db",
+                    borderRadius: "8px", fontSize: "14px", background: "white", cursor: "pointer",
+                    fontFamily: fontFamily === 'Inter' ? "'Inter', sans-serif" : `'${fontFamily}', sans-serif`,
+                  }}
+                >
+                  <option value="Inter">Inter</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Open Sans">Open Sans</option>
+                  <option value="Lato">Lato</option>
+                  <option value="Montserrat">Montserrat</option>
+                  <option value="Poppins">Poppins</option>
+                  <option value="Nunito">Nunito</option>
+                  <option value="Work Sans">Work Sans</option>
+                  <option value="DM Sans">DM Sans</option>
+                  <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                </select>
+                <p style={{ color: "#94a3b8", fontSize: "12px", marginTop: 6 }}>
+                  Se aplicará a toda la aplicación. Recarga la página para ver el cambio completo.
+                </p>
+              </div>
+
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <button type="submit" disabled={saving} style={{ background: primaryColor, color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", cursor: "pointer", fontWeight: 700 }}>{saving ? "Guardando..." : "Guardar Personalización"}</button>
               </div>
