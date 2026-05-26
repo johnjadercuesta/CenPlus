@@ -616,66 +616,66 @@ export default function SetupPage() {
                     borderRadius: 14,
                   }}>
                     {/* Header de la organización */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ color: "white", fontWeight: 700, fontSize: 18 }}>🏢 {t.name}</span>
-                          <span style={{
-                            padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                            background: t.activo ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)",
-                            color: t.activo ? "#4ade80" : "#f87171",
-                            border: `1px solid ${t.activo ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`,
-                          }}>
-                            {t.activo ? "● Activo" : "● Inactivo"}
-                          </span>
-                        </div>
-                        <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
-                          {t.ciudadanos} ciudadano(s) · Creada: {t.created ? new Date(t.created).toLocaleDateString("es-CO") : "N/A"}
-                        </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ color: "white", fontWeight: 700, fontSize: 18 }}>🏢 {t.name}</span>
+                        <span style={{
+                          padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+                          background: t.activo ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)",
+                          color: t.activo ? "#4ade80" : "#f87171",
+                          border: `1px solid ${t.activo ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`,
+                        }}>
+                          {t.activo ? "● Activo" : "● Inactivo"}
+                        </span>
                       </div>
-                      <div style={{ display: "flex", gap: "8px", flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                        <button
-                          onClick={() => handleToggleTenant(t.name, !t.activo)}
-                          style={{
-                            padding: "8px 16px",
-                            background: t.activo
-                              ? "rgba(239,68,68,0.15)"
-                              : "rgba(34,197,94,0.15)",
-                            border: `1px solid ${t.activo ? "rgba(239,68,68,0.4)" : "rgba(34,197,94,0.4)"}`,
-                            borderRadius: 8,
-                            color: t.activo ? "#f87171" : "#4ade80",
-                            cursor: "pointer", fontSize: 13, fontWeight: 600,
-                          }}
-                        >
-                          {t.activo ? "Desactivar" : "Activar"}
-                        </button>
-                        <button
-                          onClick={() => handleImpersonate(t.name)}
-                          style={{
-                            padding: "8px 16px",
-                            background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(52,211,153,0.3))",
-                            border: "1px solid rgba(16,185,129,0.4)",
-                            borderRadius: 8, color: "#34d399",
-                            cursor: "pointer", fontSize: 13, fontWeight: 600,
-                          }}
-                        >
-                          Entrar a Administrar →
-                        </button>
-                        <a
-                          href={tenantUrl(t.name)}
-                          target={BASE_DOMAIN ? "_blank" : "_self"}
-                          rel="noreferrer"
-                          style={{
-                            padding: "8px 16px", display: "flex", alignItems: "center",
-                            background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
-                            border: "1px solid rgba(59,130,246,0.4)",
-                            borderRadius: 8, color: "#60a5fa",
-                            textDecoration: "none", fontSize: 13, fontWeight: 600,
-                          }}
-                        >
-                          Login Normal →
-                        </a>
+                      <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
+                        {t.ciudadanos} ciudadano(s) · Creada: {t.created ? new Date(t.created).toLocaleDateString("es-CO") : "N/A"}
                       </div>
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => handleToggleTenant(t.name, !t.activo)}
+                        style={{
+                          padding: "8px 16px",
+                          background: t.activo
+                            ? "rgba(239,68,68,0.15)"
+                            : "rgba(34,197,94,0.15)",
+                          border: `1px solid ${t.activo ? "rgba(239,68,68,0.4)" : "rgba(34,197,94,0.4)"}`,
+                          borderRadius: 8,
+                          color: t.activo ? "#f87171" : "#4ade80",
+                          cursor: "pointer", fontSize: 13, fontWeight: 600,
+                        }}
+                      >
+                        {t.activo ? "Desactivar" : "Activar"}
+                      </button>
+                      <button
+                        onClick={() => handleImpersonate(t.name)}
+                        style={{
+                          padding: "8px 16px",
+                          background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(52,211,153,0.3))",
+                          border: "1px solid rgba(16,185,129,0.4)",
+                          borderRadius: 8, color: "#34d399",
+                          cursor: "pointer", fontSize: 13, fontWeight: 600,
+                        }}
+                      >
+                        Entrar a Administrar →
+                      </button>
+                      <a
+                        href={tenantUrl(t.name)}
+                        target={BASE_DOMAIN ? "_blank" : "_self"}
+                        rel="noreferrer"
+                        style={{
+                          padding: "8px 16px", display: "flex", alignItems: "center",
+                          background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
+                          border: "1px solid rgba(59,130,246,0.4)",
+                          borderRadius: 8, color: "#60a5fa",
+                          textDecoration: "none", fontSize: 13, fontWeight: 600,
+                        }}
+                      >
+                        Login Normal →
+                      </a>
                     </div>
 
                     {/* URL de acceso */}
