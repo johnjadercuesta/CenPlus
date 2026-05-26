@@ -394,7 +394,7 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
         ref={mapRef}
         style={{
           width: "100%",
-          height: 600,
+          height: "min(600px, 50vh)",
           borderRadius: 12,
           border: "1px solid #e2e8f0",
           boxShadow: "0 4px 20px rgba(0,0,0,0.06)",

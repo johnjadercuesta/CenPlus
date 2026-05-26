@@ -83,14 +83,14 @@ function LoginForm() {
   };
 
   return (
-    <div style={{
+    <div className="login-page" style={{
       minHeight: "100vh",
       display: "flex",
       background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a5f 100%)",
       fontFamily: "'Inter', 'Segoe UI', sans-serif",
     }}>
       {/* Branding - Lado Izquierdo */}
-      <div style={{
+      <div className="login-branding" style={{
         flex: 1,
         display: "flex",
         flexDirection: "column",
@@ -120,7 +120,7 @@ function LoginForm() {
           <p style={{ fontSize: 18, color: "#94a3b8", marginBottom: 32, lineHeight: 1.6 }}>
             Plataforma de Gestión Comunitaria e Inteligencia Territorial
           </p>
-          <div style={{ display: "flex", gap: 24, color: "#cbd5e1", fontSize: 13 }}>
+          <div style={{ display: "flex", gap: 24, color: "#cbd5e1", fontSize: 13, flexWrap: "wrap" }}>
             <div><div style={{ fontSize: 24, fontWeight: 800, color: "#60a5fa" }}>PWA</div><div>Mobile</div></div>
             <div><div style={{ fontSize: 24, fontWeight: 800, color: "#a78bfa" }}>GPS</div><div>Mapas</div></div>
             <div><div style={{ fontSize: 24, fontWeight: 800, color: "#34d399" }}>Multi</div><div>Tenants</div></div>
@@ -133,14 +133,14 @@ function LoginForm() {
       </div>
 
       {/* Formulario - Lado Derecho */}
-      <div style={{
-        width: 480,
+      <div className="login-form-col" style={{
+        width: "100%", maxWidth: 480,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: 48,
       }}>
-        <div style={{
+        <div className="login-card" style={{
           width: "100%", maxWidth: 400, background: "white", borderRadius: 20, padding: 40,
           boxShadow: "0 40px 80px rgba(0, 0, 0, 0.35)",
         }}>

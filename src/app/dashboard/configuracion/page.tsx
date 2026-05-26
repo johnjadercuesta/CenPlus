@@ -236,16 +236,16 @@ export default function ConfiguracionPage() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid #e2e8f0" }}>
-        <button onClick={() => setActiveTab("territorio")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "territorio" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "territorio" ? 700 : 500, color: activeTab === "territorio" ? "#3b82f6" : "#64748b" }}>📍 Territorio</button>
-        <button onClick={() => setActiveTab("referencias")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "referencias" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "referencias" ? 700 : 500, color: activeTab === "referencias" ? "#3b82f6" : "#64748b" }}>⚙️ Referencias</button>
-        <button onClick={() => setActiveTab("marca")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "marca" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "marca" ? 700 : 500, color: activeTab === "marca" ? "#3b82f6" : "#64748b" }}>🎨 Marca y Estilo</button>
-        <button onClick={() => setActiveTab("cuenta")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "cuenta" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "cuenta" ? 700 : 500, color: activeTab === "cuenta" ? "#3b82f6" : "#64748b" }}>🔒 Mi Cuenta</button>
+      <div className="config-tabs" style={{ display: "flex", gap: "12px", marginBottom: "24px", borderBottom: "1px solid #e2e8f0", flexWrap: "wrap", overflowX: "auto" }}>
+        <button onClick={() => setActiveTab("territorio")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "territorio" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "territorio" ? 700 : 500, color: activeTab === "territorio" ? "#3b82f6" : "#64748b", whiteSpace: "nowrap" }}>📍 Territorio</button>
+        <button onClick={() => setActiveTab("referencias")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "referencias" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "referencias" ? 700 : 500, color: activeTab === "referencias" ? "#3b82f6" : "#64748b", whiteSpace: "nowrap" }}>⚙️ Referencias</button>
+        <button onClick={() => setActiveTab("marca")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "marca" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "marca" ? 700 : 500, color: activeTab === "marca" ? "#3b82f6" : "#64748b", whiteSpace: "nowrap" }}>🎨 Marca y Estilo</button>
+        <button onClick={() => setActiveTab("cuenta")} style={{ padding: "12px 20px", border: "none", background: "none", cursor: "pointer", borderBottom: activeTab === "cuenta" ? "2px solid #3b82f6" : "none", fontWeight: activeTab === "cuenta" ? 700 : 500, color: activeTab === "cuenta" ? "#3b82f6" : "#64748b", whiteSpace: "nowrap" }}>🔒 Mi Cuenta</button>
       </div>
 
       <div className="content">
         {activeTab === "territorio" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+          <div className="config-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
             <div className="card" style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
                <h3 style={{ marginTop: 0 }}>Comunas / Corregimientos</h3>
                <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
@@ -278,7 +278,7 @@ export default function ConfiguracionPage() {
         )}
 
         {activeTab === "referencias" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+          <div className="config-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
             <div className="card" style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
               <h3 style={{ marginTop: 0 }}>Puestos de Votación</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
@@ -319,7 +319,7 @@ export default function ConfiguracionPage() {
         {activeTab === "marca" && (
           <div className="card" style={{ background: "white", padding: "32px", borderRadius: "12px", border: "1px solid #e2e8f0", maxWidth: "800px" }}>
             <form onSubmit={handleSaveBranding}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", marginBottom: "32px" }}>
+              <div className="config-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", marginBottom: "32px" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Color de la Aplicación</label>
                   <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>

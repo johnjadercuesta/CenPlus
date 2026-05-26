@@ -30,6 +30,7 @@ body {
   color: var(--text-primary);
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* ===== SCROLLBAR CORPORATIVO ===== */
@@ -633,6 +634,51 @@ body {
   .mobile-toggle {
     display: flex !important;
   }
+
+  /* Login page: stack columns vertically */
+  .login-page {
+    flex-direction: column !important;
+  }
+
+  .login-branding {
+    padding: 32px 24px !important;
+  }
+
+  .login-form-col {
+    padding: 24px !important;
+  }
+
+  .login-card {
+    padding: 24px !important;
+  }
+
+  /* Config page: collapse 2-col grids to 1 col */
+  .config-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .config-tabs {
+    gap: 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-branding {
+    display: none !important;
+  }
+
+  .login-form-col {
+    padding: 16px !important;
+  }
+
+  .login-card {
+    padding: 20px !important;
+    box-shadow: none !important;
+  }
+
+  .main-header {
+    padding: 0 16px !important;
+  }
 }
 
 .mobile-toggle {
@@ -645,6 +691,7 @@ body {
   background: transparent;
   cursor: pointer;
   border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .mobile-toggle:hover {

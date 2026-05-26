@@ -740,7 +740,7 @@ export default function SetupPage() {
                         <div style={{ color: "#c4b5fd", fontSize: 11, fontWeight: 600, marginBottom: 8 }}>👥 USUARIOS DE PRUEBA (contraseña: admin123):</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           {t.testUsers.map((u, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                               <span style={{
                                 padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
                                 background: u.role === "estratega" ? "rgba(59,130,246,0.2)" : "rgba(16,185,129,0.2)",
