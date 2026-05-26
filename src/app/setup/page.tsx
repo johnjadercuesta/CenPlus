@@ -634,11 +634,11 @@ export default function SetupPage() {
                     </div>
 
                     {/* Botones de acción */}
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       <button
                         onClick={() => handleToggleTenant(t.name, !t.activo)}
                         style={{
-                          padding: "8px 16px",
+                          width: "100%", padding: "10px 16px", textAlign: "center",
                           background: t.activo
                             ? "rgba(239,68,68,0.15)"
                             : "rgba(34,197,94,0.15)",
@@ -653,7 +653,7 @@ export default function SetupPage() {
                       <button
                         onClick={() => handleImpersonate(t.name)}
                         style={{
-                          padding: "8px 16px",
+                          width: "100%", padding: "10px 16px", textAlign: "center",
                           background: "linear-gradient(135deg, rgba(16,185,129,0.3), rgba(52,211,153,0.3))",
                           border: "1px solid rgba(16,185,129,0.4)",
                           borderRadius: 8, color: "#34d399",
@@ -667,7 +667,7 @@ export default function SetupPage() {
                         target={BASE_DOMAIN ? "_blank" : "_self"}
                         rel="noreferrer"
                         style={{
-                          padding: "8px 16px", display: "flex", alignItems: "center",
+                          width: "100%", padding: "10px 16px", textAlign: "center", boxSizing: "border-box",
                           background: "linear-gradient(135deg, rgba(59,130,246,0.3), rgba(139,92,246,0.3))",
                           border: "1px solid rgba(59,130,246,0.4)",
                           borderRadius: 8, color: "#60a5fa",
