@@ -67,7 +67,7 @@ export default function DashboardPage() {
           <h1 className="main-header-title">Inteligencia Territorial</h1>
           <p className="main-header-subtitle">Análisis geoespacial y estratégico multi-capa</p>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
           <ArchivoSelector value={archivoId} onChange={setArchivoId} compact />
           <Link href="/dashboard/formulario" className="btn btn-primary btn-sm">
             + Nuevo Registro Territorial
@@ -112,7 +112,7 @@ export default function DashboardPage() {
         )}
 
         {/* Global KPIs */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: 24 }}>
+        <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: 24 }}>
           <KPICard
             icon={<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />}
             iconExtra={<circle cx="8.5" cy="7" r="4" />}
@@ -154,7 +154,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Strategic Analysis Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 16, marginBottom: 24 }}>
+        <div className="strategic-grid" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 16, marginBottom: 24 }}>
           {/* Geospace Analysis Map */}
           <div className="card">
             <div className="card-header">
@@ -214,7 +214,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Health and Problems Analysis Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+        <div className="analysis-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
           {/* Social Problems */}
           <div className="card">
             <div className="card-header">
@@ -305,7 +305,7 @@ export default function DashboardPage() {
             <span style={{ fontSize: 12, color: "#64748b" }}>Tasa de recolección diaria</span>
           </div>
           <div className="card-body">
-             <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 160, paddingBottom: 24 }}>
+             <div className="chart-bars" style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 160, paddingBottom: 24 }}>
                 {(stats?.ultimos7dias || []).map((d, i) => {
                   const max7d = stats?.ultimos7dias?.length ? Math.max(...stats.ultimos7dias.map(x => x.c)) : 1;
                   const height = (d.c / (max7d || 1)) * 130;

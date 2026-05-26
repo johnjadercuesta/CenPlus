@@ -36,25 +36,25 @@ export default function MapaPage() {
           <h1 className="main-header-title">👥 Mapa Territorial</h1>
           <p className="main-header-subtitle">Visualización de densidad y metas por zona</p>
         </div>
-        <div style={{ minWidth: 220 }}>
+        <div>
           <ArchivoSelector value={archivoId} onChange={setArchivoId} compact />
         </div>
       </div>
       <div className="main-content">
-        <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-          <div className="metric-card" style={{ flex: 1 }}>
+        <div className="mapa-metrics" style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
+          <div className="metric-card" style={{ flex: "1 1 140px", minWidth: 140 }}>
             <div style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>Total registros</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: "#1e3a5f" }}>{ciudadanos.length}</div>
           </div>
-          <div className="metric-card" style={{ flex: 1 }}>
+          <div className="metric-card" style={{ flex: "1 1 140px", minWidth: 140 }}>
             <div style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>Geolocalizados</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: "#16a34a" }}>{conCoords.length}</div>
           </div>
-          <div className="metric-card" style={{ flex: 1 }}>
+          <div className="metric-card" style={{ flex: "1 1 140px", minWidth: 140 }}>
             <div style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>Líderes</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: "#d97706" }}>{lideres.length}</div>
           </div>
-          <div className="metric-card" style={{ flex: 1 }}>
+          <div className="metric-card" style={{ flex: "1 1 140px", minWidth: 140 }}>
             <div style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>Meta Global</div>
             <div style={{ fontSize: 24, fontWeight: 800, color: "#7c3aed" }}>{meta}</div>
           </div>

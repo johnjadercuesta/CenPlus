@@ -660,6 +660,37 @@ body {
   .config-tabs {
     gap: 6px !important;
   }
+
+  /* Dashboard grids */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .strategic-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .analysis-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .chart-bars {
+    overflow-x: auto !important;
+    padding-bottom: 16px !important;
+  }
+
+  /* Sectores page grids */
+  .sectores-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sectores-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sectores-field-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 480px) {

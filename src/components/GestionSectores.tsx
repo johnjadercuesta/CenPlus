@@ -227,7 +227,7 @@ export default function GestionSectores() {
   return (
     <div className="space-y-6">
       {/* Meta Global KPI summary */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+      <div className="sectores-summary-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
         <div className="card">
           <div className="card-header">
             <span style={{ fontWeight: 700, fontSize: 13, color: "#64748b", textTransform: "uppercase" }}>Meta Global de Captación</span>
@@ -238,7 +238,7 @@ export default function GestionSectores() {
           <div className="card-body">
             {editMeta ? (
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <input type="number" value={metaInput} onChange={(e) => setMetaInput(e.target.value)} className="input" style={{ width: 160 }} min="1" />
+                <input type="number" value={metaInput} onChange={(e) => setMetaInput(e.target.value)} className="input" style={{ maxWidth: 160, width: "100%" }} min="1" />
                 <button onClick={handleSaveMeta} className="btn btn-primary btn-sm">Guardar</button>
                 <button onClick={() => { setEditMeta(false); setMetaInput(String(metaGlobal)); }} className="btn btn-ghost btn-sm">Cancelar</button>
               </div>
@@ -333,7 +333,7 @@ export default function GestionSectores() {
             </span>
             <button onClick={resetForm} className="btn btn-ghost btn-sm">Cerrar</button>
           </div>
-          <div className="card-body" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 24 }}>
+          <div className="sectores-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 24 }}>
             {/* Form fields */}
             <form onSubmit={editingId ? (e) => { e.preventDefault(); handleUpdate(editingId); } : handleCreate}>
               <div style={{ marginBottom: 16 }}>
@@ -357,7 +357,7 @@ export default function GestionSectores() {
                  </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              <div className="sectores-field-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                 <div>
                   <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>
                     {form.zona === 'urbana' ? "Comuna (Sector)" : "Corregimiento"}
@@ -413,7 +413,7 @@ export default function GestionSectores() {
                 <input type="text" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required placeholder="Ej: Zona Norte - Popular" className="input" />
               </div>
               
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              <div className="sectores-field-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                 <div>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 6 }}>Meta Captación *</label>
                   <input type="number" value={form.meta} onChange={(e) => setForm({ ...form, meta: e.target.value })} required min="1" className="input" />
