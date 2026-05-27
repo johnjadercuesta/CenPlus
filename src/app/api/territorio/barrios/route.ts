@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
-import { verifyToken } from "@/lib/auth";
+import { getTokenFromRequest } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,13 +38,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get("token")?.value;
-    const payload = token ? verifyToken(token) : null;
+    const payload = getTokenFromRequest(request);
     if (!payload || (payload.role !== "administrador" && payload.role !== "estratega")) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     const tenant = payload.tenant as string;
+    if (!tenant) return NextResponse.json({ error: "Tenant no especificado" }, { status: 400 });
+
     const { nombre, comunaId, tipo } = await request.json();
     if (!nombre || !comunaId) return NextResponse.json({ error: "Nombre y comunaId obligatorios" }, { status: 400 });
 
@@ -54,9 +55,9 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ data: rows[0], message: "Barrio guardado" }, { status: 201 });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Error al guardar barrio" }, { status: 500 });
+  } catch (err: any) {
+    console.error("[barrios POST] Error:", err?.message || err);
+    return NextResponse.json({ error: `Error al guardar barrio: ${err?.message || "Error interno"}` }, { status: 500 });
   }
 }
 
