@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
       await client.query(`
         CREATE TABLE IF NOT EXISTS puestos_votacion (
           id SERIAL PRIMARY KEY,
-          nombre VARCHAR(255) NOT NULL,
+          nombre VARCHAR(255) NOT NULL UNIQUE,
           comuna_id INT,
           votos_historicos INT DEFAULT 0
         )

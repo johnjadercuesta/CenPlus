@@ -68,9 +68,9 @@ export default function FormularioCiudadano() {
       );
     }
 
-    // Fetch inicial de datos compartidos
-    fetch("/api/territorio/puestos").then(r => r.json()).then(res => setPuestos(res.data || []));
-    fetch("/api/territorio/problematicas").then(r => r.json()).then(res => setProblematicas(res.data || []));
+    const h = authHeadersWithJson();
+    fetch("/api/territorio/puestos", { headers: h }).then(r => r.json()).then(res => setPuestos(res.data || [])).catch(() => {});
+    fetch("/api/territorio/problematicas", { headers: h }).then(r => r.json()).then(res => setProblematicas(res.data || [])).catch(() => {});
 
     const token = getToken();
     if (!token) return;
@@ -93,9 +93,10 @@ export default function FormularioCiudadano() {
 
   // Fetch de comunas/corregimientos cuando cambia la zona
   useEffect(() => {
-    fetch(`/api/territorio/comunas?tipo=${form.zona}`)
+    fetch(`/api/territorio/comunas?tipo=${form.zona}`, { headers: authHeadersWithJson() })
       .then(r => r.json())
-      .then(res => setComunas(res.data || []));
+      .then(res => setComunas(res.data || []))
+      .catch(() => {});
   }, [form.zona]);
 
   const handleChange = (
@@ -125,9 +126,10 @@ export default function FormularioCiudadano() {
         vereda: ""
       }));
       if (value) {
-        fetch(`/api/territorio/barrios?comunaId=${value}`)
+        fetch(`/api/territorio/barrios?comunaId=${value}`, { headers: authHeadersWithJson() })
           .then(r => r.json())
-          .then(res => setBarrios(res.data || []));
+          .then(res => setBarrios(res.data || []))
+          .catch(() => {});
       } else {
         setBarrios([]);
       }

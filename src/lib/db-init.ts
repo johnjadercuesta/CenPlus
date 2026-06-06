@@ -5,7 +5,9 @@ let migrationComplete = false;
 let lastError: string | null = null;
 
 export async function ensureIdentificacionColumn() {
-  if (migrationComplete) return { success: true, message: "Migration already completed" };
+  if (migrationComplete) {
+    return { success: true, message: "Migration already completed" };
+  }
   if (migrationRunning) return { success: false, message: "Migration already running" };
   
   migrationRunning = true;
@@ -227,6 +229,53 @@ export async function ensureIdentificacionColumn() {
       console.error("[DB-INIT] Error creating audit tables:", e.message);
     }
 
+    // Create messaging tables
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.mensajes_enviados (
+          id SERIAL PRIMARY KEY,
+          tenant VARCHAR(63),
+          canal VARCHAR(20) NOT NULL DEFAULT 'whatsapp',
+          modo VARCHAR(20) DEFAULT 'masivo',
+          mensaje TEXT NOT NULL,
+          plantilla_nombre VARCHAR(100),
+          destinatarios_count INT DEFAULT 0,
+          exitosos_count INT DEFAULT 0,
+          fallidos_count INT DEFAULT 0,
+          filtros JSONB,
+          programado_para TIMESTAMP,
+          enviado_en TIMESTAMP,
+          estado VARCHAR(20) DEFAULT 'pendiente',
+          enviado_por INT,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.mensajes_individuales (
+          id SERIAL PRIMARY KEY,
+          mensaje_id INT REFERENCES mensajes_enviados(id) ON DELETE CASCADE,
+          tenant VARCHAR(63),
+          ciudadano_id INT,
+          ciudadano_nombre VARCHAR(255),
+          telefono VARCHAR(50),
+          canal VARCHAR(20) DEFAULT 'whatsapp',
+          estado VARCHAR(30) DEFAULT 'pendiente',
+          error_msg TEXT,
+          meta_msg_id VARCHAR(255),
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      console.log("[DB-INIT] Messaging tables ready");
+    } catch (e: any) {
+      console.error("[DB-INIT] Error creating messaging tables:", e.message);
+    }
+
+    // Add tipo column to per-tenant tables if missing
+    await ensureTipoColumns();
+
+    // Create voting module tables in each tenant schema
+    await ensureVotacionTables();
+
     migrationComplete = true;
     console.log("[DB-INIT] Migration completed successfully");
     return { success: true, message: "Migration completed", schemas: schemas.length };
@@ -238,10 +287,127 @@ export async function ensureIdentificacionColumn() {
   }
 }
 
+export async function ensureTipoColumns() {
+  try {
+    const { rows: schemas } = await pool.query(`
+      SELECT schema_name FROM information_schema.schemata
+      WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'public') 
+        AND schema_name NOT LIKE 'pg_%'
+    `);
+
+    for (const schema of schemas) {
+      const schemaName = schema.schema_name;
+      try {
+        await pool.query(`
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='${schemaName}' AND table_name='comunas' AND column_name='tipo') THEN
+              ALTER TABLE "${schemaName}".comunas ADD COLUMN tipo VARCHAR(20) DEFAULT 'urbana';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='${schemaName}' AND table_name='barrios' AND column_name='tipo') THEN
+              ALTER TABLE "${schemaName}".barrios ADD COLUMN tipo VARCHAR(20) DEFAULT 'barrio';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.constraint_column_usage WHERE table_schema='${schemaName}' AND table_name='puestos_votacion' AND constraint_name='puestos_votacion_nombre_key') THEN
+              ALTER TABLE "${schemaName}".puestos_votacion ADD CONSTRAINT puestos_votacion_nombre_key UNIQUE (nombre);
+            END IF;
+          END $$;
+        `);
+      } catch (e: any) {
+        console.error(`[DB-INIT] Error adding tipo column to ${schemaName}:`, e.message);
+      }
+    }
+  } catch (err: any) {
+    console.error("[DB-INIT] Error ensuring tipo columns:", err?.message);
+  }
+}
+
 export function getMigrationStatus() {
   return {
     complete: migrationComplete,
     running: migrationRunning,
     lastError,
   };
+}
+
+export async function ensureVotacionTables() {
+  try {
+    const { rows: schemas } = await pool.query(`
+      SELECT schema_name FROM information_schema.schemata
+      WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'public')
+        AND schema_name NOT LIKE 'pg_%'
+    `);
+
+    for (const schema of schemas) {
+      const s = schema.schema_name;
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS "${s}".votaciones (
+            id SERIAL PRIMARY KEY,
+            titulo VARCHAR(255) NOT NULL,
+            descripcion TEXT,
+            estado VARCHAR(20) NOT NULL DEFAULT 'borrador',
+            tipo VARCHAR(30) NOT NULL DEFAULT 'encuesta',
+            audiencia VARCHAR(30) NOT NULL DEFAULT 'publico',
+            visibilidad_resultados VARCHAR(30) NOT NULL DEFAULT 'app_users',
+            limite_respuestas VARCHAR(30) NOT NULL DEFAULT 'una_por_sesion',
+            anonima BOOLEAN NOT NULL DEFAULT true,
+            fecha_inicio TIMESTAMP,
+            fecha_fin TIMESTAMP,
+            creado_por INTEGER,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+          );
+
+          CREATE TABLE IF NOT EXISTS "${s}".votacion_preguntas (
+            id SERIAL PRIMARY KEY,
+            votacion_id INTEGER NOT NULL REFERENCES "${s}".votaciones(id) ON DELETE CASCADE,
+            orden INTEGER NOT NULL DEFAULT 0,
+            texto TEXT NOT NULL,
+            tipo VARCHAR(30) NOT NULL,
+            opciones JSONB,
+            obligatoria BOOLEAN NOT NULL DEFAULT true
+          );
+
+          CREATE TABLE IF NOT EXISTS "${s}".votacion_respuestas (
+            id SERIAL PRIMARY KEY,
+            votacion_id INTEGER NOT NULL,
+            ciudadano_id VARCHAR(50),
+            sesion_id VARCHAR(64),
+            user_id INTEGER,
+            ip_address VARCHAR(45),
+            submitted_at TIMESTAMP DEFAULT NOW()
+          );
+
+          CREATE TABLE IF NOT EXISTS "${s}".votacion_respuesta_items (
+            id SERIAL PRIMARY KEY,
+            respuesta_id INTEGER NOT NULL REFERENCES "${s}".votacion_respuestas(id) ON DELETE CASCADE,
+            pregunta_id INTEGER NOT NULL,
+            texto TEXT,
+            opciones JSONB,
+            escala INTEGER
+          );
+        `);
+
+        // Índices únicos para control de duplicados
+        await pool.query(`
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_vot_resp_ciudadano
+            ON "${s}".votacion_respuestas (votacion_id, ciudadano_id)
+            WHERE ciudadano_id IS NOT NULL;
+
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_vot_resp_sesion
+            ON "${s}".votacion_respuestas (votacion_id, sesion_id)
+            WHERE sesion_id IS NOT NULL;
+
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_vot_resp_user
+            ON "${s}".votacion_respuestas (votacion_id, user_id)
+            WHERE user_id IS NOT NULL;
+        `);
+
+        console.log(`[DB-INIT] Votación tables ready for schema: ${s}`);
+      } catch (e: any) {
+        console.error(`[DB-INIT] Error creating votacion tables for ${s}:`, e.message);
+      }
+    }
+  } catch (err: any) {
+    console.error("[DB-INIT] Error ensuring votacion tables:", err?.message);
+  }
 }

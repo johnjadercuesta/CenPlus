@@ -10,6 +10,12 @@ export async function GET(request: NextRequest) {
   try {
     let tenant = getTenantFromRequest(request);
     
+    // Fallback a query params para rutas públicas sin headers
+    if (!tenant) {
+      const { searchParams } = new URL(request.url);
+      tenant = searchParams.get("tenant") || searchParams.get("t");
+    }
+
     // Si no hay tenant en la URL/headers, intentar sacarlo del token del usuario actual
     if (!tenant || tenant === 'public') {
       const payload = getTokenFromRequest(request);

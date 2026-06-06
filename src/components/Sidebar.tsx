@@ -9,7 +9,7 @@ interface UserData {
   email: string;
 }
 
-export default function Sidebar() {
+export default function Sidebar({ user: propUser }: { user?: any }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<{ id?: number; userId?: number; nombre?: string; role?: string; email?: string } | null>(null);
@@ -17,17 +17,29 @@ export default function Sidebar() {
   const [logo, setLogo] = useState<string | null>(null);
 
   useEffect(() => {
+    if (propUser) {
+      setUser({
+        userId: propUser.userId,
+        nombre: propUser.nombre,
+        email: propUser.email,
+        role: propUser.role
+      });
+    } else {
+      const token = localStorage.getItem("token");
+      if (token) {
+        fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.authenticated) {
+              setUser({ userId: data.userId, nombre: data.nombre, email: data.email, role: data.role });
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
     const token = localStorage.getItem("token");
     if (token) {
-      fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.authenticated) {
-            setUser({ userId: data.userId, nombre: data.nombre, email: data.email, role: data.role });
-          }
-        })
-        .catch(() => {});
-      
       // Cargar logo desde la config del tenant
       fetch(`/api/tenant/config?t=${Date.now()}`)
         .then(r => r.json())
@@ -36,7 +48,7 @@ export default function Sidebar() {
         })
         .catch(() => {});
     }
-  }, []);
+  }, [propUser]);
 
   const handleLogout = async () => {
     localStorage.removeItem("token");
@@ -103,6 +115,40 @@ export default function Sidebar() {
       href: "/dashboard/mapa",
       adminOnly: false,
       icon: <span style={{ fontSize: "18px" }}>👥</span>,
+    },
+    {
+      label: "WhatsApp",
+      href: "/dashboard/whatsapp",
+      adminOnly: false,
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="9" y1="11" x2="15" y2="11" />
+        </svg>
+      ),
+    },
+    {
+      label: "SMS",
+      href: "/dashboard/sms",
+      adminOnly: false,
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+      ),
+    },
+    {
+      label: "Votaciones",
+      href: "/dashboard/votaciones",
+      adminOnly: false,
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+      ),
     },
   ];
 

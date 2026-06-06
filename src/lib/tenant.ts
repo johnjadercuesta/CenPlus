@@ -48,6 +48,23 @@ export function getTenantFromRequest(req: NextRequest | { headers?: any; cookies
     }
   }
 
+  // 4. Check Authorization header (JWT token)
+  if (headers && typeof headers.get === 'function') {
+    const auth = headers.get('authorization');
+    if (auth && auth.startsWith('Bearer ')) {
+      try {
+        const token = auth.slice(7);
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        if (payload && payload.tenant) {
+          const s = sanitizeTenantValue(payload.tenant);
+          if (s) return s;
+        }
+      } catch {
+        // Ignore token parse errors
+      }
+    }
+  }
+
   return null;
 }
 
