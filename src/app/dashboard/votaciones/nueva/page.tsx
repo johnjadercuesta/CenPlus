@@ -28,6 +28,24 @@ export default function NuevaVotacionPage() {
   const [fechaFin, setFechaFin] = useState("");
   const [anonima, setAnonima] = useState(true);
 
+  // Dimensions state
+  const DIMENSIONES_OPTS = [
+    { value: "sexo", label: "Sexo" },
+    { value: "edad_rango", label: "Edad" },
+    { value: "zona", label: "Zona (Urbana/Rural)" },
+    { value: "comuna", label: "Comuna / Corregimiento" },
+    { value: "barrio", label: "Barrio / Vereda" },
+    { value: "nivel_estudios", label: "Nivel de Estudios" },
+    { value: "regimen_salud", label: "Régimen de Salud" },
+    { value: "es_lider", label: "Líder" },
+    { value: "ocupacion", label: "Ocupación" },
+  ];
+  const [dimensiones, setDimensiones] = useState<string[]>([]);
+
+  const toggleDimension = (val: string) => {
+    setDimensiones(prev => prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val]);
+  };
+
   // Questions state
   const [preguntas, setPreguntas] = useState<PreguntaNueva[]>([
     { texto: "", tipo: "seleccion_unica", opciones: ["Opción 1", "Opción 2"], obligatoria: true }
@@ -139,6 +157,7 @@ export default function NuevaVotacionPage() {
         limite_respuestas: limiteRespuestas,
         visibilidad_resultados: visibilidadResultados,
         anonima,
+        dimensiones,
         fecha_inicio: fechaInicio || null,
         fecha_fin: fechaFin || null,
         preguntas: preguntas.map((q) => ({
@@ -331,6 +350,26 @@ export default function NuevaVotacionPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Análisis y Segmentación</label>
+                <p className="text-xs text-slate-400 mb-3">Selecciona las dimensiones demográficas disponibles para desglosar los resultados en los gráficos.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {DIMENSIONES_OPTS.map(d => (
+                    <label key={d.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={dimensiones.includes(d.value)}
+                        onChange={() => toggleDimension(d.value)}
+                        className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-xs font-medium text-slate-700">{d.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Fecha de Apertura (Opcional)</label>
                 <input

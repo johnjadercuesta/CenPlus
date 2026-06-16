@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No se pudo identificar la organización para aplicar la marca." }, { status: 403 });
     }
 
-    const { primary_color, secondary_color, logo_url, font_family } = await request.json();
+    const { primary_color, secondary_color, logo_url, font_family, config } = await request.json();
 
     // 2. Validar colores (formato hex)
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
@@ -44,15 +44,16 @@ export async function POST(request: NextRequest) {
 
     // 4. Actualizar o Insertar configuración
     await pool.query(
-      `INSERT INTO public.tenants_config (tenant, primary_color, secondary_color, logo_url, font_family, updated_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())
+      `INSERT INTO public.tenants_config (tenant, primary_color, secondary_color, logo_url, font_family, config, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
        ON CONFLICT (tenant) DO UPDATE SET 
          primary_color = EXCLUDED.primary_color,
          secondary_color = EXCLUDED.secondary_color,
          logo_url = EXCLUDED.logo_url,
          font_family = EXCLUDED.font_family,
+         config = EXCLUDED.config,
          updated_at = NOW()`,
-      [tenant, primary_color || '#162749', secondary_color || '#6366f1', logo_url || null, finalFont]
+      [tenant, primary_color || '#162749', secondary_color || '#6366f1', logo_url || null, finalFont, config || '{}']
     );
 
     return NextResponse.json({ success: true, message: "Configuración de marca actualizada." });

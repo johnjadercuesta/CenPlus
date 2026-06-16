@@ -12,6 +12,13 @@ export default function ConfiguracionPage() {
   const [comunaFilterId, setComunaFilterId] = useState<string>("");
 
   const [primaryColor, setPrimaryColor] = useState("#3b82f6");
+  const [secondaryColor, setSecondaryColor] = useState("#6366f1");
+  const [surfaceBg, setSurfaceBg] = useState("#f8fafc");
+  const [cardBg, setCardBg] = useState("#ffffff");
+  const [borderColor, setBorderColor] = useState("#e2e8f0");
+  const [textPrimary, setTextPrimary] = useState("#0f172a");
+  const [textSecondary, setTextSecondary] = useState("#475569");
+  const [borderRadius, setBorderRadius] = useState("8");
   const [logoUrl, setLogoUrl] = useState("");
   const [fontFamily, setFontFamily] = useState("Inter");
   const [metaGlobal, setMetaGlobal] = useState("1000");
@@ -77,21 +84,42 @@ export default function ConfiguracionPage() {
     setPrimaryColor('#162749');
   };
 
+  const applyThemeVars = (cfg: any) => {
+    const doc = document.documentElement;
+    if (cfg.primary_color) {
+      doc.style.setProperty('--brand-accent', cfg.primary_color);
+      doc.style.setProperty('--brand', cfg.primary_color);
+      doc.style.setProperty('--primary-glow', `${cfg.primary_color}33`);
+    }
+    if (cfg.secondary_color) doc.style.setProperty('--secondary', cfg.secondary_color);
+    if (cfg.config?.surface_bg) doc.style.setProperty('--surface', cfg.config.surface_bg);
+    if (cfg.config?.card_bg) doc.style.setProperty('--card', cfg.config.card_bg);
+    if (cfg.config?.border_color) doc.style.setProperty('--border', cfg.config.border_color);
+    if (cfg.config?.text_primary) doc.style.setProperty('--text-primary', cfg.config.text_primary);
+    if (cfg.config?.text_secondary) doc.style.setProperty('--text-secondary', cfg.config.text_secondary);
+    if (cfg.config?.border_radius) {
+      doc.style.setProperty('--radius', `${cfg.config.border_radius}px`);
+    }
+  };
+
   const loadThemeConfig = async () => {
     try {
       const res = await fetch(`/api/tenant/config?t=${Date.now()}`);
       const data = await res.json();
-      if (data.primary_color) {
-        setPrimaryColor(data.primary_color);
-        document.documentElement.style.setProperty('--brand-accent', data.primary_color);
+      if (data.primary_color) setPrimaryColor(data.primary_color);
+      if (data.secondary_color) setSecondaryColor(data.secondary_color);
+      if (data.font_family) setFontFamily(data.font_family);
+      if (data.logo_url) setLogoUrl(data.logo_url);
+      if (data.config) {
+        if (data.config.surface_bg) setSurfaceBg(data.config.surface_bg);
+        if (data.config.card_bg) setCardBg(data.config.card_bg);
+        if (data.config.border_color) setBorderColor(data.config.border_color);
+        if (data.config.text_primary) setTextPrimary(data.config.text_primary);
+        if (data.config.text_secondary) setTextSecondary(data.config.text_secondary);
+        if (data.config.border_radius) setBorderRadius(String(data.config.border_radius));
       }
-      if (data.font_family) {
-        setFontFamily(data.font_family);
-      }
-      if (data.logo_url) {
-        setLogoUrl(data.logo_url);
-      }
-      
+      applyThemeVars(data);
+
       const statsRes = await fetch("/api/stats", { headers: authHeadersWithJson() });
       const statsData = await statsRes.json();
       if (statsData.meta) setMetaGlobal(String(statsData.meta));
@@ -121,13 +149,23 @@ export default function ConfiguracionPage() {
     setSaving(true);
     setMessage(null);
     try {
+      const styleConfig = {
+        surface_bg: surfaceBg,
+        card_bg: cardBg,
+        border_color: borderColor,
+        text_primary: textPrimary,
+        text_secondary: textSecondary,
+        border_radius: parseInt(borderRadius) || 8,
+      };
       const res = await fetch("/api/tenant/config/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           primary_color: primaryColor,
+          secondary_color: secondaryColor,
           logo_url: logoUrl,
           font_family: fontFamily,
+          config: styleConfig,
         }),
       });
 
@@ -135,7 +173,11 @@ export default function ConfiguracionPage() {
 
       if (res.ok) {
         setMessage({ type: "success", text: "Marca actualizada correctamente. Aplicando cambios..." });
-        document.documentElement.style.setProperty('--brand-accent', primaryColor);
+        applyThemeVars({
+          primary_color: primaryColor,
+          secondary_color: secondaryColor,
+          config: styleConfig,
+        });
         setTimeout(() => {
           window.location.href = window.location.pathname + "?refresh=" + Date.now();
         }, 1500);
@@ -496,34 +538,122 @@ export default function ConfiguracionPage() {
         )}
 
         {activeTab === "marca" && (
-          <div className="card" style={{ background: "white", padding: "32px", borderRadius: "12px", border: "1px solid #e2e8f0", maxWidth: "800px" }}>
+          <div className="card" style={{ background: cardBg, padding: "32px", borderRadius: `${borderRadius}px`, border: `1px solid ${borderColor}`, maxWidth: "900px" }}>
             <form onSubmit={handleSaveBranding}>
-              <div className="config-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", marginBottom: "32px" }}>
+              <h3 style={{ margin: "0 0 24px", color: textPrimary, fontSize: "18px", fontWeight: 700 }}>Colores Principales</h3>
+              <div className="config-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Color de la Aplicación</label>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: textPrimary }}>Color Primario</label>
                   <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
                     <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
-                    <input type="text" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ flex: 1, padding: "8px", border: "1px solid #ccc" }} />
+                    <input type="text" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} style={{ flex: 1, padding: "8px", border: `1px solid ${borderColor}`, borderRadius: `${borderRadius}px`, color: textPrimary }} />
                   </div>
-                  <button type="button" onClick={handleResetColor} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: "13px", padding: 0, textDecoration: "underline" }}>Restablecer color original</button>
+                  <button type="button" onClick={handleResetColor} style={{ background: "none", border: "none", color: primaryColor, cursor: "pointer", fontSize: "13px", padding: 0, textDecoration: "underline" }}>Restablecer color original</button>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Logo Corporativo</label>
-                  <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ marginBottom: "12px" }} />
-                  <div style={{ padding: "16px", border: "2px dashed #e2e8f0", borderRadius: "8px", textAlign: "center" }}>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: textPrimary }}>Color Secundario</label>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <input type="color" value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
+                    <input type="text" value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)} style={{ flex: 1, padding: "8px", border: `1px solid ${borderColor}`, borderRadius: `${borderRadius}px`, color: textPrimary }} />
+                  </div>
+                </div>
+              </div>
+
+              <h3 style={{ margin: "0 0 24px", color: textPrimary, fontSize: "18px", fontWeight: 700 }}>Fondos</h3>
+              <div className="config-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: textPrimary }}>Fondo de Superficie</label>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <input type="color" value={surfaceBg} onChange={e => setSurfaceBg(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
+                    <input type="text" value={surfaceBg} onChange={e => setSurfaceBg(e.target.value)} style={{ flex: 1, padding: "8px", border: `1px solid ${borderColor}`, borderRadius: `${borderRadius}px`, color: textPrimary }} />
+                  </div>
+                  <div style={{ marginTop: 8, padding: "8px 12px", background: surfaceBg, borderRadius: "6px", border: `1px solid ${borderColor}` }}>
+                    <span style={{ fontSize: 12, color: textSecondary }}>Vista previa del fondo</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: textPrimary }}>Fondo de Tarjetas</label>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <input type="color" value={cardBg} onChange={e => setCardBg(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
+                    <input type="text" value={cardBg} onChange={e => setCardBg(e.target.value)} style={{ flex: 1, padding: "8px", border: `1px solid ${borderColor}`, borderRadius: `${borderRadius}px`, color: textPrimary }} />
+                  </div>
+                  <div style={{ marginTop: 8, padding: "8px 12px", background: cardBg, borderRadius: "6px", border: `1px solid ${borderColor}` }}>
+                    <span style={{ fontSize: 12, color: textSecondary }}>Vista previa de tarjeta</span>
+                  </div>
+                </div>
+              </div>
+
+              <h3 style={{ margin: "0 0 24px", color: textPrimary, fontSize: "18px", fontWeight: 700 }}>Textos</h3>
+              <div className="config-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: textPrimary }}>Color de Texto Principal</label>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <input type="color" value={textPrimary} onChange={e => setTextPrimary(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
+                    <input type="text" value={textPrimary} onChange={e => setTextPrimary(e.target.value)} style={{ flex: 1, padding: "8px", border: `1px solid ${borderColor}`, borderRadius: `${borderRadius}px`, color: textPrimary }} />
+                  </div>
+                  <div style={{ marginTop: 8, padding: "8px 12px", background: surfaceBg, borderRadius: "6px", border: `1px solid ${borderColor}`, color: textPrimary, fontSize: 14, fontWeight: 600 }}>
+                    Texto de ejemplo
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: textPrimary }}>Color de Texto Secundario</label>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <input type="color" value={textSecondary} onChange={e => setTextSecondary(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
+                    <input type="text" value={textSecondary} onChange={e => setTextSecondary(e.target.value)} style={{ flex: 1, padding: "8px", border: `1px solid ${borderColor}`, borderRadius: `${borderRadius}px`, color: textPrimary }} />
+                  </div>
+                  <div style={{ marginTop: 8, padding: "8px 12px", background: surfaceBg, borderRadius: "6px", border: `1px solid ${borderColor}`, color: textSecondary, fontSize: 13 }}>
+                    Texto secundario de ejemplo
+                  </div>
+                </div>
+              </div>
+
+              <h3 style={{ margin: "0 0 24px", color: textPrimary, fontSize: "18px", fontWeight: 700 }}>Bordes</h3>
+              <div className="config-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: textPrimary }}>Color de Bordes</label>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <input type="color" value={borderColor} onChange={e => setBorderColor(e.target.value)} style={{ width: "50px", height: "50px", border: "none", cursor: "pointer" }} />
+                    <input type="text" value={borderColor} onChange={e => setBorderColor(e.target.value)} style={{ flex: 1, padding: "8px", border: `1px solid ${borderColor}`, borderRadius: `${borderRadius}px`, color: textPrimary }} />
+                  </div>
+                  <div style={{ marginTop: 8, padding: "8px 12px", background: cardBg, borderRadius: "6px", border: `2px solid ${borderColor}` }}>
+                    <span style={{ fontSize: 12, color: textSecondary }}>Vista previa de borde</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px", color: textPrimary }}>Radio de Bordes ({borderRadius}px)</label>
+                  <input type="range" min="0" max="24" value={borderRadius} onChange={e => setBorderRadius(e.target.value)} style={{ width: "100%" }} />
+                  <div style={{ display: "flex", gap: "8px", marginTop: 8 }}>
+                    {[0, 16, 24].map(v => (
+                      <button key={v} type="button" onClick={() => setBorderRadius(String(v))} style={{
+                        padding: "4px 12px", fontSize: 12, border: `1px solid ${borderColor}`,
+                        borderRadius: `${borderRadius}px`, background: parseInt(borderRadius) === v ? primaryColor : "transparent",
+                        color: parseInt(borderRadius) === v ? "#fff" : textPrimary, cursor: "pointer",
+                      }}>{v}px</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <h3 style={{ margin: "0 0 24px", color: textPrimary, fontSize: "18px", fontWeight: 700 }}>Logo Corporativo</h3>
+              <div style={{ marginBottom: "32px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                  <div>
+                    <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ marginBottom: "12px" }} />
+                  </div>
+                  <div style={{ padding: "16px", border: `2px dashed ${borderColor}`, borderRadius: `${borderRadius}px`, textAlign: "center" }}>
                     {logoUrl ? <img src={logoUrl} alt="Logo" style={{ maxHeight: "80px", maxWidth: "100%" }} /> : <span style={{ color: "#94a3b8" }}>Sin logo</span>}
                   </div>
                 </div>
               </div>
 
+              <h3 style={{ margin: "0 0 24px", color: textPrimary, fontSize: "18px", fontWeight: 700 }}>Tipo de Letra</h3>
               <div style={{ marginBottom: "32px" }}>
-                <label style={{ display: "block", fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>Tipo de Letra</label>
                 <select
                   value={fontFamily}
                   onChange={e => setFontFamily(e.target.value)}
                   style={{
-                    width: "100%", padding: "10px 14px", border: "1px solid #d1d5db",
-                    borderRadius: "8px", fontSize: "14px", background: "white", cursor: "pointer",
+                    width: "100%", padding: "10px 14px", border: `1px solid ${borderColor}`,
+                    borderRadius: `${borderRadius}px`, fontSize: "14px", background: cardBg, color: textPrimary, cursor: "pointer",
                   }}
                 >
                   <option value="Inter">Inter</option>
@@ -539,29 +669,30 @@ export default function ConfiguracionPage() {
                 </select>
 
                 <div style={{
-                  marginTop: 16, padding: 20, borderRadius: 10,
-                  background: "#f8fafc", border: "1px solid #e2e8f0",
+                  marginTop: 16, padding: 20,
+                  background: surfaceBg, border: `1px solid ${borderColor}`,
+                  borderRadius: `${borderRadius}px`,
                   fontFamily: fontFamily === 'Inter' ? "'Inter', sans-serif" : `'${fontFamily}', sans-serif`,
-                  fontSize: 18, lineHeight: 1.8, color: "#0f172a",
+                  fontSize: 18, lineHeight: 1.8, color: textPrimary,
                 }}>
-                  <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 4 }}>
+                  <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 4, color: textPrimary }}>
                     {fontFamily}
                   </div>
-                  <div style={{ color: "#475569", fontSize: 15 }}>
+                  <div style={{ color: textSecondary, fontSize: 15 }}>
                     El veloz murciélago hindú comía feliz cardillo y kiwi. La cigüeña tocaba el saxofón detrás del palenque de paja.
                   </div>
-                  <div style={{ color: "#64748b", fontSize: 13, marginTop: 12, borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+                  <div style={{ color: textSecondary, fontSize: 13, marginTop: 12, borderTop: `1px solid ${borderColor}`, paddingTop: 12 }}>
                     ABCDEFGHIJKLMNOPQRSTUVWXYZ · abcdefghijklmnopqrstuvwxyz · 0123456789
                   </div>
                 </div>
 
-                <p style={{ color: "#94a3b8", fontSize: "12px", marginTop: 6 }}>
+                <p style={{ color: textSecondary, fontSize: "12px", marginTop: 6 }}>
                   Al guardar, el cambio se aplica en toda la aplicación.
                 </p>
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button type="submit" disabled={saving} style={{ background: primaryColor, color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", cursor: "pointer", fontWeight: 700 }}>{saving ? "Guardando..." : "Guardar Personalización"}</button>
+                <button type="submit" disabled={saving} style={{ background: primaryColor, color: "white", border: "none", padding: "12px 24px", borderRadius: `${borderRadius}px`, cursor: "pointer", fontWeight: 700, opacity: saving ? 0.7 : 1 }}>{saving ? "Guardando..." : "Guardar Personalización"}</button>
               </div>
             </form>
           </div>

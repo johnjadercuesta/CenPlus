@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { getTokenFromRequest } from "@/lib/auth";
 import { getTenantFromRequest } from "@/lib/tenant";
 import { getFreshTrends } from "@/lib/scrapers/base";
 
 export async function GET(request: NextRequest) {
   try {
-    const tenant = getTenantFromRequest(request);
+    const token = getTokenFromRequest(request);
+    const tenant = token?.tenant || getTenantFromRequest(request);
     if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+      return NextResponse.json({ data: [] });
     }
 
     const { searchParams } = new URL(request.url);

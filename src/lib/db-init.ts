@@ -353,6 +353,7 @@ export async function ensureVotacionTables() {
             fecha_inicio TIMESTAMP,
             fecha_fin TIMESTAMP,
             creado_por INTEGER,
+            dimensiones TEXT[] DEFAULT '{}',
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
           );
@@ -400,11 +401,31 @@ export async function ensureVotacionTables() {
           CREATE UNIQUE INDEX IF NOT EXISTS idx_vot_resp_user
             ON "${s}".votacion_respuestas (votacion_id, user_id)
             WHERE user_id IS NOT NULL;
+
+          -- Add dimensiones column if it doesn't exist (migration for existing tables)
+          ALTER TABLE "${s}".votaciones ADD COLUMN IF NOT EXISTS dimensiones TEXT[] DEFAULT '{}';
         `);
 
         console.log(`[DB-INIT] Votación tables ready for schema: ${s}`);
       } catch (e: any) {
         console.error(`[DB-INIT] Error creating votacion tables for ${s}:`, e.message);
+      }
+    }
+
+    // Migration: add poligono column to barrios
+    console.log("[DB-INIT] Ensuring barrios poligono column...");
+    const { rows: schemas2 } = await pool.query(
+      "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('public', 'information_schema', 'pg_catalog', 'pg_toast') AND schema_name NOT LIKE 'pg_%'"
+    );
+    for (const schema of schemas2) {
+      const s = schema.schema_name;
+      try {
+        await pool.query(`
+          ALTER TABLE "${s}".barrios ADD COLUMN IF NOT EXISTS poligono TEXT;
+        `);
+        console.log(`[DB-INIT] Barrios poligono column ready for schema: ${s}`);
+      } catch (e: any) {
+        console.error(`[DB-INIT] Error adding poligono to barrios for ${s}:`, e.message);
       }
     }
   } catch (err: any) {

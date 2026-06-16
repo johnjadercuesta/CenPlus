@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       fecha_inicio,
       fecha_fin,
       preguntas = [],
+      dimensiones = [],
     } = body;
 
     if (!titulo?.trim()) {
@@ -86,8 +87,8 @@ export async function POST(request: NextRequest) {
 
     // Insertar encuesta
     const { rows: [encuesta] } = await queryWithTenant(tenant, `
-      INSERT INTO votaciones (titulo, descripcion, tipo, audiencia, visibilidad_resultados, limite_respuestas, anonima, fecha_inicio, fecha_fin, creado_por)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO votaciones (titulo, descripcion, tipo, audiencia, visibilidad_resultados, limite_respuestas, anonima, fecha_inicio, fecha_fin, creado_por, dimensiones)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [
       titulo.trim(),
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
       fecha_inicio || null,
       fecha_fin || null,
       token.userId,
+      Array.isArray(dimensiones) ? dimensiones : [],
     ]);
 
     // Insertar preguntas si vienen en el body

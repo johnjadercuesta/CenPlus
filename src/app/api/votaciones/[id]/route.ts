@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
 import { getTenantFromRequest, queryWithTenant, sanitizeTenantValue } from "@/lib/tenant";
+import { pool } from "@/lib/db";
+
+async function resolveTenantFromVotacionId(id: number): Promise<string | null> {
+  try {
+    const { rows } = await pool.query(
+      "SELECT table_schema FROM information_schema.tables WHERE table_name = 'votaciones' AND table_schema NOT IN ('public', 'information_schema', 'pg_catalog')"
+    );
+    for (const row of rows) {
+      const schema = row.table_schema;
+      const { rows: found } = await pool.query(
+        `SELECT 1 FROM "${schema}".votaciones WHERE id = $1 LIMIT 1`, [id]
+      );
+      if (found.length > 0) return schema;
+    }
+  } catch {}
+  return null;
+}
 
 // GET /api/votaciones/[id] — detalle de una encuesta con preguntas
 export async function GET(
@@ -19,13 +36,18 @@ export async function GET(
       tenant = sanitizeTenantValue(searchParams.get("tenant"));
     }
 
-    if (!tenant) return NextResponse.json({ error: "Tenant no especificado" }, { status: 400 });
-
     const votacionId = parseInt(params.id);
     if (isNaN(votacionId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 });
 
+    if (!tenant) {
+      // Fallback: buscar el tenant automáticamente por el ID de votación
+      tenant = await resolveTenantFromVotacionId(votacionId);
+    }
+
+    if (!tenant) return NextResponse.json({ error: "Tenant no especificado" }, { status: 400 });
+
     const { rows: [encuesta] } = await queryWithTenant(tenant,
-      "SELECT id, titulo, descripcion, estado, tipo, audiencia, visibilidad_resultados, limite_respuestas, anonima, fecha_inicio, fecha_fin, created_at FROM votaciones WHERE id = $1", [votacionId]
+      "SELECT id, titulo, descripcion, estado, tipo, audiencia, visibilidad_resultados, limite_respuestas, anonima, fecha_inicio, fecha_fin, created_at, dimensiones FROM votaciones WHERE id = $1", [votacionId]
     );
     if (!encuesta) return NextResponse.json({ error: "Encuesta no encontrada" }, { status: 404 });
 
@@ -91,7 +113,7 @@ export async function PUT(
       titulo, descripcion, tipo, audiencia,
       visibilidad_resultados, limite_respuestas,
       anonima, fecha_inicio, fecha_fin,
-      preguntas,
+      preguntas, dimensiones,
     } = body;
 
     // Actualizar encuesta
@@ -108,6 +130,7 @@ export async function PUT(
     if (anonima !== undefined) { updates.push(`anonima = $${idx++}`); values.push(anonima); }
     if (fecha_inicio !== undefined) { updates.push(`fecha_inicio = $${idx++}`); values.push(fecha_inicio || null); }
     if (fecha_fin !== undefined) { updates.push(`fecha_fin = $${idx++}`); values.push(fecha_fin || null); }
+    if (dimensiones !== undefined) { updates.push(`dimensiones = $${idx++}`); values.push(Array.isArray(dimensiones) ? dimensiones : []); }
 
     if (updates.length > 0) {
       updates.push(`updated_at = NOW()`);

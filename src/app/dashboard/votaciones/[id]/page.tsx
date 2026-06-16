@@ -32,6 +32,23 @@ export default function EditarVotacionPage() {
   const [fechaFin, setFechaFin] = useState("");
   const [anonima, setAnonima] = useState(true);
   const [estado, setEstado] = useState<"borrador" | "activa" | "cerrada">("borrador");
+  const [dimensiones, setDimensiones] = useState<string[]>([]);
+
+  const DIMENSIONES_OPTS = [
+    { value: "sexo", label: "Sexo" },
+    { value: "edad_rango", label: "Edad" },
+    { value: "zona", label: "Zona (Urbana/Rural)" },
+    { value: "comuna", label: "Comuna / Corregimiento" },
+    { value: "barrio", label: "Barrio / Vereda" },
+    { value: "nivel_estudios", label: "Nivel de Estudios" },
+    { value: "regimen_salud", label: "Régimen de Salud" },
+    { value: "es_lider", label: "Líder" },
+    { value: "ocupacion", label: "Ocupación" },
+  ];
+
+  const toggleDimension = (val: string) => {
+    setDimensiones(prev => prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val]);
+  };
 
   // Questions state
   const [preguntas, setPreguntas] = useState<Pregunta[]>([]);
@@ -56,6 +73,7 @@ export default function EditarVotacionPage() {
           setVisibilidadResultados(enc.visibilidad_resultados || "app_users");
           setAnonima(enc.anonima !== false);
           setEstado(enc.estado || "borrador");
+          setDimensiones(Array.isArray(enc.dimensiones) ? enc.dimensiones : []);
 
           // Formatear fechas para input datetime-local (YYYY-MM-DDTHH:MM)
           if (enc.fecha_inicio) {
@@ -175,6 +193,7 @@ export default function EditarVotacionPage() {
         limite_respuestas: limiteRespuestas,
         visibilidad_resultados: visibilidadResultados,
         anonima,
+        dimensiones,
         fecha_inicio: fechaInicio || null,
         fecha_fin: fechaFin || null,
         preguntas: preguntas.map((q) => ({
@@ -397,6 +416,24 @@ export default function EditarVotacionPage() {
             <label htmlFor="anonima-chk" className="text-sm font-medium text-slate-700 cursor-pointer">
               Encuesta anónima (No asociar respuestas a identidad)
             </label>
+          </div>
+
+          <div className="border-t border-slate-100 pt-6">
+            <h3 className="text-sm font-bold text-slate-700 mb-3">Análisis y Segmentación</h3>
+            <p className="text-xs text-slate-400 mb-3">Selecciona las dimensiones demográficas disponibles para desglosar los resultados en los gráficos.</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {DIMENSIONES_OPTS.map(d => (
+                <label key={d.value} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={dimensiones.includes(d.value)}
+                    onChange={() => toggleDimension(d.value)}
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-medium text-slate-700">{d.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 pt-6">

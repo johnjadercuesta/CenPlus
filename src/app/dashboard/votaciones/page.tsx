@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { authHeaders } from "@/lib/api";
+import { authHeaders, getToken } from "@/lib/api";
 
 interface Votacion {
   id: number;
@@ -18,6 +18,17 @@ interface Votacion {
   total_preguntas: number;
   total_respuestas: number;
   created_at: string;
+}
+
+function getTenantFromToken(): string | null {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.tenant || null;
+  } catch {
+    return null;
+  }
 }
 
 export default function VotacionesListPage() {
@@ -99,7 +110,9 @@ export default function VotacionesListPage() {
 
   const getPublicLink = (id: number) => {
     if (typeof window !== "undefined") {
-      return `${window.location.origin}/v/${id}`;
+      const base = `${window.location.origin}/v/${id}`;
+      const tenant = getTenantFromToken();
+      return tenant ? `${base}?tenant=${tenant}` : base;
     }
     return `/v/${id}`;
   };

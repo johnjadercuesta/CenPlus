@@ -65,6 +65,27 @@ export function getTenantFromRequest(req: NextRequest | { headers?: any; cookies
     }
   }
 
+  // 5. Check URL query parameter (for localhost without subdomain)
+  if (typeof req === 'object' && req !== null && 'nextUrl' in (req as any)) {
+    try {
+      const url = (req as any).nextUrl as URL;
+      const t = url.searchParams.get('tenant');
+      if (t) {
+        const s = sanitizeTenantValue(t);
+        if (s) return s;
+      }
+    } catch {}
+  } else if (typeof req === 'object' && req !== null && 'url' in (req as any)) {
+    try {
+      const url = new URL((req as any).url);
+      const t = url.searchParams.get('tenant');
+      if (t) {
+        const s = sanitizeTenantValue(t);
+        if (s) return s;
+      }
+    } catch {}
+  }
+
   return null;
 }
 

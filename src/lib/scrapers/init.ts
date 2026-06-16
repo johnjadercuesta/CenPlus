@@ -48,9 +48,35 @@ export async function initTrendsScrapedTable() {
       CREATE INDEX IF NOT EXISTS idx_trends_scraped_tenant ON trends_scraped(tenant)
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS global_trends (
+        id SERIAL PRIMARY KEY,
+        topic VARCHAR(255) NOT NULL,
+        platform VARCHAR(50),
+        heat_index DOUBLE PRECISION DEFAULT 0,
+        sentiment_score DOUBLE PRECISION DEFAULT 0,
+        metrics JSONB DEFAULT '{}',
+        ciudad VARCHAR(150),
+        latitude DOUBLE PRECISION,
+        longitude DOUBLE PRECISION,
+        timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        tenant VARCHAR(63)
+      )
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_global_trends_platform ON global_trends(platform)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_global_trends_heat_index ON global_trends(heat_index DESC)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_global_trends_tenant ON global_trends(tenant)
+    `);
+
     return { success: true };
   } catch (err) {
-    console.error("[trends-scraped] Error creating table:", err);
+    console.error("[trends-scraped] Error creating tables:", err);
     return { success: false, error: String(err) };
   }
 }

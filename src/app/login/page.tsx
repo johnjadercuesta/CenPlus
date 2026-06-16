@@ -162,7 +162,7 @@ function LoginForm() {
                 value={identificacion}
                 onChange={(e) => setIdentificacion(e.target.value)}
                 required
-                placeholder="admin@testorg2.com o tu cédula"
+                placeholder="Ingrese su usuario"
                 style={{
                   width: "100%", padding: "12px 16px", border: "1.5px solid #e2e8f0", borderRadius: 10,
                   fontSize: 14, background: "#f8fafc", outline: "none", boxSizing: "border-box"
