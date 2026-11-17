@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
       color,
       comuna_id,
       barrio_id,
-      zona
+      zona,
+      descripcion
     } = await request.json();
 
     if (!nombre) {
@@ -83,8 +84,8 @@ export async function POST(request: NextRequest) {
     }
 
     const sql = `
-      INSERT INTO sectores (nombre, meta, votos_historicos, latitud, longitud, radio, poligono, color, comuna_id, barrio_id, zona) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+      INSERT INTO sectores (nombre, meta, votos_historicos, latitud, longitud, radio, poligono, color, comuna_id, barrio_id, zona, descripcion) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
       RETURNING *
     `;
     const values = [
@@ -98,7 +99,8 @@ export async function POST(request: NextRequest) {
       color || '#3b82f6',
       comuna_id ? parseInt(comuna_id) : null,
       barrio_id ? parseInt(barrio_id) : null,
-      zona || 'urbana'
+      zona || 'urbana',
+      descripcion || null
     ];
     
     const { rows } = await queryWithTenant(tenant, sql, values);

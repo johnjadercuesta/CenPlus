@@ -199,14 +199,14 @@ export async function POST(request: NextRequest) {
         nivel_estudios, ocupacion, regimen_salud, puesto_votacion, 
         problematica_principal, id_comuna, id_barrio, barrio, 
         corregimiento, vereda, es_lider, nombre_lider, lider_id, 
-        latitud, longitud, zona
+        latitud, longitud, zona, territorio_id
       )
       VALUES (
         $1, $2, $3, $4, $5, 
         $6, $7, $8, $9, 
         $10, $11, $12, $13, 
         $14, $15, $16, $17, $18, 
-        $19, $20, $21
+        $19, $20, $21, $22
       )
       RETURNING *
     `;
@@ -224,20 +224,40 @@ export async function POST(request: NextRequest) {
       body.problematica_principal || null,
       body.id_comuna ? parseInt(body.id_comuna) : null,
       body.id_barrio ? parseInt(body.id_barrio) : null,
-      String(body.barrio).trim(),
-      String(body.corregimiento).trim(),
+      String(body.barrio || '').trim(),
+      String(body.corregimiento || '').trim(),
       body.vereda ? String(body.vereda).trim() : null,
       (body.es_lider === true || body.es_lider === "Sí" || body.es_lider === "true" || body.es_lider === 1) ? 1 : 0,
       body.nombre_lider ? String(body.nombre_lider).trim() : null,
       liderId,
       lat,
       lng,
-      body.zona || 'urbana'
+      body.zona || 'urbana',
+      body.territorio_id ? parseInt(body.territorio_id) : null
     ];
 
     const { rows } = await run(sql, values);
     const data = rows[0];
     data.es_lider = data.es_lider === 1;
+
+    // Registrar apoyos electorales a candidatos si vienen en el payload
+    if (body.apoyos && Array.isArray(body.apoyos) && body.apoyos.length > 0) {
+      try {
+        for (const candId of body.apoyos) {
+          const cId = parseInt(candId);
+          if (!isNaN(cId)) {
+            await run(
+              `INSERT INTO apoyos_electorales (ciudadano_id, candidato_id, lider_id, nivel_compromiso)
+               VALUES ($1, $2, $3, $4)
+               ON CONFLICT (ciudadano_id, candidato_id) DO NOTHING`,
+              [data.id_unico, cId, liderId, body.nivel_compromiso || 'seguro']
+            );
+          }
+        }
+      } catch (apoyoErr: any) {
+        console.warn("[ciudadanos POST] Error registrando apoyos:", apoyoErr.message);
+      }
+    }
 
     const { recordLog } = await import("@/lib/audit");
     if (tenant) {

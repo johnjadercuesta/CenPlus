@@ -30,6 +30,8 @@ export default function FormularioCiudadano() {
     barrio: "",
     corregimiento: "",
     vereda: "",
+    id_sub_barrio: "",
+    territorio_id: null as number | null,
     es_lider: "No",
     nombre_lider: "",
     latitud: null as number | null,
@@ -49,8 +51,11 @@ export default function FormularioCiudadano() {
   // Listas de referencia dinámicas
   const [comunas, setComunas] = useState<Comuna[]>([]);
   const [barrios, setBarrios] = useState<Barrio[]>([]);
+  const [subBarrios, setSubBarrios] = useState<{ id: number; nombre: string }[]>([]);
   const [puestos, setPuestos] = useState<PuestoVotacion[]>([]);
   const [problematicas, setProblematicas] = useState<ProblematicaSocial[]>([]);
+  const [candidatos, setCandidatos] = useState<any[]>([]);
+  const [selectedCandidatos, setSelectedCandidatos] = useState<number[]>([]);
 
   // Obtener GPS automáticamente al cargar el formulario
   useEffect(() => {
@@ -71,6 +76,7 @@ export default function FormularioCiudadano() {
     const h = authHeadersWithJson();
     fetch("/api/territorio/puestos", { headers: h }).then(r => r.json()).then(res => setPuestos(res.data || [])).catch(() => {});
     fetch("/api/territorio/problematicas", { headers: h }).then(r => r.json()).then(res => setProblematicas(res.data || [])).catch(() => {});
+    fetch("/api/candidatos", { headers: h }).then(r => r.json()).then(res => setCandidatos(res.data || [])).catch(() => {});
 
     const token = getToken();
     if (!token) return;
@@ -110,11 +116,14 @@ export default function FormularioCiudadano() {
             zona: value, 
             id_comuna: "", 
             id_barrio: "", 
+            id_sub_barrio: "",
+            territorio_id: null,
             barrio: "", 
             corregimiento: "", 
             vereda: "" 
         }));
         setBarrios([]);
+        setSubBarrios([]);
     } else if (name === "id_comuna") {
       const selectedObj = comunas.find(c => String(c.id) === value);
       setForm(prev => ({ 
@@ -122,13 +131,25 @@ export default function FormularioCiudadano() {
         id_comuna: value, 
         corregimiento: selectedObj?.nombre || "",
         id_barrio: "", 
+        id_sub_barrio: "",
+        territorio_id: value ? parseInt(value) : null,
         barrio: "",
         vereda: ""
       }));
+      setSubBarrios([]);
       if (value) {
-        fetch(`/api/territorio/barrios?comunaId=${value}`, { headers: authHeadersWithJson() })
+        // Consultar primero divisiones jerárquicas; fallback a barrios
+        fetch(`/api/territorio/divisiones?padre_id=${value}`, { headers: authHeadersWithJson() })
           .then(r => r.json())
-          .then(res => setBarrios(res.data || []))
+          .then(res => {
+            if (res.data && res.data.length > 0) {
+              setBarrios(res.data);
+            } else {
+              return fetch(`/api/territorio/barrios?comunaId=${value}`, { headers: authHeadersWithJson() })
+                .then(r => r.json())
+                .then(bRes => setBarrios(bRes.data || []));
+            }
+          })
           .catch(() => {});
       } else {
         setBarrios([]);
@@ -138,8 +159,30 @@ export default function FormularioCiudadano() {
       setForm(prev => ({ 
         ...prev, 
         id_barrio: value, 
+        id_sub_barrio: "",
+        territorio_id: value ? parseInt(value) : null,
         barrio: selectedBarrio?.nombre || "",
         vereda: selectedBarrio?.nombre || ""
+      }));
+      setSubBarrios([]);
+      // Si estamos en zona rural, verificar si esta vereda tiene barrios/sectores internos
+      if (form.zona === "rural" && value) {
+        fetch(`/api/territorio/divisiones?padre_id=${value}`, { headers: authHeadersWithJson() })
+          .then(r => r.json())
+          .then(res => {
+            if (res.data && res.data.length > 0) {
+              setSubBarrios(res.data);
+            }
+          })
+          .catch(() => {});
+      }
+    } else if (name === "id_sub_barrio") {
+      const selectedSub = subBarrios.find(sb => String(sb.id) === value);
+      setForm(prev => ({
+        ...prev,
+        id_sub_barrio: value,
+        territorio_id: value ? parseInt(value) : (prev.id_barrio ? parseInt(prev.id_barrio) : null),
+        barrio: selectedSub ? `${prev.vereda} - ${selectedSub.nombre}` : prev.barrio
       }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
@@ -164,6 +207,7 @@ export default function FormularioCiudadano() {
         ...form,
         edad: form.edad ? parseInt(form.edad) : null,
         es_lider: form.es_lider === "Sí",
+        apoyos: selectedCandidatos,
         timestamp: new Date().toISOString(),
       };
 
@@ -195,6 +239,26 @@ export default function FormularioCiudadano() {
     }
   };
 
+  const toggleCandidato = (cand: any) => {
+    setSelectedCandidatos(prev => {
+      const existe = prev.includes(cand.id);
+      if (existe) {
+        return prev.filter(id => id !== cand.id);
+      } else {
+        // En uninominales (presidencia, gobernación, alcaldía) reemplazamos el del mismo tipo
+        const uninominales = ['presidencia', 'gobernacion', 'alcaldia'];
+        if (uninominales.includes(cand.corporacion)) {
+          const otrosDeMismaCorp = candidatos
+            .filter(c => c.corporacion === cand.corporacion && c.id !== cand.id)
+            .map(c => c.id);
+          const filtrados = prev.filter(id => !otrosDeMismaCorp.includes(id));
+          return [...filtrados, cand.id];
+        }
+        return [...prev, cand.id];
+      }
+    });
+  };
+
   const handleResetForm = () => {
     setForm({
       id_unico: "",
@@ -213,12 +277,16 @@ export default function FormularioCiudadano() {
       barrio: "",
       corregimiento: "",
       vereda: "",
+      id_sub_barrio: "",
+      territorio_id: null,
       es_lider: "No",
       nombre_lider: "",
       latitud: form.latitud,
       longitud: form.longitud,
     });
     setBarrios([]);
+    setSubBarrios([]);
+    setSelectedCandidatos([]);
   };
 
   return (
@@ -337,6 +405,26 @@ export default function FormularioCiudadano() {
             ))}
           </select>
         </FormField>
+
+        {/* Sector o Barrio dentro de la Vereda (si la vereda tiene divisiones internas) */}
+        {form.zona === 'rural' && subBarrios.length > 0 && (
+          <div style={{ gridColumn: "1 / -1", animation: "fadeIn 0.3s ease" }}>
+            <FormField label="🏘️ Barrio / Sector interno de la Vereda (Opcional)">
+              <select
+                name="id_sub_barrio"
+                value={form.id_sub_barrio}
+                onChange={handleChange}
+                className="input"
+                style={{ borderColor: "#6366f1", background: "#f8fafc" }}
+              >
+                <option value="">Toda la vereda (sin sector específico)</option>
+                {subBarrios.map((sb) => (
+                  <option key={sb.id} value={sb.id}>{sb.nombre}</option>
+                ))}
+              </select>
+            </FormField>
+          </div>
+        )}
       </div>
 
       {/* SECTION: Electoral y Social */}
@@ -360,6 +448,66 @@ export default function FormularioCiudadano() {
           </select>
         </FormField>
       </div>
+
+      {/* SECTION: Fórmula Política y Apoyos Electorales */}
+      {candidatos.length > 0 && (
+        <div style={{ marginBottom: 28, animation: "fadeIn 0.3s ease" }}>
+          <SectionHeader icon="🗳️" title="Fórmula y Apoyos Políticos" subtitle="Selecciona los candidatos respaldados por el simpatizante" />
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {Array.from(new Set(candidatos.map(c => c.corporacion))).map((corp: any) => {
+              const candsDeCorp = candidatos.filter(c => c.corporacion === corp);
+              return (
+                <div key={corp} style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", textTransform: "uppercase", marginBottom: 8 }}>
+                    {corp === 'presidencia' ? '🇨🇴 Presidencia' :
+                     corp === 'senado' ? '🏛️ Senado de la República' :
+                     corp === 'camara' ? '🏛️ Cámara de Representantes' :
+                     corp === 'gobernacion' ? '🏢 Gobernación' :
+                     corp === 'asamblea' ? '📑 Asamblea Departamental' :
+                     corp === 'alcaldia' ? '🏛️ Alcaldía Municipal' :
+                     corp === 'concejo' ? '👥 Concejo Municipal' : corp}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {candsDeCorp.map(cand => {
+                      const isSelected = selectedCandidatos.includes(cand.id);
+                      return (
+                        <button
+                          key={cand.id}
+                          type="button"
+                          onClick={() => toggleCandidato(cand)}
+                          style={{
+                            padding: "8px 14px",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                            border: `1.5px solid ${isSelected ? "#4f46e5" : "#cbd5e1"}`,
+                            background: isSelected ? "#eef2ff" : "white",
+                            color: isSelected ? "#4338ca" : "#334155",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6
+                          }}
+                        >
+                          <span>{isSelected ? "✓" : "+"}</span>
+                          <span>{cand.nombre}</span>
+                          {cand.numero_tarjeton && (
+                            <span style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: isSelected ? "#c7d2fe" : "#f1f5f9", color: "#312e81" }}>
+                              #{cand.numero_tarjeton}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: "100%", padding: "16px", borderRadius: 12, fontWeight: 700 }}>
         {loading ? "Procesando..." : "Finalizar Registro"}

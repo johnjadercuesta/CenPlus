@@ -84,6 +84,12 @@ export default function Sidebar({ user: propUser }: { user?: any }) {
       ),
     },
     {
+      label: "Mi Panel de Líder",
+      href: "/dashboard/mi-panel",
+      adminOnly: false,
+      icon: <span style={{ fontSize: "18px" }}>📱</span>,
+    },
+    {
       label: "Formulario",
       href: "/dashboard/formulario",
       adminOnly: false,
@@ -115,6 +121,18 @@ export default function Sidebar({ user: propUser }: { user?: any }) {
       href: "/dashboard/mapa",
       adminOnly: false,
       icon: <span style={{ fontSize: "18px" }}>👥</span>,
+    },
+    {
+      label: "Ámbito Electoral",
+      href: "/dashboard/escala",
+      adminOnly: false,
+      icon: <span style={{ fontSize: "18px" }}>🇨🇴</span>,
+    },
+    {
+      label: "Operación Día D",
+      href: "/dashboard/dia-d",
+      adminOnly: false,
+      icon: <span style={{ fontSize: "18px" }}>🗳️</span>,
     },
     {
       label: "WhatsApp",
@@ -187,6 +205,12 @@ export default function Sidebar({ user: propUser }: { user?: any }) {
           <circle cx="12" cy="12" r="2" />
         </svg>
       ),
+    },
+    {
+      label: "Candidaturas",
+      href: "/dashboard/candidatos",
+      adminOnly: false,
+      icon: <span style={{ fontSize: "18px" }}>🗳️</span>,
     },
     {
       label: "Usuarios",

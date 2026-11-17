@@ -131,6 +131,7 @@ async function initTenant() {
         color VARCHAR(50) NOT NULL DEFAULT '#3b82f6',
         activo INTEGER NOT NULL DEFAULT 1,
         descripcion TEXT,
+        zona VARCHAR(50) DEFAULT 'urbana',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);

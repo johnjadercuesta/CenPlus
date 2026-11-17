@@ -153,9 +153,9 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
       }).setView([4.5709, -74.2973], 6);
 
       // Better tile layer
-      winL.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-        subdomains: "abcd",
+      winL.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: "abc",
         maxZoom: 20,
       }).addTo(map);
 

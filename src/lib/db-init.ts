@@ -276,6 +276,12 @@ export async function ensureIdentificacionColumn() {
     // Create voting module tables in each tenant schema
     await ensureVotacionTables();
 
+    // Create hierarchical territorial division and multi-candidate tables
+    await ensureDivisionTerritorialTables();
+
+    // Create Dia D witness and E-14 transmission tables
+    await ensureDiaDTables();
+
     migrationComplete = true;
     console.log("[DB-INIT] Migration completed successfully");
     return { success: true, message: "Migration completed", schemas: schemas.length };
@@ -305,6 +311,15 @@ export async function ensureTipoColumns() {
             END IF;
             IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='${schemaName}' AND table_name='barrios' AND column_name='tipo') THEN
               ALTER TABLE "${schemaName}".barrios ADD COLUMN tipo VARCHAR(20) DEFAULT 'barrio';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='${schemaName}' AND table_name='sectores' AND column_name='zona') THEN
+              ALTER TABLE "${schemaName}".sectores ADD COLUMN zona VARCHAR(50) DEFAULT 'urbana';
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='${schemaName}' AND table_name='sectores' AND column_name='descripcion') THEN
+              ALTER TABLE "${schemaName}".sectores ADD COLUMN descripcion TEXT;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='${schemaName}' AND table_name='ciudadanos' AND column_name='zona') THEN
+              ALTER TABLE "${schemaName}".ciudadanos ADD COLUMN zona VARCHAR(50) DEFAULT 'urbana';
             END IF;
             IF NOT EXISTS (SELECT 1 FROM information_schema.constraint_column_usage WHERE table_schema='${schemaName}' AND table_name='puestos_votacion' AND constraint_name='puestos_votacion_nombre_key') THEN
               ALTER TABLE "${schemaName}".puestos_votacion ADD CONSTRAINT puestos_votacion_nombre_key UNIQUE (nombre);
@@ -430,5 +445,153 @@ export async function ensureVotacionTables() {
     }
   } catch (err: any) {
     console.error("[DB-INIT] Error ensuring votacion tables:", err?.message);
+  }
+}
+
+export async function ensureDivisionTerritorialTables() {
+  try {
+    const { rows: schemas } = await pool.query(`
+      SELECT schema_name FROM information_schema.schemata
+      WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'public')
+        AND schema_name NOT LIKE 'pg_%'
+    `);
+
+    for (const schema of schemas) {
+      const s = schema.schema_name;
+      try {
+        // 1. Tabla de división territorial jerárquica
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS "${s}".division_territorial (
+            id SERIAL PRIMARY KEY,
+            nombre VARCHAR(255) NOT NULL,
+            tipo VARCHAR(30) NOT NULL,
+            zona VARCHAR(20) NOT NULL DEFAULT 'urbana',
+            padre_id INT REFERENCES "${s}".division_territorial(id) ON DELETE CASCADE,
+            codigo_divipola VARCHAR(20),
+            latitud DOUBLE PRECISION,
+            longitud DOUBLE PRECISION,
+            poligono TEXT,
+            activo INT DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_div_territorial_padre_${s} ON "${s}".division_territorial(padre_id);
+          CREATE INDEX IF NOT EXISTS idx_div_territorial_tipo_${s} ON "${s}".division_territorial(tipo);
+          CREATE INDEX IF NOT EXISTS idx_div_territorial_zona_${s} ON "${s}".division_territorial(zona);
+
+          -- Columnas en ciudadanos y sectores
+          ALTER TABLE "${s}".ciudadanos ADD COLUMN IF NOT EXISTS territorio_id INT REFERENCES "${s}".division_territorial(id) ON DELETE SET NULL;
+          ALTER TABLE "${s}".ciudadanos ADD COLUMN IF NOT EXISTS corregimiento VARCHAR(255);
+          ALTER TABLE "${s}".ciudadanos ADD COLUMN IF NOT EXISTS vereda VARCHAR(255);
+          ALTER TABLE "${s}".sectores ADD COLUMN IF NOT EXISTS territorio_id INT REFERENCES "${s}".division_territorial(id) ON DELETE SET NULL;
+
+          -- 2. Tablas multinivel de corporaciones y apoyos electorales
+          CREATE TABLE IF NOT EXISTS "${s}".corporaciones_candidatos (
+            id SERIAL PRIMARY KEY,
+            nombre VARCHAR(255) NOT NULL,
+            corporacion VARCHAR(50) NOT NULL,
+            numero_tarjeton VARCHAR(10),
+            partido VARCHAR(150),
+            foto_url TEXT,
+            activo INT DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS "${s}".apoyos_electorales (
+            id SERIAL PRIMARY KEY,
+            ciudadano_id VARCHAR(50) NOT NULL,
+            candidato_id INT NOT NULL REFERENCES "${s}".corporaciones_candidatos(id) ON DELETE CASCADE,
+            lider_id INT,
+            nivel_compromiso VARCHAR(20) DEFAULT 'seguro',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(ciudadano_id, candidato_id)
+          );
+        `);
+
+        // 3. Migrar automáticamente de comunas y barrios a division_territorial si está vacía
+        const { rows: countRows } = await pool.query(`SELECT COUNT(*)::int as count FROM "${s}".division_territorial`);
+        if (countRows[0].count === 0) {
+          console.log(`[DB-INIT] Migrating legacy comunas and barrios to division_territorial in ${s}...`);
+          
+          // Migrar comunas
+          const { rows: comRows } = await pool.query(`SELECT * FROM "${s}".comunas ORDER BY id`);
+          for (const com of comRows) {
+            const isRural = com.tipo === 'rural';
+            const tipo = isRural ? 'corregimiento' : 'comuna';
+            const zona = isRural ? 'rural' : 'urbana';
+            
+            const { rows: insertedCom } = await pool.query(
+              `INSERT INTO "${s}".division_territorial (nombre, tipo, zona) VALUES ($1, $2, $3) RETURNING id`,
+              [com.nombre, tipo, zona]
+            );
+            const parentId = insertedCom[0].id;
+
+            // Migrar barrios pertenecientes a esta comuna
+            const { rows: barRows } = await pool.query(
+              `SELECT * FROM "${s}".barrios WHERE comuna_id = $1 ORDER BY id`,
+              [com.id]
+            );
+            for (const bar of barRows) {
+              const barTipo = isRural ? (bar.tipo === 'vereda' ? 'vereda' : 'barrio') : 'barrio';
+              await pool.query(
+                `INSERT INTO "${s}".division_territorial (nombre, tipo, zona, padre_id, poligono) VALUES ($1, $2, $3, $4, $5)`,
+                [bar.nombre, barTipo, zona, parentId, bar.poligono || null]
+              );
+            }
+          }
+          console.log(`[DB-INIT] Migration to division_territorial completed for ${s}`);
+        }
+
+        console.log(`[DB-INIT] Division territorial tables verified for schema: ${s}`);
+      } catch (e: any) {
+        console.error(`[DB-INIT] Error in division territorial tables for ${s}:`, e.message);
+      }
+    }
+  } catch (err: any) {
+    console.error("[DB-INIT] Error ensuring division territorial tables:", err?.message);
+  }
+}
+
+export async function ensureDiaDTables() {
+  try {
+    const { rows: schemas } = await pool.query(`
+      SELECT schema_name FROM information_schema.schemata
+      WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'public')
+        AND schema_name NOT LIKE 'pg_%'
+    `);
+
+    for (const schema of schemas) {
+      const s = schema.schema_name;
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS "${s}".mesas_votacion (
+            id SERIAL PRIMARY KEY,
+            nombre_puesto VARCHAR(255) NOT NULL,
+            numero_mesa INT NOT NULL,
+            censo_mesa INT DEFAULT 350,
+            testigo_id INT REFERENCES "${s}".admins(id) ON DELETE SET NULL,
+            estado VARCHAR(20) DEFAULT 'pendiente',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(nombre_puesto, numero_mesa)
+          );
+
+          CREATE TABLE IF NOT EXISTS "${s}".reportes_e14 (
+            id SERIAL PRIMARY KEY,
+            mesa_id INT REFERENCES "${s}".mesas_votacion(id) ON DELETE CASCADE,
+            candidato_id INT REFERENCES "${s}".corporaciones_candidatos(id) ON DELETE CASCADE,
+            votos INT NOT NULL DEFAULT 0,
+            foto_e14_url TEXT,
+            observaciones TEXT,
+            reportado_por INT REFERENCES "${s}".admins(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(mesa_id, candidato_id)
+          );
+        `);
+      } catch (e: any) {
+        console.error(`[DB-INIT] Error creating Dia D tables for ${s}:`, e.message);
+      }
+    }
+  } catch (err: any) {
+    console.error("[DB-INIT] Error ensuring Dia D tables:", err?.message);
   }
 }
