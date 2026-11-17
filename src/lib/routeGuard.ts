@@ -1,6 +1,7 @@
 /**
  * Route Guard - Control de acceso por rol
- * Define qué rutas requieren rol de administrador
+ * Define qué rutas requieren rol de administrador o estratega.
+ * Nota: las rutas de ADMIN_ROUTES y PUBLIC_ROUTES NO deben solaparse.
  */
 
 export const ADMIN_ROUTES = [
@@ -12,6 +13,11 @@ export const ADMIN_ROUTES = [
   "/dashboard/lideres",
   "/dashboard/configuracion",
   "/dashboard/monitor-x",
+  "/dashboard/mensajes",
+  "/dashboard/whatsapp",
+  "/dashboard/sms",
+  "/dashboard/auditoria",
+  "/dashboard/votaciones",
 ];
 
 export const PUBLIC_ROUTES = [
@@ -30,15 +36,14 @@ export function isPublicRoute(pathname: string): boolean {
 }
 
 export function checkRouteAccess(pathname: string, userRole: string | undefined): boolean {
-  // Si no hay rol, denegar acceso
+  // Sin rol, denegar
   if (!userRole) return false;
 
-  // Admin tiene acceso a todo
-  if (userRole === "administrador") return true;
+  // Admin y estratega tienen acceso a todo
+  if (userRole === "administrador" || userRole === "estratega") return true;
 
-  // Usuarios normales solo pueden acceder a rutas públicas
+  // Usuarios normales (lider, analista) solo rutas públicas
   if (isPublicRoute(pathname)) return true;
 
-  // Todo lo demás está restringido
   return false;
 }

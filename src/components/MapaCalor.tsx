@@ -6,6 +6,15 @@ import "leaflet/dist/leaflet.css";
 import type { Sector, MapaCalorProps } from "@/types/ciudadano";
 import { getToken, authHeaders } from "@/lib/api";
 
+// Predefined colors per comuna for barrio polygons
+const COMUNA_COLORS: Record<string, string> = {
+  "Norte": "#3b82f6",
+  "Centro": "#10b981",
+  "Sur": "#f59e0b",
+  "Corregimiento Rural": "#8b5cf6",
+  "Estructura 1": "#ec4899",
+};
+
 export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
   const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -15,8 +24,10 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
   const leafletLibRef = useRef<any>(null);
   const [mapReady, setMapReady] = useState(false);
   const [sectores, setSectores] = useState<Sector[]>([]);
+  const [barrios, setBarrios] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<"heatmap" | "sectores" | "ambos">("ambos");
   const [showPoints, setShowPoints] = useState(false);
+  const [showBarrios, setShowBarrios] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [feedback, setFeedback] = useState<{ type: string; text: string } | null>(null);
 
@@ -75,6 +86,10 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
     fetch("/api/sectores/stats", { headers: h, cache: "no-store" })
       .then((r) => r.json())
       .then((data) => setSectores(data.sectorStats || []))
+      .catch(() => {});
+    fetch("/api/territorio/barrios/poligonos", { headers: h, cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => setBarrios(data.data || []))
       .catch(() => {});
   }, [refreshKey]);
 
@@ -308,7 +323,42 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
         layersRef.current.push(label);
       });
     }
-  }, [mapReady, viewMode, showPoints, filteredData.length, sectores, porcentaje, refreshKey]);
+
+    // Barrio polygons
+    if (showBarrios && barrios.length > 0) {
+      const barrioGroup = L.featureGroup();
+      barrios.forEach((b) => {
+        if (!b.poligono || b.poligono.length < 3) return;
+        const color = COMUNA_COLORS[b.comuna_nombre] || "#64748b";
+        const poly = L.polygon(b.poligono, {
+          color,
+          fillColor: color,
+          fillOpacity: 0.12,
+          weight: 2,
+          dashArray: "6,4",
+        });
+
+        poly.bindPopup(`
+          <div style="font-family:Inter,sans-serif;min-width:200px;padding:8px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <div style="width:10px;height:10px;border-radius:2px;background:${color}"></div>
+              <span style="font-size:15px;font-weight:700;color:#0f172a">${b.nombre}</span>
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:4px">
+              <strong>Localidad:</strong> ${b.comuna_nombre}
+            </div>
+            <div style="font-size:12px;color:#64748b">
+              <strong>Ciudadanos:</strong> ${b.total_ciudadanos}
+            </div>
+          </div>
+        `, { className: "custom-popup" });
+
+        barrioGroup.addLayer(poly);
+      });
+      barrioGroup.addTo(mapInstanceRef.current);
+      layersRef.current.push(barrioGroup);
+    }
+  }, [mapReady, viewMode, showPoints, showBarrios, filteredData.length, sectores, barrios, porcentaje, refreshKey]);
 
   const goalColor = getGoalColor(porcentaje);
 
@@ -373,6 +423,15 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
             />
             Puntos
           </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 12, color: "#64748b", fontWeight: 500 }}>
+            <input
+              type="checkbox"
+              checked={showBarrios}
+              onChange={(e) => setShowBarrios(e.target.checked)}
+              style={{ accentColor: "#8b5cf6" }}
+            />
+            Barrios
+          </label>
         </div>
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
@@ -433,6 +492,12 @@ export default function MapaCalor({ ciudadanos, meta = 1000 }: MapaCalorProps) {
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", border: "1px solid white" }} />
           <span style={{ fontSize: 11, color: "#64748b", fontWeight: 500 }}>Punto líder</span>
         </div>
+        {showBarrios && Object.entries(COMUNA_COLORS).map(([name, color]) => (
+          <div key={name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 14, height: 4, borderRadius: 1, background: color }} />
+            <span style={{ fontSize: 11, color: "#64748b", fontWeight: 500 }}>{name}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

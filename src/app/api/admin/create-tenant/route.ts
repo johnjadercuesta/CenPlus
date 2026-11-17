@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
           nombre VARCHAR(255) NOT NULL,
           comuna_id INT NOT NULL REFERENCES comunas(id) ON DELETE CASCADE,
           tipo VARCHAR(50) DEFAULT 'barrio',
+          poligono TEXT,
           CONSTRAINT barrios_tipo_check CHECK (tipo IN ('barrio', 'vereda')),
           CONSTRAINT barrios_nombre_comuna_id_key UNIQUE (nombre, comuna_id)
         )
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
       await client.query(`
         CREATE TABLE IF NOT EXISTS puestos_votacion (
           id SERIAL PRIMARY KEY,
-          nombre VARCHAR(255) NOT NULL,
+          nombre VARCHAR(255) NOT NULL UNIQUE,
           comuna_id INT,
           votos_historicos INT DEFAULT 0
         )

@@ -17,6 +17,7 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<string | undefined>(undefined);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [accessDenied, setAccessDenied] = useState(false);
   const [orgDisabled, setOrgDisabled] = useState(false);
   const [orgDisabledMessage, setOrgDisabledMessage] = useState("");
@@ -116,6 +117,7 @@ export default function DashboardLayout({
         }
 
         setUserRole(data.role);
+        setCurrentUser(data);
 
         const hasAccess = checkRouteAccess(pathname, data.role);
         if (!hasAccess) {
@@ -194,7 +196,7 @@ export default function DashboardLayout({
 
   return (
     <>
-      <Sidebar />
+      <Sidebar user={currentUser} />
       <div className="main-wrapper">
         {children}
       </div>

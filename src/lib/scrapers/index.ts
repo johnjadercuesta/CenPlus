@@ -6,8 +6,8 @@ import { scrapeInstagram, scrapeFacebook } from "./social";
 export const scrapers = {
   twitter: scrapeTwitter,
   youtube: scrapeYouTube,
-  google: (query: string) => scrapeGoogle(query, "web"),
-  google_news: (query: string) => scrapeGoogle(query, "news"),
+  google: (...args: Parameters<typeof scrapeGoogle>) => scrapeGoogle(...args),
+  google_news: (query: string, ...rest: any[]) => scrapeGoogle(query, "news", ...rest),
   instagram: scrapeInstagram,
   facebook: scrapeFacebook,
 };

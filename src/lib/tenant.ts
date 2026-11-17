@@ -48,6 +48,44 @@ export function getTenantFromRequest(req: NextRequest | { headers?: any; cookies
     }
   }
 
+  // 4. Check Authorization header (JWT token)
+  if (headers && typeof headers.get === 'function') {
+    const auth = headers.get('authorization');
+    if (auth && auth.startsWith('Bearer ')) {
+      try {
+        const token = auth.slice(7);
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        if (payload && payload.tenant) {
+          const s = sanitizeTenantValue(payload.tenant);
+          if (s) return s;
+        }
+      } catch {
+        // Ignore token parse errors
+      }
+    }
+  }
+
+  // 5. Check URL query parameter (for localhost without subdomain)
+  if (typeof req === 'object' && req !== null && 'nextUrl' in (req as any)) {
+    try {
+      const url = (req as any).nextUrl as URL;
+      const t = url.searchParams.get('tenant');
+      if (t) {
+        const s = sanitizeTenantValue(t);
+        if (s) return s;
+      }
+    } catch {}
+  } else if (typeof req === 'object' && req !== null && 'url' in (req as any)) {
+    try {
+      const url = new URL((req as any).url);
+      const t = url.searchParams.get('tenant');
+      if (t) {
+        const s = sanitizeTenantValue(t);
+        if (s) return s;
+      }
+    } catch {}
+  }
+
   return null;
 }
 

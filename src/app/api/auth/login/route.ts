@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (!tenant) {
       try {
         const { rows: tenantRows } = await pool.query(
-          "SELECT tenant FROM public.user_tenants WHERE identificacion = $1 LIMIT 1",
+          "SELECT tenant FROM public.user_tenants WHERE (identificacion = $1 OR email = $1) LIMIT 1",
           [identificacion]
         );
         if (tenantRows.length > 0) {
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           const schemaName = s.schema_name;
           try {
             const { rows: users } = await pool.query(
-              `SELECT id FROM "${schemaName}".admins WHERE identificacion = $1 AND activo = 1 LIMIT 1`,
+              `SELECT id FROM "${schemaName}".admins WHERE (identificacion = $1 OR email = $1) AND activo = 1 LIMIT 1`,
               [identificacion]
             );
             if (users.length > 0) {
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     const { rows } = await run(
-      "SELECT * FROM admins WHERE identificacion = $1 AND activo = 1",
+      "SELECT * FROM admins WHERE (identificacion = $1 OR email = $1) AND activo = 1",
       [identificacion]
     );
     const user = rows[0] as { id: number; email: string; password: string; nombre: string; role: string } | undefined;

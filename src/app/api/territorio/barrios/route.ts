@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const comunaId = searchParams.get("comunaId");
-    const tipo = searchParams.get("tipo"); 
+    const tipo = searchParams.get("tipo");
 
     let query = "SELECT * FROM barrios";
     const params = [];
@@ -47,9 +47,9 @@ export async function POST(request: NextRequest) {
     if (!tenant) return NextResponse.json({ error: "Tenant no especificado" }, { status: 400 });
 
     const { nombre, comunaId, tipo } = await request.json();
-    if (!nombre || !comunaId) return NextResponse.json({ error: "Nombre y comunaId obligatorios" }, { status: 400 });
+    if (!nombre || !comunaId) return NextResponse.json({ error: "Nombre y comuna obligatorios" }, { status: 400 });
 
-    const { rows } = await queryWithTenant(tenant, 
+    const { rows } = await queryWithTenant(tenant,
       "INSERT INTO barrios (nombre, comuna_id, tipo) VALUES ($1, $2, $3) ON CONFLICT (nombre, comuna_id) DO UPDATE SET tipo = EXCLUDED.tipo RETURNING *",
       [nombre, parseInt(comunaId), tipo || 'barrio']
     );

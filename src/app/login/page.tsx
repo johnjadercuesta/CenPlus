@@ -156,13 +156,13 @@ function LoginForm() {
 
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Número de Identificación</label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Email o Identificación</label>
               <input
                 type="text"
                 value={identificacion}
                 onChange={(e) => setIdentificacion(e.target.value)}
                 required
-                placeholder="Ingresa tu identificación"
+                placeholder="Ingrese su usuario"
                 style={{
                   width: "100%", padding: "12px 16px", border: "1.5px solid #e2e8f0", borderRadius: 10,
                   fontSize: 14, background: "#f8fafc", outline: "none", boxSizing: "border-box"

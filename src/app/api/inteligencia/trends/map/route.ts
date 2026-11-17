@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { getTokenFromRequest } from "@/lib/auth";
 import { getTenantFromRequest } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const tenant = getTenantFromRequest(request);
+    const token = getTokenFromRequest(request);
+    const tenant = token?.tenant || getTenantFromRequest(request);
     if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
+      return NextResponse.json({ features: [] });
     }
 
     // Try fresh scraped data first
