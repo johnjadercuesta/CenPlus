@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 import { sendWhatsAppTemplate } from "@/lib/whatsapp-meta";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
-    }
+    const auth = await requireModule(request, "mensajeria");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
-    const tenant = getTenantFromRequest(request);
+    const tenant = user.tenant;
     const run = (sql: string, params: any[] = []) =>
-      tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params);
+      queryWithTenant(tenant, sql, params);
 
     const {
       lider_ids,
@@ -56,9 +52,9 @@ export async function POST(request: NextRequest) {
       conditions.push(`c.id = $${pCount++}`);
       qparams.push(ciudadano_id);
     } else {
-      if (token.role === "lider") {
+      if (user.role === "lider") {
         conditions.push(`c.lider_id = $${pCount++}`);
-        qparams.push(token.userId);
+        qparams.push(user.userId);
       }
       if (lider_ids && lider_ids.length > 0) {
         conditions.push(`c.lider_id = ANY($${pCount++})`);
@@ -115,7 +111,7 @@ export async function POST(request: NextRequest) {
         JSON.stringify(filters),
         scheduleTime,
         isScheduled ? "pendiente" : "enviando",
-        token.userId,
+        user.userId,
       ]
     );
 

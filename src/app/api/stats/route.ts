@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireAnyModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAnyModule(request, [
+      "dashboard",
+      "registros",
+      "mapa",
+      "archivos",
+      "inteligencia",
+      "mi-panel",
+      "escala",
+    ]);
+    if (auth.error) return auth.error;
+    const user = auth.user;
+
     const { searchParams } = new URL(request.url);
     const archivoId = searchParams.get("archivo_id");
 
     let total, lideres, conCoords, hoy, semana, porEstudios, porSexo, topBarrios, topCorregimientos, topOcupaciones, topRegimenSalud, topProblematicas, porLider, rows7dias: { fecha: string; c: number }[], avgEdad;
 
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+    const tenant = user.tenant;
+    const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     if (archivoId) {
       const archivoRes = await run(

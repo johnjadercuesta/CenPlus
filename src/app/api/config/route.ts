@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { getCurrentUser, requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
+    const user = await getCurrentUser(request);
+    if (!user) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
 
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
-
-    const { rows } = await run("SELECT clave, valor FROM config");
+    const { rows } = await queryWithTenant(user.tenant, "SELECT clave, valor FROM config");
     const config: Record<string, string> = {};
     for (const r of rows) {
       config[r.clave] = r.valor;
@@ -29,19 +24,15 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores pueden cambiar la configuracion" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
-
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+    const auth = await requireModule(request, "configuracion");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
 
     for (const [clave, valor] of Object.entries(body)) {
-      await run(
+      await queryWithTenant(
+        user.tenant,
         "INSERT INTO config (clave, valor) VALUES ($1, $2) ON CONFLICT (clave) DO UPDATE SET valor = $2",
         [clave, String(valor)]
       );

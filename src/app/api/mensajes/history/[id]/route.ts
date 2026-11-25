@@ -1,22 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
+    const auth = await requireModule(request, "mensajeria");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
     const envioId = params.id;
 
     const envioRes = await pool.query(

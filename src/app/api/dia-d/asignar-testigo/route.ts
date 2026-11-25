@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireDiaDLevel } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
-      return NextResponse.json({ error: "No autorizado para asignar testigos" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireDiaDLevel(request, "coordinador");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const body = await request.json();
     const { mesa_id, testigo_id } = body;

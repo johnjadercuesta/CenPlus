@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const payload = getTokenFromRequest(request);
-    if (!payload) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const auth = await requireModule(request, "mensajeria");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
-    const tenant = payload.tenant as string;
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no detectado" }, { status: 400 });
-    }
-
-    const { rows } = await queryWithTenant(tenant,
+    const { rows } = await queryWithTenant(user.tenant,
       `SELECT a.id, a.nombre, a.identificacion,
         (SELECT COUNT(*) FROM ciudadanos c WHERE c.lider_id = a.id) as ciudadanos_count
       FROM admins a

@@ -69,7 +69,7 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
           <ArchivoSelector value={archivoId} onChange={setArchivoId} compact />
-          <Link href="/dashboard/formulario" className="btn btn-primary btn-sm">
+          <Link href="/dashboard/mi-panel" className="btn btn-primary btn-sm">
             + Nuevo Registro Territorial
           </Link>
           <button

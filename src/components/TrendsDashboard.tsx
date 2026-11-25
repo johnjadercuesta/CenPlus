@@ -14,7 +14,11 @@ const TrendsChart = dynamic(() => import('./TrendsChart'), {
   loading: () => <div className="h-[300px] w-full bg-slate-900 animate-pulse rounded-xl" />
 });
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_TRENDS_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_TRENDS_API_URL ||
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:8000/api/v1`
+    : 'http://localhost:8000/api/v1');
 
 const MOCK_TRENDS = [
   { keyword: "agua potable", location: { city: "Medellín" }, sentiment: 0.8, growth_rate: 45, frequency_score: 1250 },

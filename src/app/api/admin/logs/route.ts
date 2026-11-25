@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = token.tenant || getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "auditoria");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");

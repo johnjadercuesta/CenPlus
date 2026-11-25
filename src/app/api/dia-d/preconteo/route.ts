@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireDiaDLevel } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireDiaDLevel(request, "testigo");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     // 1. Estadísticas de mesas escrutadas
     const { rows: mesasStats } = await queryWithTenant(

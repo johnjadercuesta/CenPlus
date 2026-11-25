@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
+    const auth = await requireModule(request, "registros");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
@@ -50,13 +47,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "El CSV debe tener al menos las columnas Cedula y Nombre" }, { status: 400 });
     }
 
-    const liderId = token.role === "administrador" ? token.userId : token.userId;
+    const formLiderId = formData.get("lider_id");
+    const liderId =
+      (user.role === "administrador" || user.role === "estratega") && formLiderId
+        ? parseInt(String(formLiderId)) || user.userId
+        : user.userId;
     let importados = 0;
     let duplicados = 0;
     let errores = 0;
 
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+    const tenant = user.tenant;
+    const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     if (mode === "replace") {
       await run("DELETE FROM ciudadanos");

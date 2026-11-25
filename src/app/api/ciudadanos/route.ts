@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireAnyModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    const auth = await requireAnyModule(request, [
+      "registros",
+      "mi-panel",
+      "mapa",
+      "dashboard",
+      "escala",
+      "archivos",
+      "inteligencia",
+    ]);
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
@@ -29,8 +34,8 @@ export async function GET(request: NextRequest) {
     let rows: any[] = [];
     let count = 0;
 
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+    const tenant = user.tenant;
+    const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     if (archivoId) {
       const archivoRes = await run(
@@ -88,9 +93,9 @@ export async function GET(request: NextRequest) {
       const params: any[] = [];
       let pCount = 1;
 
-      if (token.role === "lider") {
+      if (user.role === "lider") {
         conditions.push(`c.lider_id = $${pCount++}`);
-        params.push(token.userId);
+        params.push(user.userId);
       }
 
       if (search) {
@@ -163,11 +168,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizaci�n" }, { status: 403 });
+    const auth = await requireAnyModule(request, ["registros", "mi-panel"]);
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
 
@@ -178,17 +181,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+    const tenant = user.tenant;
+    const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     const { rows: existingRows } = await run("SELECT id FROM ciudadanos WHERE id_unico = $1", [String(body.id_unico).trim()]);
     if (existingRows.length > 0) {
       return NextResponse.json({ error: "Esta cédula ya está registrada" }, { status: 409 });
     }
 
-    const liderId = (token.role === "administrador" || token.role === "estratega") && body.lider_id
+    const liderId = (user.role === "administrador" || user.role === "estratega") && body.lider_id
       ? parseInt(body.lider_id)
-      : token.userId;
+      : user.userId;
 
     const lat = body.latitud ? parseFloat(body.latitud) : null;
     const lng = body.longitud ? parseFloat(body.longitud) : null;
@@ -261,7 +264,7 @@ export async function POST(request: NextRequest) {
 
     const { recordLog } = await import("@/lib/audit");
     if (tenant) {
-      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "ciudadanos", accion: "Registró al ciudadano: " + data.nombre_completo });
+      await recordLog({ tenant, email: user.email, nombre: user.nombre, modulo: "ciudadanos", accion: "Registró al ciudadano: " + data.nombre_completo });
     }
     return NextResponse.json({ data, message: "Registro exitoso" }, { status: 201 });
   } catch (err) {

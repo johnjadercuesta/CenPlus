@@ -1,28 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTenantFromRequest } from "@/lib/tenant";
-import { verifyToken } from "@/lib/auth";
-import { recordLog } from "@/lib/audit";
+import { requireModule } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Verificar autenticación y rol
-    const token = request.cookies.get("token")?.value;
-    const payload = token ? verifyToken(token) : null;
-
-    if (!payload || payload.role !== 'administrador') {
-      return NextResponse.json({ error: "No autorizado. Solo administradores pueden cambiar la marca." }, { status: 401 });
-    }
-
-    let tenant = payload.tenant;
-    if (!tenant) {
-      // Si el administrador es global (sin tenant en token), intentamos detectarlo del request
-      tenant = getTenantFromRequest(request);
-    }
-
-    if (!tenant || tenant === 'public') {
-      return NextResponse.json({ error: "No se pudo identificar la organización para aplicar la marca." }, { status: 403 });
-    }
+    // 1. Verificar autenticación y módulo de configuración
+    const auth = await requireModule(request, "configuracion");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { primary_color, secondary_color, logo_url, font_family, config } = await request.json();
 

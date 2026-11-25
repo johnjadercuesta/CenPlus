@@ -8,9 +8,6 @@ export default function PanelLiderMovil() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [editingCiudadano, setEditingCiudadano] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ nombre_completo: "", telefono: "", barrio: "" });
-  const [savingEdit, setSavingEdit] = useState(false);
   const [mensaje, setMensaje] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchResumen = async () => {
@@ -32,40 +29,6 @@ export default function PanelLiderMovil() {
     fetchResumen();
   }, []);
 
-  const handleOpenEdit = (c: any) => {
-    setEditingCiudadano(c);
-    setEditForm({
-      nombre_completo: c.nombre_completo || "",
-      telefono: c.telefono || "",
-      barrio: c.barrio || c.vereda || "",
-    });
-  };
-
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCiudadano) return;
-    try {
-      setSavingEdit(true);
-      const res = await fetch(`/api/ciudadanos/${editingCiudadano.id}`, {
-        method: "PUT",
-        headers: authHeadersWithJson(),
-        body: JSON.stringify(editForm),
-      });
-      const json = await res.json();
-      if (res.ok) {
-        setMensaje({ type: "success", text: "Registro actualizado correctamente." });
-        setEditingCiudadano(null);
-        fetchResumen();
-      } else {
-        setMensaje({ type: "error", text: json.error || "No se pudo actualizar." });
-      }
-    } catch {
-      setMensaje({ type: "error", text: "Error de conexión al actualizar." });
-    } finally {
-      setSavingEdit(false);
-    }
-  };
-
   const registrosFiltrados = (data?.registros || []).filter((r: any) => {
     if (!search.trim()) return true;
     const s = search.toLowerCase();
@@ -78,22 +41,13 @@ export default function PanelLiderMovil() {
     );
   });
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
-        <div style={{ fontSize: "28px", marginBottom: "8px" }}>📱</div>
-        <p style={{ fontWeight: 600 }}>Cargando su panel territorial...</p>
-      </div>
-    );
-  }
-
   const progreso = data?.progreso || { total: 0, porcentaje: 0, restantes: 50, urbanos: 0, rurales: 0 };
   const meta = data?.meta || 50;
   const lider = data?.lider || { nombre: "Líder" };
+  const totalRegistros = data?.progreso?.total || 0;
 
   return (
     <div style={{ maxWidth: "720px", margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Mensajes flotantes */}
       {mensaje && (
         <div style={{
           padding: "12px 16px", borderRadius: 10,
@@ -125,11 +79,10 @@ export default function PanelLiderMovil() {
           <div style={{ fontSize: 32 }}>🎯</div>
         </div>
 
-        {/* Barra de progreso */}
         <div style={{ marginTop: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
             <span>Tu Meta: {progreso.total} / {meta} votos</span>
-            <span>{progreso.porcentaje}% alcanzado</span>
+            <span>{loading ? "..." : `${progreso.porcentaje}% alcanzado`}</span>
           </div>
           <div style={{ height: 12, background: "rgba(255, 255, 255, 0.25)", borderRadius: 6, overflow: "hidden" }}>
             <div style={{
@@ -147,30 +100,31 @@ export default function PanelLiderMovil() {
         </div>
       </div>
 
-      {/* Botón Gigante de Acción Rápida para el Líder */}
+      {/* Acción principal: abre el módulo de formulario */}
       <Link
         href="/dashboard/formulario"
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          padding: "16px",
+          justifyContent: "space-between",
+          gap: 14,
+          padding: "18px 20px",
+          borderRadius: 14,
           background: "#16a34a",
           color: "white",
-          borderRadius: 14,
-          fontWeight: 800,
-          fontSize: 16,
           textDecoration: "none",
-          boxShadow: "0 6px 15px -3px rgba(22, 163, 74, 0.4)",
-          transition: "transform 0.1s ease"
+          boxShadow: "0 8px 20px -8px rgba(22, 163, 74, 0.6)",
         }}
       >
-        <span style={{ fontSize: 22 }}>➕</span>
-        <span>REGISTRAR NUEVO SIMPATIZANTE</span>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 800 }}>➕ Registrar simpatizante</div>
+          <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>
+            Escanee la cédula y complete el formulario de registro
+          </div>
+        </div>
+        <span style={{ fontSize: 22 }}>→</span>
       </Link>
 
-      {/* Resumen de apoyos aportados a la fórmula */}
       {data?.apoyos && data.apoyos.length > 0 && (
         <div style={{ background: "white", borderRadius: 12, padding: "16px", border: "1px solid #e2e8f0" }}>
           <h4 style={{ fontSize: 13, fontWeight: 700, color: "#475569", textTransform: "uppercase", margin: "0 0 10px 0" }}>
@@ -193,13 +147,16 @@ export default function PanelLiderMovil() {
         </div>
       )}
 
-      {/* Lista de simpatizantes propios con buscador */}
+      {/* Listado compacto; la gestión completa vive en el módulo Registros */}
       <div style={{ background: "white", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" }}>
         <div style={{ padding: "16px", borderBottom: "1px solid #f1f5f9" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8 }}>
             <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0, color: "#0f172a" }}>
-              👥 Mis Simpatizantes Registrados ({registrosFiltrados.length})
+              👥 Mis Simpatizantes ({totalRegistros})
             </h3>
+            <Link href="/dashboard/registros" style={{ fontSize: 12, fontWeight: 700, color: "#4f46e5", textDecoration: "none" }}>
+              Gestionar →
+            </Link>
           </div>
           <input
             type="text"
@@ -216,7 +173,9 @@ export default function PanelLiderMovil() {
         <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 10, maxHeight: "500px", overflowY: "auto" }}>
           {registrosFiltrados.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px 10px", color: "#94a3b8", fontSize: 13 }}>
-              {search ? "No se encontraron simpatizantes con ese criterio." : "Aún no has registrado simpatizantes. ¡Comienza hoy con el botón verde superior!"}
+              {search
+                ? "No se encontraron simpatizantes con ese criterio."
+                : "Aún no has registrado simpatizantes. Usa 'Registrar simpatizante' para comenzar."}
             </div>
           ) : (
             registrosFiltrados.map((c: any) => {
@@ -239,7 +198,6 @@ export default function PanelLiderMovil() {
                     </div>
                   </div>
 
-                  {/* Acciones directas (Llamar, WhatsApp, Editar) */}
                   <div style={{ display: "flex", gap: 6 }}>
                     {waLink && (
                       <a
@@ -267,16 +225,6 @@ export default function PanelLiderMovil() {
                         📞
                       </a>
                     )}
-                    <button
-                      onClick={() => handleOpenEdit(c)}
-                      title="Editar datos de mi simpatizante"
-                      style={{
-                        padding: "8px 10px", borderRadius: 8, background: "#e2e8f0", color: "#334155",
-                        border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700
-                      }}
-                    >
-                      ✏️
-                    </button>
                   </div>
                 </div>
               );
@@ -284,77 +232,6 @@ export default function PanelLiderMovil() {
           )}
         </div>
       </div>
-
-      {/* Modal de Edición Rápida */}
-      {editingCiudadano && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(15, 23, 42, 0.6)", display: "flex", alignItems: "center", justifyContent: "center",
-          padding: 16, zIndex: 1000
-        }}>
-          <div style={{ background: "white", borderRadius: 16, padding: "24px", width: "100%", maxWidth: "440px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "#0f172a" }}>✏️ Editar Simpatizante</h3>
-              <button onClick={() => setEditingCiudadano(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18 }}>✕</button>
-            </div>
-
-            <form onSubmit={handleSaveEdit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 4 }}>Cédula</label>
-                <input type="text" value={editingCiudadano.id_unico} disabled style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#f1f5f9" }} />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 4 }}>Nombre Completo</label>
-                <input
-                  type="text"
-                  required
-                  value={editForm.nombre_completo}
-                  onChange={e => setEditForm({ ...editForm, nombre_completo: e.target.value })}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", outline: "none" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 4 }}>Teléfono / Celular</label>
-                <input
-                  type="text"
-                  value={editForm.telefono}
-                  onChange={e => setEditForm({ ...editForm, telefono: e.target.value })}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", outline: "none" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 4 }}>Barrio o Vereda</label>
-                <input
-                  type="text"
-                  value={editForm.barrio}
-                  onChange={e => setEditForm({ ...editForm, barrio: e.target.value })}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #cbd5e1", outline: "none" }}
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => setEditingCiudadano(null)}
-                  style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1px solid #cbd5e1", background: "white", cursor: "pointer", fontWeight: 600 }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingEdit}
-                  style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#4f46e5", color: "white", cursor: "pointer", fontWeight: 700 }}
-                >
-                  {savingEdit ? "Guardando..." : "Guardar Cambios"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

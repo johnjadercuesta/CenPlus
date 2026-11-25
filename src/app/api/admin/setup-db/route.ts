@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
+import { ensureAccessColumns } from '@/lib/db-init';
 
 const SUPER_KEY = process.env.SUPER_ADMIN_KEY || '';
 
@@ -93,6 +94,9 @@ export async function POST(request: NextRequest) {
       CREATE INDEX IF NOT EXISTS idx_system_logs_tenant ON public.system_logs(tenant)
     `);
     results.push('✅ Índices globales verificados');
+
+    await ensureAccessColumns();
+    results.push('✅ Columnas de acceso (session_version / dia_d_level) verificadas');
 
     return NextResponse.json({
       success: true,

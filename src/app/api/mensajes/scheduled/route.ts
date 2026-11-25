@@ -1,22 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no detectado" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "mensajeria");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const res = await pool.query(
       `SELECT id, canal, modo, mensaje, destinatarios_count, programado_para, created_at
@@ -35,15 +25,9 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
+    const auth = await requireModule(request, "mensajeria");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
     const { id } = await request.json();
 
     if (!id) {

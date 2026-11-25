@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest } from "@/lib/tenant";
+import { requireRole } from "@/lib/auth";
 import { scrapers } from "@/lib/scrapers";
 import { saveScrapedPosts, getStoredApiConfig, cleanupExpiredTrends } from "@/lib/scrapers/base";
 import { initTrendsScrapedTable } from "@/lib/scrapers/init";
@@ -16,11 +15,9 @@ const PLATFORM_MAP: Record<string, keyof typeof scrapers> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    const tenant = token?.tenant || getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireRole(request, ["administrador", "estratega"]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     await initTrendsScrapedTable();
 

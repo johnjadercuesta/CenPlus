@@ -116,12 +116,15 @@ export async function POST(request: NextRequest) {
           identificacion VARCHAR(50) UNIQUE,
           nombre VARCHAR(255) NOT NULL DEFAULT '',
           role VARCHAR(50) NOT NULL DEFAULT 'lider',
+          dia_d_level VARCHAR(20) NOT NULL DEFAULT 'none',
+          session_version INTEGER NOT NULL DEFAULT 0,
           password VARCHAR(255) NOT NULL,
           telefono VARCHAR(20),
           activo INT NOT NULL DEFAULT 1,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          CONSTRAINT admins_role_check CHECK (role IN ('administrador', 'estratega', 'lider'))
+          CONSTRAINT admins_role_check CHECK (role IN ('administrador', 'estratega', 'lider', 'analista', 'operador_dia_d')),
+          CONSTRAINT admins_dia_d_level_check CHECK (dia_d_level IN ('none', 'testigo', 'coordinador'))
         )
       `);
 

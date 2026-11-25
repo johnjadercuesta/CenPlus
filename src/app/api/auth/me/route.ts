@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest } from "@/lib/auth";
+import { getCurrentUser, getTokenFromRequest } from "@/lib/auth";
 import { pool } from "@/lib/db";
+import { getDefaultRoute } from "@/lib/modules";
 
 export async function GET(request: NextRequest) {
   const payload = getTokenFromRequest(request);
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 
-  // Verificar si el tenant esta activo y si la sesion es valida
+  // Verificar si el tenant esta activo y si la sesion del tenant es valida
   if (payload.tenant) {
     try {
       const { rows } = await pool.query(
@@ -25,7 +26,10 @@ export async function GET(request: NextRequest) {
           }, { status: 403 });
         }
         const dbVersion = tc.session_version ?? 0;
-        const tokenVersion = (payload as any).sessionVersion ?? 0;
+        const tokenVersion =
+          (payload as any).tenantVersion ??
+          (payload as any).sessionVersion ??
+          0;
         if (dbVersion > tokenVersion) {
           return NextResponse.json({
             authenticated: false,
@@ -37,11 +41,24 @@ export async function GET(request: NextRequest) {
     } catch { /* table may not exist yet */ }
   }
 
+  // Validar usuario contra la base de datos (rol, estado y session_version propios)
+  const user = await getCurrentUser(request);
+  if (!user) {
+    return NextResponse.json({
+      authenticated: false,
+      message: "Sesión inválida o usuario desactivado. Inicie sesión nuevamente."
+    }, { status: 401 });
+  }
+
   return NextResponse.json({
     authenticated: true,
-    userId: payload.userId,
-    email: payload.email,
-    nombre: payload.nombre,
-    role: payload.role,
+    userId: user.userId,
+    email: user.email,
+    nombre: user.nombre,
+    role: user.role,
+    dia_d_level: user.dia_d_level,
+    modules: user.modules,
+    readOnlyModules: user.readOnlyModules,
+    defaultRoute: getDefaultRoute(user),
   });
 }

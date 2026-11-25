@@ -1,21 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireDiaDLevel } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
+import { normalizeDiaDLevel } from "@/lib/modules";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireDiaDLevel(request, "testigo");
+    if (auth.error) return auth.error;
+    const user = auth.user;
+    const level = normalizeDiaDLevel(user.dia_d_level);
 
     const { searchParams } = new URL(request.url);
     const puesto = searchParams.get("puesto");
@@ -25,10 +18,13 @@ export async function GET(request: NextRequest) {
     const params: any[] = [];
     let pCount = 1;
 
-    // Si el usuario es un líder/testigo, puede filtrar sus mesas asignadas
-    if (token.role === "lider" && searchParams.get("solo_mias") === "true") {
+    // Un testigo solo puede consultar las mesas que tiene asignadas.
+    const soloMias =
+      level === "testigo" || searchParams.get("solo_mias") === "true";
+
+    if (soloMias) {
       conditions.push(`m.testigo_id = $${pCount++}`);
-      params.push(token.userId);
+      params.push(user.userId);
     }
 
     if (puesto) {
@@ -56,9 +52,9 @@ export async function GET(request: NextRequest) {
       ORDER BY m.nombre_puesto ASC, m.numero_mesa ASC
     `;
 
-    const { rows } = await queryWithTenant(tenant, sql, params);
+    const { rows } = await queryWithTenant(user.tenant, sql, params);
 
-    return NextResponse.json({ data: rows });
+    return NextResponse.json({ data: rows, level });
   } catch (err: any) {
     console.error("[dia-d/mesas GET] Error:", err.message);
     return NextResponse.json({ error: "Error interno: " + err.message }, { status: 500 });
@@ -67,18 +63,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores pueden crear mesas" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireDiaDLevel(request, "coordinador");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { nombre_puesto, total_mesas, censo_por_mesa } = body;
@@ -92,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     for (let m = 1; m <= nMesas; m++) {
       await queryWithTenant(
-        tenant,
+        user.tenant,
         `INSERT INTO mesas_votacion (nombre_puesto, numero_mesa, censo_mesa)
          VALUES ($1, $2, $3)
          ON CONFLICT (nombre_puesto, numero_mesa) DO NOTHING`,

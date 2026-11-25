@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest } from "@/lib/tenant";
+import { requireAnyModule } from "@/lib/auth";
 import { searchEntries } from "@/lib/trendsmap.search";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
-    const tenant = token.tenant || getTenantFromRequest(request);
+    const auth = await requireAnyModule(request, ["inteligencia", "mapa", "dashboard"]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const body = await request.json();
     const { q, hashtags, lat, lng, radiusKm, days, limit } = body || {};

@@ -1,21 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireDiaDLevel } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
+import { normalizeDiaDLevel } from "@/lib/modules";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireDiaDLevel(request, "testigo");
+    if (auth.error) return auth.error;
+    const user = auth.user;
+    const tenant = user.tenant;
 
     const body = await request.json();
     const { mesa_id, votos_candidatos, foto_e14_url, observaciones } = body;
@@ -25,7 +18,22 @@ export async function POST(request: NextRequest) {
     }
 
     const mId = parseInt(mesa_id);
-    const userId = token.userId;
+    const userId = user.userId;
+
+    // Un testigo solo puede transmitir actas de sus mesas asignadas.
+    if (normalizeDiaDLevel(user.dia_d_level) === "testigo") {
+      const { rows: mesaRows } = await queryWithTenant(
+        tenant,
+        "SELECT testigo_id FROM mesas_votacion WHERE id = $1",
+        [mId]
+      );
+      if (mesaRows.length === 0) {
+        return NextResponse.json({ error: "Mesa no encontrada" }, { status: 404 });
+      }
+      if (Number(mesaRows[0].testigo_id) !== userId) {
+        return NextResponse.json({ error: "No puede transmitir actas de una mesa que no le fue asignada" }, { status: 403 });
+      }
+    }
 
     // Insertar o actualizar el reporte por candidato
     for (const item of votos_candidatos) {

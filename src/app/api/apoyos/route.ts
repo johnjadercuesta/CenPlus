@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireAnyModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireAnyModule(request, [
+      "candidaturas",
+      "mi-panel",
+      "registros",
+      "dashboard",
+      "dia-d",
+      "inteligencia",
+    ]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { searchParams } = new URL(request.url);
     const ciudadanoId = searchParams.get("ciudadano_id");
@@ -56,18 +54,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireAnyModule(request, [
+      "mi-panel",
+      "registros",
+      "candidaturas",
+    ]);
+    if (auth.error) return auth.error;
+    const user = auth.user;
+    const tenant = user.tenant;
 
     const body = await request.json();
     const { ciudadano_id, candidatos, nivel_compromiso } = body;
@@ -76,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Cédula del ciudadano y lista de candidatos son requeridos" }, { status: 400 });
     }
 
-    const liderId = token.userId;
+    const liderId = user.userId;
 
     // Eliminar apoyos previos si se están reemplazando
     await queryWithTenant(tenant, "DELETE FROM apoyos_electorales WHERE ciudadano_id = $1", [ciudadano_id]);

@@ -36,10 +36,36 @@ async function initTenant() {
         identificacion VARCHAR(50),
         password VARCHAR(255) NOT NULL,
         nombre VARCHAR(255) NOT NULL DEFAULT '',
-        role VARCHAR(50) NOT NULL CHECK (role IN ('administrador', 'estratega', 'lider')) DEFAULT 'lider',
+        role VARCHAR(50) NOT NULL CHECK (role IN ('administrador', 'estratega', 'lider', 'analista', 'operador_dia_d')) DEFAULT 'lider',
+        dia_d_level VARCHAR(20) NOT NULL DEFAULT 'none' CHECK (dia_d_level IN ('none', 'testigo', 'coordinador')),
+        session_version INTEGER NOT NULL DEFAULT 0,
         activo INTEGER NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Migraciones idempotentes para tenants existentes
+    await client.query(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;`);
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = '${tenant}' AND table_name = 'admins' AND column_name = 'dia_d_level'
+        ) THEN
+          ALTER TABLE admins ADD COLUMN dia_d_level VARCHAR(20) NOT NULL DEFAULT 'none';
+          UPDATE admins SET dia_d_level = 'coordinador' WHERE role IN ('administrador', 'estratega');
+        END IF;
+      END $$;
+    `);
+    await client.query(`ALTER TABLE admins DROP CONSTRAINT IF EXISTS admins_role_check;`);
+    await client.query(`
+      ALTER TABLE admins ADD CONSTRAINT admins_role_check
+      CHECK (role IN ('administrador', 'estratega', 'lider', 'analista', 'operador_dia_d'));
+    `);
+    await client.query(`ALTER TABLE admins DROP CONSTRAINT IF EXISTS admins_dia_d_level_check;`);
+    await client.query(`
+      ALTER TABLE admins ADD CONSTRAINT admins_dia_d_level_check
+      CHECK (dia_d_level IN ('none', 'testigo', 'coordinador'));
     `);
 
     await client.query(`

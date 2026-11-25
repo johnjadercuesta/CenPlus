@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest } from "@/lib/tenant";
+import { requireRole } from "@/lib/auth";
 import { insertEntry } from "@/lib/trendsmap";
 import { reverseGeocode } from "@/lib/reverseGeocode";
 import { extractPlaceAndMentions } from "@/lib/placeExtractor";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
-    const tenant = token.tenant || getTenantFromRequest(request);
+    const auth = await requireRole(request, ["administrador", "estratega"]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const body = await request.json();
     const { text, hashtags, latitude, longitude } = body;

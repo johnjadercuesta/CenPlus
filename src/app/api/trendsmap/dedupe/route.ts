@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireRole } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
     console.log("[API] POST /api/trendsmap/dedupe called");
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
-
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+    const auth = await requireRole(request, ["administrador", "estratega"]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
+    const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     await run(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
 

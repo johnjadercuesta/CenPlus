@@ -91,6 +91,9 @@ export async function ensureIdentificacionColumn() {
       }
     }
 
+    // Ensure access-control columns and role constraints in every tenant
+    await ensureAccessColumns();
+
     // Create/fix audit tables
     try {
       await pool.query(`
@@ -332,6 +335,80 @@ export async function ensureTipoColumns() {
     }
   } catch (err: any) {
     console.error("[DB-INIT] Error ensuring tipo columns:", err?.message);
+  }
+}
+
+/**
+ * Agrega columnas de control de acceso a cada tenant:
+ * - session_version: invalida sesiones del usuario al cambiar rol/estado/password
+ * - dia_d_level: nivel de acceso al módulo Día D
+ * También actualiza las restricciones de roles permitidos.
+ */
+export async function ensureAccessColumns() {
+  try {
+    const { rows: schemas } = await pool.query(`
+      SELECT schema_name FROM information_schema.schemata
+      WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'public')
+        AND schema_name NOT LIKE 'pg_%'
+    `);
+
+    for (const schema of schemas) {
+      const s = schema.schema_name;
+
+      try {
+        const { rows: tableExists } = await pool.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables
+            WHERE table_schema = $1 AND table_name = 'admins'
+          )
+        `, [s]);
+
+        if (!tableExists[0].exists) continue;
+
+        await pool.query(`
+          ALTER TABLE "${s}".admins
+          ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0
+        `);
+
+        await pool.query(`
+          DO $$ BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema = '${s}' AND table_name = 'admins' AND column_name = 'dia_d_level'
+            ) THEN
+              ALTER TABLE "${s}".admins ADD COLUMN dia_d_level VARCHAR(20) NOT NULL DEFAULT 'none';
+              UPDATE "${s}".admins SET dia_d_level = 'coordinador'
+                WHERE role IN ('administrador', 'estratega');
+            END IF;
+          END $$;
+        `);
+
+        await pool.query(`
+          ALTER TABLE "${s}".admins DROP CONSTRAINT IF EXISTS admins_role_check
+        `);
+        await pool.query(`
+          ALTER TABLE "${s}".admins
+          ADD CONSTRAINT admins_role_check
+          CHECK (role IN ('administrador', 'estratega', 'lider', 'analista', 'operador_dia_d'))
+        `);
+
+        await pool.query(`
+          ALTER TABLE "${s}".admins DROP CONSTRAINT IF EXISTS admins_dia_d_level_check
+        `);
+        await pool.query(`
+          ALTER TABLE "${s}".admins
+          ADD CONSTRAINT admins_dia_d_level_check
+          CHECK (dia_d_level IN ('none', 'testigo', 'coordinador'))
+        `);
+
+        console.log(`[DB-INIT] ${s}.admins: access columns ready`);
+      } catch (e: any) {
+        console.error(`[DB-INIT] Error ensuring access columns in ${s}:`, e.message);
+        lastError = `${s}.admins access: ${e.message}`;
+      }
+    }
+  } catch (err: any) {
+    console.error("[DB-INIT] Error ensuring access columns:", err?.message);
   }
 }
 

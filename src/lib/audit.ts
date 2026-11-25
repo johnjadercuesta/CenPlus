@@ -352,6 +352,7 @@ export async function logPermissionChange(params: {
   userId: number;
   userEmail: string;
   userName: string;
+  userRole?: string;
   resourceType: string;
   resourceId: string;
   oldValue?: any;

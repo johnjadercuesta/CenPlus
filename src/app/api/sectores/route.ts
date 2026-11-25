@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireAnyModule, requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const tenant = token.tenant || getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireAnyModule(request, [
+      "sectores",
+      "mapa",
+      "dashboard",
+      "registros",
+      "escala",
+      "mi-panel",
+      "inteligencia",
+    ]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { rows } = await queryWithTenant(tenant, "SELECT * FROM sectores ORDER BY nombre");
     const mapped = rows.map((s: any) => ({
@@ -32,15 +33,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
-      return NextResponse.json({ error: "No autorizado para crear sectores" }, { status: 403 });
-    }
-
-    const tenant = token.tenant || getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "sectores");
+    if (auth.error) return auth.error;
+    const user = auth.user;
+    const tenant = user.tenant;
 
     const { 
       nombre, 
@@ -109,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     const { recordLog } = await import("@/lib/audit");
     if (tenant) {
-      await recordLog({ tenant, email: token.email, nombre: token.nombre, modulo: "sectores", accion: "Creó sector/meta: " + data.nombre });
+      await recordLog({ tenant, email: user.email, nombre: user.nombre, modulo: "sectores", accion: "Creó sector/meta: " + data.nombre });
     }
     return NextResponse.json({ data, message: "Sector creado" }, { status: 201 });
   } catch (err) {

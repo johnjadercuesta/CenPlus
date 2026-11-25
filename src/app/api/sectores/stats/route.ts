@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireAnyModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const tenant = token.tenant || getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireAnyModule(request, [
+      "dashboard",
+      "sectores",
+      "mapa",
+      "registros",
+      "inteligencia",
+      "escala",
+      "archivos",
+    ]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { searchParams } = new URL(request.url);
     const archivoId = searchParams.get("archivo_id");

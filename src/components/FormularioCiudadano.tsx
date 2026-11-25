@@ -11,8 +11,10 @@ import {
   ProblematicaSocial
 } from "@/types/ciudadano";
 import { getToken, authHeadersWithJson } from "@/lib/api";
+import EscanerCedula from "./EscanerCedula";
+import type { CedulaData } from "@/lib/cedula";
 
-export default function FormularioCiudadano() {
+export default function FormularioCiudadano({ onRegistered }: { onRegistered?: () => void }) {
   const [form, setForm] = useState({
     id_unico: "",
     nombre_completo: "",
@@ -190,6 +192,17 @@ export default function FormularioCiudadano() {
     setMessage(null);
   };
 
+  const applyScannedData = (data: CedulaData) => {
+    setForm((prev) => ({
+      ...prev,
+      id_unico: data.cedula || prev.id_unico,
+      nombre_completo: data.nombre || prev.nombre_completo,
+      sexo: data.sexo || prev.sexo,
+      edad: data.edad ? String(data.edad) : prev.edad,
+    }));
+    setMessage(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -231,6 +244,7 @@ export default function FormularioCiudadano() {
           text: `Registro territorial exitoso. GPS Validado: ${form.latitud ? "Sí" : "No"}.`,
         });
         handleResetForm();
+        onRegistered?.();
       }
     } catch {
       setMessage({ type: "error", text: "Error de conexión con el servidor." });
@@ -332,6 +346,8 @@ export default function FormularioCiudadano() {
           </div>
         </div>
       </div>
+
+      <EscanerCedula onData={applyScannedData} disabled={loading} />
 
       {/* SECTION: Identificación */}
       <SectionHeader icon="👤" title="Identificación y Perfil" subtitle="Datos básicos y demográficos" />

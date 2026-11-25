@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "candidaturas");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const id = parseInt(params.id);
     const body = await request.json();
@@ -59,7 +50,7 @@ export async function PUT(
 
     values.push(id);
     const sql = `UPDATE corporaciones_candidatos SET ${fields.join(", ")} WHERE id = $${pCount} RETURNING *`;
-    const { rows } = await queryWithTenant(tenant, sql, values);
+    const { rows } = await queryWithTenant(user.tenant, sql, values);
 
     if (rows.length === 0) {
       return NextResponse.json({ error: "Candidato no encontrado" }, { status: 404 });
@@ -77,22 +68,13 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores pueden desactivar candidatos" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "candidaturas");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const id = parseInt(params.id);
     const { rows } = await queryWithTenant(
-      tenant,
+      user.tenant,
       "UPDATE corporaciones_candidatos SET activo = 0 WHERE id = $1 RETURNING id",
       [id]
     );

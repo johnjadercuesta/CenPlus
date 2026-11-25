@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
+import { getTokenFromRequest, tokenMatchesTenant, requireModule } from "@/lib/auth";
 import { getTenantFromRequest, queryWithTenant, sanitizeTenantValue } from "@/lib/tenant";
 import { pool } from "@/lib/db";
 
@@ -84,17 +84,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-    if (token.role !== "administrador" && token.role !== "estratega") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) return NextResponse.json({ error: "Tenant no especificado" }, { status: 400 });
+    const auth = await requireModule(request, "votaciones");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const votacionId = parseInt(params.id);
     if (isNaN(votacionId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 });
@@ -168,17 +160,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
-    if (token.role !== "administrador" && token.role !== "estratega") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) return NextResponse.json({ error: "Tenant no especificado" }, { status: 400 });
+    const auth = await requireModule(request, "votaciones");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const votacionId = parseInt(params.id);
     if (isNaN(votacionId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 });

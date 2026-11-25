@@ -1,28 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireAnyModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
+    const auth = await requireAnyModule(request, ["registros", "mi-panel"]);
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const id = params.id;
+    const tenant = user.tenant;
+    const run = (sql: string, queryParams: any[] = []) =>
+      queryWithTenant(tenant, sql, queryParams);
 
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
-
-    if (token.role === "lider") {
+    if (user.role === "lider") {
       const { rows } = await run("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
       const record = rows[0] as { lider_id: number } | undefined;
-      if (!record || record.lider_id !== token.userId) {
+      if (!record || record.lider_id !== user.userId) {
         return NextResponse.json({ error: "Sin permisos para editar este registro" }, { status: 403 });
       }
     }
@@ -90,21 +87,19 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
+    const auth = await requireAnyModule(request, ["registros", "mi-panel"]);
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const id = params.id;
+    const tenant = user.tenant;
+    const run = (sql: string, queryParams: any[] = []) =>
+      queryWithTenant(tenant, sql, queryParams);
 
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
-
-    if (token.role === "lider") {
+    if (user.role === "lider") {
       const { rows } = await run("SELECT lider_id FROM ciudadanos WHERE id = $1", [id]);
       const record = rows[0] as { lider_id: number } | undefined;
-      if (!record || record.lider_id !== token.userId) {
+      if (!record || record.lider_id !== user.userId) {
         return NextResponse.json({ error: "Sin permisos para eliminar este registro" }, { status: 403 });
       }
     }

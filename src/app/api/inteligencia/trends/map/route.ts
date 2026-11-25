@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    const tenant = token?.tenant || getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ features: [] });
-    }
+    const auth = await requireModule(request, "inteligencia");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     // Try fresh scraped data first
     const { rows: fresh } = await pool.query(`

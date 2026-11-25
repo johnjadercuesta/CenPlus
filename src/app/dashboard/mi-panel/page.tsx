@@ -7,7 +7,7 @@ export default function MiPanelPage() {
         <div>
           <h1 className="main-header-title">Mi Panel de Trabajo</h1>
           <p className="main-header-subtitle">
-            Gestione sus electores asignados, avance de meta y registro rápido de campo
+            Registre simpatizantes, avance su meta y gestione sus registros
           </p>
         </div>
       </div>

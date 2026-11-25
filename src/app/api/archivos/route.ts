@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const tenant = token.tenant || getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "archivos");
+    if (auth.error) return auth.error;
+    const user = auth.user;
+    const tenant = user.tenant;
 
     const body = await request.json();
     const { nombre, descripcion, fecha_corte } = body;
@@ -59,7 +54,7 @@ export async function POST(request: NextRequest) {
           lideresRes.rows.length,
           sectoresRes.rows.length,
           JSON.stringify(snapshot),
-          token.userId,
+          user.userId,
         ]
       );
 
@@ -101,15 +96,9 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const tenant = token.tenant || getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "archivos");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { rows } = await queryWithTenant(tenant,
       `SELECT a.*, ad.nombre as creado_por_nombre

@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireAnyModule, requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireAnyModule(request, [
+      "candidaturas",
+      "dia-d",
+      "mi-panel",
+      "registros",
+    ]);
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const corporacion = searchParams.get("corporacion");
@@ -56,7 +52,7 @@ export async function GET(request: NextRequest) {
         c.nombre ASC
     `;
 
-    const { rows } = await queryWithTenant(tenant, sql, params);
+    const { rows } = await queryWithTenant(user.tenant, sql, params);
 
     return NextResponse.json({ data: rows });
   } catch (err: any) {
@@ -67,18 +63,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
-      return NextResponse.json({ error: "No autorizado para registrar candidatos" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "candidaturas");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { nombre, corporacion, numero_tarjeton, partido, foto_url } = body;
@@ -100,7 +87,7 @@ export async function POST(request: NextRequest) {
       foto_url ? String(foto_url).trim() : null
     ];
 
-    const { rows } = await queryWithTenant(tenant, sql, params);
+    const { rows } = await queryWithTenant(user.tenant, sql, params);
 
     return NextResponse.json({ data: rows[0], message: "Candidato registrado correctamente" }, { status: 201 });
   } catch (err: any) {

@@ -1,29 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
-import { logRecordCreate, logRecordUpdate, logRecordDelete, logPermissionChange } from "@/lib/audit";
+import { logRecordCreate, logPermissionChange } from "@/lib/audit";
+import {
+  Role,
+  isRole,
+  resolveDiaDLevelForRole,
+} from "@/lib/modules";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
+    const auth = await requireModule(request, "usuarios");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
-    let tenant = getTenantFromRequest(request);
-    if (!tenant && token.tenant) {
-      tenant = token.tenant;
-    }
-
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
-
-    const { rows: data } = await queryWithTenant(tenant,
-      "SELECT id, email, identificacion, nombre, role, activo, created_at FROM admins ORDER BY created_at DESC"
+    const { rows: data } = await queryWithTenant(
+      user.tenant,
+      `SELECT id, email, identificacion, nombre, role, dia_d_level, activo, created_at
+         FROM admins
+        ORDER BY created_at DESC`
     );
 
     return NextResponse.json({ data });
@@ -35,39 +32,36 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
-    }
-    if (!tokenMatchesTenant(token, request)) return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
+    const auth = await requireModule(request, "usuarios");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
-    const { email, identificacion, password, nombre, role } = await request.json();
+    const { email, identificacion, password, nombre, role, dia_d_level } = await request.json();
 
     if (!email || !identificacion || !password || !nombre) {
       return NextResponse.json({ error: "Email, identificacion, contrasena y nombre son obligatorios" }, { status: 400 });
     }
 
-    let tenant = getTenantFromRequest(request);
-    if (!tenant && token.tenant) {
-      tenant = token.tenant;
-    }
+    const targetRole: Role = isRole(role) ? role : "lider";
+    const targetLevel = resolveDiaDLevelForRole(targetRole, dia_d_level);
 
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
-
-    const { rows: existingRows } = await queryWithTenant(tenant, "SELECT id FROM admins WHERE email = $1 OR identificacion = $2", [email, identificacion]);
+    const { rows: existingRows } = await queryWithTenant(
+      user.tenant,
+      "SELECT id FROM admins WHERE email = $1 OR identificacion = $2",
+      [email, identificacion]
+    );
     if (existingRows.length > 0) {
       return NextResponse.json({ error: "Este email o identificacion ya esta registrado" }, { status: 409 });
     }
 
     const hash = bcrypt.hashSync(password, 10);
-    const validRoles = ["administrador", "estratega", "lider", "analista"];
-    const targetRole = validRoles.includes(role) ? role : "lider";
 
-    const { rows } = await queryWithTenant(tenant,
-      "INSERT INTO admins (email, identificacion, password, nombre, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, identificacion, nombre, role, activo, created_at",
-      [email, identificacion, hash, nombre, targetRole]
+    const { rows } = await queryWithTenant(
+      user.tenant,
+      `INSERT INTO admins (email, identificacion, password, nombre, role, dia_d_level)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, email, identificacion, nombre, role, dia_d_level, activo, created_at`,
+      [email, identificacion, hash, nombre, targetRole, targetLevel]
     );
 
     const client = await pool.connect();
@@ -75,32 +69,32 @@ export async function POST(request: NextRequest) {
       await client.query(`
         INSERT INTO public.user_tenants (email, tenant, identificacion) VALUES ($1, $2, $3)
         ON CONFLICT (email) DO UPDATE SET tenant = $2, identificacion = $3
-      `, [email, tenant, identificacion]);
+      `, [email, user.tenant, identificacion]);
     } finally {
       client.release();
     }
 
     await logRecordCreate({
-      tenant,
-      userId: token.userId,
-      userEmail: token.email,
-      userName: token.nombre,
-      userRole: token.role,
+      tenant: user.tenant,
+      userId: user.userId,
+      userEmail: user.email,
+      userName: user.nombre,
+      userRole: user.role,
       module: "usuarios",
       resourceType: "admin",
       resourceId: String(rows[0].id),
-      newValue: { email, nombre, role: targetRole },
+      newValue: { email, nombre, role: targetRole, dia_d_level: targetLevel },
     });
 
-    if (targetRole !== "lider") {
+    if (targetRole !== "lider" || targetLevel !== "none") {
       await logPermissionChange({
-        tenant,
-        userId: token.userId,
-        userEmail: token.email,
-        userName: token.nombre,
+        tenant: user.tenant,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.nombre,
         resourceType: "admin",
         resourceId: String(rows[0].id),
-        newValue: { role: targetRole },
+        newValue: { role: targetRole, dia_d_level: targetLevel },
       });
     }
 

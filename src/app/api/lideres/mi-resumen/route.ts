@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 403 });
-    }
+    const auth = await requireModule(request, "mi-panel");
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) {
-      return NextResponse.json({ error: "Tenant no encontrado" }, { status: 400 });
-    }
-
-    const liderId = token.userId;
+    const tenant = user.tenant;
+    const liderId = user.userId;
 
     // 1. Meta y datos del líder
     const { rows: liderRows } = await queryWithTenant(
@@ -80,7 +72,7 @@ export async function GET(request: NextRequest) {
     const porcentaje = Math.min(100, Math.round((stats.total_registrados / meta) * 100));
 
     return NextResponse.json({
-      lider: liderRows[0] || { id: liderId, nombre: token.nombre },
+      lider: liderRows[0] || { id: liderId, nombre: user.nombre },
       meta,
       progreso: {
         total: stats.total_registrados,

@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest } from "@/lib/tenant";
+import { requireAnyModule } from "@/lib/auth";
 import { getHotspots } from "@/lib/trendsmap";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
-    const tenant = token.tenant || getTenantFromRequest(request);
+    const auth = await requireAnyModule(request, ["inteligencia", "mapa", "dashboard"]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { searchParams } = new URL(request.url);
     const hours = Math.min(parseInt(searchParams.get("hours") || "24"), 168);

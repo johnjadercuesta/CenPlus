@@ -4,6 +4,12 @@ import { signTokenWithVersion } from "@/lib/auth";
 import { getTenantFromRequest, queryWithTenant, sanitizeTenantValue } from "@/lib/tenant";
 import bcrypt from "bcryptjs";
 import { logLogin, recordFailedLogin, recordSystemEvent } from "@/lib/audit";
+import {
+  Role,
+  getDefaultRoute,
+  getEffectiveModuleIds,
+  normalizeDiaDLevel,
+} from "@/lib/modules";
 
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -150,19 +156,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userSessionVersion = Number((user as any).session_version ?? 0);
+    const diaDLevel = normalizeDiaDLevel((user as any).dia_d_level);
+    const accessUser = { role: user.role as Role, dia_d_level: diaDLevel };
+
     const token = signTokenWithVersion({
       userId: user.id,
       email: user.email,
       nombre: user.nombre,
-      role: user.role as "administrador" | "estratega" | "lider",
+      role: user.role as Role,
       tenant: tenant || null,
-    }, sessionVersion);
+    }, userSessionVersion, sessionVersion);
 
     const response = NextResponse.json({
       token,
       email: user.email,
       nombre: user.nombre,
       role: user.role,
+      dia_d_level: diaDLevel,
+      modules: getEffectiveModuleIds(accessUser),
+      defaultRoute: getDefaultRoute(accessUser),
     });
     
     await logLogin({

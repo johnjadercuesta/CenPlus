@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pool } from "@/lib/db";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireAnyModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function GET(request: NextRequest) {
   try {
-    const tenant = getTenantFromRequest(request);
-    const run = (sql: string, params: any[] = []) => (tenant ? queryWithTenant(tenant, sql, params) : pool.query(sql, params));
+    const auth = await requireAnyModule(request, [
+      "registros",
+      "dashboard",
+      "mapa",
+      "archivos",
+      "inteligencia",
+    ]);
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
+    const run = (sql: string, params: any[] = []) => queryWithTenant(tenant, sql, params);
 
     const { rows: data } = await run("SELECT * FROM ciudadanos ORDER BY created_at DESC");
 

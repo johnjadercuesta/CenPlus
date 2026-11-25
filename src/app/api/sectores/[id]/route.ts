@@ -1,31 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
-
-const sanitize = (t: string | null | undefined) => {
-  if (!t) return null;
-  const s = String(t).trim().toLowerCase();
-  if (!/^[a-z0-9_]+$/.test(s) || s.length === 0 || s.length > 63) return null;
-  return s;
-};
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireModule(request, "sectores");
+  if (auth.error) return auth.error;
+  const tenant = auth.user.tenant;
+
   const client = await pool.connect();
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || (token.role !== "administrador" && token.role !== "estratega")) {
-      return NextResponse.json({ error: "No autorizado para editar sectores" }, { status: 403 });
-    }
-
-    const tenant = sanitize(token.tenant || getTenantFromRequest(request));
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
-
     await client.query(`SET search_path TO "${tenant}", public`);
 
     const id = params.id;
@@ -133,15 +120,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores pueden eliminar sectores" }, { status: 403 });
-    }
-
-    const tenant = sanitize(token.tenant || getTenantFromRequest(request));
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "sectores");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { rowCount } = await queryWithTenant(tenant, "DELETE FROM sectores WHERE id = $1", [params.id]);
     if (rowCount === 0) {

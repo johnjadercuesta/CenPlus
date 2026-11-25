@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest, queryWithTenant } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
+import { queryWithTenant } from "@/lib/tenant";
 
 // GET /api/votaciones — lista encuestas del tenant
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
-    }
-    if (token.role !== "administrador" && token.role !== "estratega") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) return NextResponse.json({ error: "Tenant no especificado" }, { status: 400 });
+    const auth = await requireModule(request, "votaciones");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { rows } = await queryWithTenant(tenant, `
       SELECT
@@ -36,17 +28,10 @@ export async function GET(request: NextRequest) {
 // POST /api/votaciones — crear nueva encuesta
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organización" }, { status: 403 });
-    }
-    if (token.role !== "administrador" && token.role !== "estratega") {
-      return NextResponse.json({ error: "Solo administradores y estrategas pueden crear encuestas" }, { status: 403 });
-    }
-
-    const tenant = getTenantFromRequest(request);
-    if (!tenant) return NextResponse.json({ error: "Tenant no especificado" }, { status: 400 });
+    const auth = await requireModule(request, "votaciones");
+    if (auth.error) return auth.error;
+    const user = auth.user;
+    const tenant = user.tenant;
 
     const body = await request.json();
     const {
@@ -100,7 +85,7 @@ export async function POST(request: NextRequest) {
       anonima,
       fecha_inicio || null,
       fecha_fin || null,
-      token.userId,
+      user.userId,
       Array.isArray(dimensiones) ? dimensiones : [],
     ]);
 

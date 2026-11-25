@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest, tokenMatchesTenant } from "@/lib/auth";
-import { getTenantFromRequest } from "@/lib/tenant";
+import { requireModule } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!tokenMatchesTenant(token, request)) {
-      return NextResponse.json({ error: "Acceso no autorizado para esta organizacion" }, { status: 403 });
-    }
+    const auth = await requireModule(request, "mensajeria");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
-    const tenant = getTenantFromRequest(request);
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");

@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getTokenFromRequest } from "@/lib/auth";
+import { requireModule } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
-    }
-
-    const tenant = token.tenant;
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "auditoria");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { searchParams } = new URL(request.url);
     const resolved = searchParams.get("resolved");
@@ -53,15 +47,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token || token.role !== "administrador") {
-      return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
-    }
-
-    const tenant = token.tenant;
-    if (!tenant) {
-      return NextResponse.json({ error: "No se pudo detectar la organizacion" }, { status: 400 });
-    }
+    const auth = await requireModule(request, "auditoria");
+    if (auth.error) return auth.error;
+    const tenant = auth.user.tenant;
 
     const { alertId } = await request.json();
 
@@ -69,7 +57,7 @@ export async function POST(request: NextRequest) {
       `UPDATE public.security_alerts 
        SET is_resolved = TRUE, resolved_at = NOW(), resolved_by = $1 
        WHERE id = $2 AND tenant = $3 RETURNING *`,
-      [token.email, alertId, tenant]
+      [auth.user.email, alertId, tenant]
     );
 
     if (rows.length === 0) {
